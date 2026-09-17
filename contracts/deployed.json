@@ -1,0 +1,14 @@
+{
+  "chainId": 10143,
+  "rpc": "https://testnet-rpc.monad.xyz",
+  "explorer": "https://testnet.monadscan.com",
+  "eventId": 1,
+  "shards": 64,
+  "operator": "0x1111d87736c9C90Bb9eAE83297BE83ae990699cE",
+  "reporter": "0x1111d87736c9C90Bb9eAE83297BE83ae990699cE",
+  "contracts": {
+    "TestUSD": "0x195758b71dAD14EdB1Dd7E75AAE3e8e7ae69f6A3",
+    "Tick": "0x6C54f7F4adb7193e022ba73FcbcD477722C426bC",
+    "TickNaive": "0xB6061bC7489bDAe71cAeFd8d86A5800a78fa9bE9"
+  }
+}
