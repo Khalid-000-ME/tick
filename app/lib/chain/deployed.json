@@ -1,0 +1,19 @@
+{
+  "chainId": 10143,
+  "rpc": "https://testnet-rpc.monad.xyz",
+  "explorer": "https://testnet.monadscan.com",
+  "shards": 64,
+  "admin": "0x1111d87736c9C90Bb9eAE83297BE83ae990699cE",
+  "acceptMarginSeconds": 10,
+  "settleWindowSeconds": 600,
+  "windowSeconds": 30,
+  "settleToleranceSeconds": 20,
+  "feeBps": 200,
+  "contracts": {
+    "TestUSD": "0x2dDc814a107e8F982f356E3b409DC2D00F68b1b3",
+    "Tick": "0x54A8d52E72C0FdfB3ECF7014F47cE24D6229B763",
+    "Pyth": "0x2880aB155794e7179c9eE2e38200202908C17B43"
+  },
+  "settleBountyBps": 5000,
+  "maxSettleBountyUsd": 2
+}
