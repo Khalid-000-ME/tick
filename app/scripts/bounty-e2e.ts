@@ -8,7 +8,7 @@
  * market from Hermes' signed update, and is paid. Then both claim.
  *
  * What it asserts, on chain:
- *   - the settler (a stranger) earns exactly half the fee: 1 tUSD on a 100 tUSD losing pool
+ *   - the settler (a stranger) earns exactly half the fee on a 5 USDC losing pool
  *   - the winner is paid, the loser is not
  *   - winner + fee recipient + settler never exceed what was staked, and account for
  *     essentially all of it
@@ -33,8 +33,9 @@ import { fetchPriceUpdate, feedBySymbol } from "../lib/pyth.js";
 import { PythAbi } from "../lib/chain/pythAbi.js";
 import { WINDOW_S } from "../lib/chain/config.js";
 
-const usd = (v: bigint) => `${formatUnits(v, 6)} tUSD`;
-const STAKE = 100n * 10n ** 6n;
+const usd = (v: bigint) => `${formatUnits(v, 6)} USDC`;
+// Real Circle USDC cannot be minted, so the proof runs at a size the faucet can cover.
+const STAKE = 5n * 10n ** 6n;
 
 async function main() {
   const feed = feedBySymbol("BTC/USD");
@@ -43,10 +44,10 @@ async function main() {
   const settler = participant(13);
   for (const p of [a, b, settler]) registerParticipantPk(p.account.address, p.pk);
 
-  console.log("funding participants (MON for gas, tUSD for stakes)…");
-  await ensureFunded(a.account.address, 150n * 10n ** 15n, 200n * 10n ** 6n);
-  await ensureFunded(b.account.address, 150n * 10n ** 15n, 200n * 10n ** 6n);
-  // The settler gets MON only. It must earn its tUSD or this proves nothing.
+  console.log("funding participants (MON for gas, USDC for stakes)…");
+  await ensureFunded(a.account.address, 150n * 10n ** 15n, STAKE);
+  await ensureFunded(b.account.address, 150n * 10n ** 15n, STAKE);
+  // The settler gets MON only. It must earn its USDC or this proves nothing.
   const sMon = await pub.getBalance({ address: settler.account.address });
   if (sMon < 400n * 10n ** 15n) {
     const h = await deployerWallet().sendTransaction({ to: settler.account.address, value: 400n * 10n ** 15n - sMon, account: deployer(), chain: null });
@@ -116,7 +117,7 @@ async function main() {
   console.log(`outcome: ${outcome === 1 ? "ABOVE" : "BELOW"}  settled at ${s[2]} vs strike ${strike}`);
 
   const bounty = ((await pub.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [settler.account.address] })) as bigint) - settlerTickBefore;
-  console.log(`settler (no prior tUSD) earned ${usd(bounty)}`);
+  console.log(`settler (no prior USDC) earned ${usd(bounty)}`);
 
   let paid = 0n;
   for (const p of [a, b]) {
@@ -132,8 +133,8 @@ async function main() {
 
   const total = paid + fees + bounty;
   const checks: [string, boolean][] = [
-    ["settler earned exactly half the 2% fee (1 tUSD)", bounty === 1_000_000n],
-    ["winner paid more than the 100 staked, loser nothing", paid > STAKE && paid < 2n * STAKE],
+    ["settler earned exactly half the 2% fee", bounty === (STAKE * 200n) / 10_000n / 2n],
+    ["winner paid more than they staked, loser nothing", paid > STAKE && paid < 2n * STAKE],
     ["payouts + fees + bounty never exceed what was staked", total <= 2n * STAKE],
     ["and account for all but dust", total >= 2n * STAKE - 1_000n],
   ];

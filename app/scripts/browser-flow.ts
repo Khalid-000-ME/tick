@@ -15,12 +15,12 @@
  * restake them into the next window at a different strike. Asserted below.
  */
 import { formatUnits } from "viem";
-import { CONTRACTS, TestUSDAbi, TickAbi, deployer, deployerWallet, marketId, participant, pub, sleep, txUrl } from "./lib/chain.js";
+import { CONTRACTS, Erc20Abi, TickAbi, deployer, deployerWallet, marketId, participant, pub, sleep, txUrl } from "./lib/chain.js";
 import { feedBySymbol } from "../lib/pyth.js";
 import { WINDOW_S } from "../lib/chain/config.js";
 
-const usd = (v: bigint) => `${formatUnits(v, 6)} tUSD`;
-const STAKE = 25n * 10n ** 6n;
+const usd = (v: bigint) => `${formatUnits(v, 6)} USDC`;
+const STAKE = 5n * 10n ** 6n;
 const APP = "http://localhost:3000";
 
 async function main() {
@@ -40,15 +40,16 @@ async function main() {
 
   // ---- setup, exactly as useStake does it on a first stake
   for (const p of [me, other]) {
-    const bal = (await pub.readContract({ address: CONTRACTS.testUsd, abi: TestUSDAbi, functionName: "balanceOf", args: [p.account.address] })) as bigint;
+    const bal = (await pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "balanceOf", args: [p.account.address] })) as bigint;
     if (bal < STAKE) {
-      const h = await p.wallet.writeContract({ address: CONTRACTS.testUsd, abi: TestUSDAbi, functionName: "claim", args: [], account: p.account, chain: null, gas: 120_000n });
+      // A real user gets USDC from faucet.circle.com or a transfer; the deployer stands in.
+      const h = await deployerWallet().writeContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "transfer", args: [p.account.address, STAKE - bal], account: deployer(), chain: null });
       await pub.waitForTransactionReceipt({ hash: h });
-      console.log("  faucet claimed");
+      console.log("  funded with USDC");
     }
-    const allow = (await pub.readContract({ address: CONTRACTS.testUsd, abi: TestUSDAbi, functionName: "allowance", args: [p.account.address, CONTRACTS.tick] })) as bigint;
+    const allow = (await pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "allowance", args: [p.account.address, CONTRACTS.tick] })) as bigint;
     if (allow < STAKE) {
-      const h = await p.wallet.writeContract({ address: CONTRACTS.testUsd, abi: TestUSDAbi, functionName: "approve", args: [CONTRACTS.tick, 2n ** 255n], account: p.account, chain: null, gas: 80_000n });
+      const h = await p.wallet.writeContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "approve", args: [CONTRACTS.tick, 2n ** 255n], account: p.account, chain: null, gas: 80_000n });
       await pub.waitForTransactionReceipt({ hash: h });
       console.log("  approved");
     }
@@ -113,7 +114,7 @@ async function main() {
     ["the winner was actually paid, and more than they staked", claimed > STAKE],
     ["the payout matched previewClaim exactly", claimed === preview],
     ["the loser is offered nothing to claim", loserPreview === 0n],
-    ["winner + fee + bounty never exceeded the 50 staked", claimed <= 2n * STAKE],
+    ["winner + fee + bounty never exceeded what was staked", claimed <= 2n * STAKE],
   ];
   let ok = true;
   for (const [name, pass] of checks) {

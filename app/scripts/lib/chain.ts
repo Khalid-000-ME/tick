@@ -1,6 +1,6 @@
 import { createPublicClient, createWalletClient, http, keccak256, encodeAbiParameters, parseAbiParameters, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { TickAbi, TestUSDAbi } from "../../lib/chain/abi.js";
+import { TickAbi, Erc20Abi } from "../../lib/chain/abi.js";
 import { PythAbi } from "../../lib/chain/pythAbi.js";
 import { CONTRACTS, monadTestnet } from "../../lib/chain/config.js";
 import { loadEnv, requireEnv } from "./env.js";
@@ -16,7 +16,7 @@ export const deployerPk = () => requireEnv("DEPLOYER_PK") as `0x${string}`;
 export const deployer = () => privateKeyToAccount(deployerPk());
 export const deployerWallet = () => walletFor(deployerPk());
 
-export { TickAbi, TestUSDAbi, PythAbi, CONTRACTS, monadTestnet };
+export { TickAbi, Erc20Abi, PythAbi, CONTRACTS, monadTestnet };
 
 export interface Terms {
   feedId: `0x${string}`;
@@ -92,16 +92,29 @@ export async function ensureFunded(addr: `0x${string}`, minMon: bigint, minUsd: 
   }
 
   const usd = (await pub.readContract({
-    address: CONTRACTS.testUsd,
-    abi: TestUSDAbi,
+    address: CONTRACTS.usdc,
+    abi: Erc20Abi,
     functionName: "balanceOf",
     args: [addr],
   })) as bigint;
   if (usd < minUsd) {
+    // Circle USDC cannot be minted. The deployer holds whatever the Circle faucet gave it
+    // and lends it out; if that runs dry, top the deployer up at faucet.circle.com.
+    const have = (await pub.readContract({
+      address: CONTRACTS.usdc,
+      abi: Erc20Abi,
+      functionName: "balanceOf",
+      args: [deployer().address],
+    })) as bigint;
+    if (have < minUsd - usd) {
+      throw new Error(
+        `deployer holds ${Number(have) / 1e6} USDC but ${Number(minUsd - usd) / 1e6} is needed — claim more at https://faucet.circle.com`
+      );
+    }
     const hash = await w.writeContract({
-      address: CONTRACTS.testUsd,
-      abi: TestUSDAbi,
-      functionName: "seed",
+      address: CONTRACTS.usdc,
+      abi: Erc20Abi,
+      functionName: "transfer",
       args: [addr, minUsd - usd],
       account: acct,
       chain: null,
@@ -110,16 +123,16 @@ export async function ensureFunded(addr: `0x${string}`, minMon: bigint, minUsd: 
   }
 
   const allowance = (await pub.readContract({
-    address: CONTRACTS.testUsd,
-    abi: TestUSDAbi,
+    address: CONTRACTS.usdc,
+    abi: Erc20Abi,
     functionName: "allowance",
     args: [addr, CONTRACTS.tick],
   })) as bigint;
   if (allowance < minUsd) {
     const wallet = walletFor(participantPkFor(addr) ?? deployerPk());
     const hash = await wallet.writeContract({
-      address: CONTRACTS.testUsd,
-      abi: TestUSDAbi,
+      address: CONTRACTS.usdc,
+      abi: Erc20Abi,
       functionName: "approve",
       args: [CONTRACTS.tick, 2n ** 255n],
       account: wallet.account!,

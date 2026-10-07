@@ -42,7 +42,7 @@ import {
 } from "../lib/pyth.js";
 import { ACCEPT_MARGIN_S, SETTLE_TOLERANCE_S, WINDOW_S } from "../lib/chain/config.js";
 
-const usd = (v: bigint) => `${formatUnits(v, 6)} tUSD`;
+const usd = (v: bigint) => `${formatUnits(v, 6)} USDC`;
 
 /** Fetch from Hermes and put it on chain. Returns the publishTime now stored. */
 async function refreshPrice(feedId: `0x${string}`, label: string) {
@@ -158,20 +158,20 @@ async function main() {
   for (const p of [a, b]) {
     // 0.5 MON: settle costs ~1.2M gas and Monad charges the LIMIT, so 0.06 MON
     // was rejected outright by the RPC rather than reverting.
-    await ensureFunded(p.account.address, 5n * 10n ** 17n, 2_000n * 10n ** 6n);
+    await ensureFunded(p.account.address, 5n * 10n ** 17n, 12n * 10n ** 6n);
     const dep = (await pub.readContract({
       address: CONTRACTS.tick,
       abi: TickAbi,
       functionName: "deposits",
       args: [p.account.address],
     })) as bigint;
-    if (dep < 500n * 10n ** 6n) {
+    if (dep < 10n * 10n ** 6n) {
       await sendTimed(`deposit ${p.account.address.slice(0, 8)}`, () =>
         p.wallet.writeContract({
           address: CONTRACTS.tick,
           abi: TickAbi,
           functionName: "deposit",
-          args: [1_000n * 10n ** 6n],
+          args: [10n * 10n ** 6n],
           account: p.account,
           chain: null,
         })
@@ -201,24 +201,24 @@ async function main() {
   console.log(`\n4. stake while the price is fresh (the cutoff is open)`);
   await refreshPrice(feed.id, "refresh before staking");
 
-  await preflight("alice ABOVE", a.account.address, terms, true, 40n * 10n ** 6n);
-  const stakeA = await sendTimed("alice stakes ABOVE 40 tUSD", () =>
+  await preflight("alice ABOVE", a.account.address, terms, true, 4n * 10n ** 6n);
+  const stakeA = await sendTimed("alice stakes ABOVE 4 USDC", () =>
     a.wallet.writeContract({
       address: CONTRACTS.tick,
       abi: TickAbi,
       functionName: "stakeOn",
-      args: [terms, true, 40n * 10n ** 6n],
+      args: [terms, true, 4n * 10n ** 6n],
       account: a.account,
       chain: null,
     })
   );
-  await preflight("bob BELOW", b.account.address, terms, false, 60n * 10n ** 6n);
-  const stakeB = await sendTimed("bob stakes BELOW 60 tUSD", () =>
+  await preflight("bob BELOW", b.account.address, terms, false, 6n * 10n ** 6n);
+  const stakeB = await sendTimed("bob stakes BELOW 6 USDC", () =>
     b.wallet.writeContract({
       address: CONTRACTS.tick,
       abi: TickAbi,
       functionName: "stakeOn",
-      args: [terms, false, 60n * 10n ** 6n],
+      args: [terms, false, 6n * 10n ** 6n],
       account: b.account,
       chain: null,
     })
@@ -261,7 +261,7 @@ async function main() {
       address: CONTRACTS.tick,
       abi: TickAbi,
       functionName: "stakeOn",
-      args: [terms, true, 10n * 10n ** 6n],
+      args: [terms, true, 1n * 10n ** 6n],
       account: a.account,
     });
     console.log(`   *** a stale-price stake was ACCEPTED — the cutoff is not working ***`);

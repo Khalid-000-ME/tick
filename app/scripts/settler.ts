@@ -112,7 +112,7 @@ async function pass() {
       const rc = await pub.waitForTransactionReceipt({ hash });
       const after = (await pub.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account.address] })) as bigint;
 
-      console.log(`settled ${id.slice(0, 10)}… ${rc.status}  bounty +${formatUnits(after - before, 6)} tUSD  gas ${rc.gasUsed}  ${txUrl(hash)}`);
+      console.log(`settled ${id.slice(0, 10)}… ${rc.status}  bounty +${formatUnits(after - before, 6)} USDC  gas ${rc.gasUsed}  ${txUrl(hash)}`);
       settled++;
     } catch (e) {
       console.log(`skip ${id.slice(0, 10)}…  ${((e as { shortMessage?: string }).shortMessage ?? (e as Error).message).split("\n")[0]}`);
