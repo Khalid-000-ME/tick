@@ -18,7 +18,7 @@ field_selection:
 chains:
   - id: 10143
     # Block the current Tick deployment was mined in (from the forge broadcast record).
-    start_block: 69025508
+    start_block: 69056362
     contracts:
       - name: Tick
-        address: "0x54A8d52E72C0FdfB3ECF7014F47cE24D6229B763"
+        address: "0x8F6a59d397499636f8ff2Ed367DE1a8484b1b0cf"
