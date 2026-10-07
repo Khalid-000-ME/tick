@@ -1,0 +1,58 @@
+{
+  "chainId": 10143,
+  "generatedAt": "2026-10-06T14:36:21.117Z",
+  "sharded": {
+    "label": "sharded",
+    "target": "0x6C54f7F4adb7193e022ba73FcbcD477722C426bC",
+    "marketId": "0xa893c7b170a0894cae116bc8d9795be4f09b8202b9e03fdc114e38032579d6dd",
+    "writesPerStaker": {
+      "staker1": [
+        "poolNo[shard 54]",
+        "stakeOf[me]",
+        "deposits[me]"
+      ],
+      "staker2": [
+        "poolYes[shard 18]",
+        "stakeOf[me]",
+        "deposits[me]"
+      ],
+      "staker3": [
+        "poolNo[shard 3]",
+        "stakeOf[me]",
+        "deposits[me]"
+      ]
+    },
+    "pairs": 3,
+    "conflictingPairs": 0,
+    "conflictRate": 0,
+    "sharedWrittenSlots": []
+  },
+  "naive": {
+    "label": "naive",
+    "target": "0xB6061bC7489bDAe71cAeFd8d86A5800a78fa9bE9",
+    "marketId": "0xe7a0b325d352fa772a91226bef22399a3d5d6ccd2568e2187d6b69d6968e84ce",
+    "writesPerStaker": {
+      "staker1": [
+        "market.totals(slot2)",
+        "stakeOf[me]",
+        "deposits[me]"
+      ],
+      "staker2": [
+        "market.totals(slot2)",
+        "stakeOf[me]",
+        "deposits[me]"
+      ],
+      "staker3": [
+        "market.totals(slot2)",
+        "stakeOf[me]",
+        "deposits[me]"
+      ]
+    },
+    "pairs": 3,
+    "conflictingPairs": 3,
+    "conflictRate": 1,
+    "sharedWrittenSlots": [
+      "market.totals(slot2)"
+    ]
+  }
+}

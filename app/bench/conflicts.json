@@ -1,0 +1,52 @@
+{
+  "chainId": 10143,
+  "generatedAt": "2026-10-06T14:34:31.554Z",
+  "sharded": {
+    "label": "sharded",
+    "target": "0x6C54f7F4adb7193e022ba73FcbcD477722C426bC",
+    "stakers": 12,
+    "slotsPerStaker": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "distinctSlotsTouched": 38,
+    "pairs": 66,
+    "conflictingPairs": 66,
+    "conflictRate": 1,
+    "avgSharedSlots": 2
+  },
+  "naive": {
+    "label": "naive",
+    "target": "0xB6061bC7489bDAe71cAeFd8d86A5800a78fa9bE9",
+    "stakers": 12,
+    "slotsPerStaker": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "distinctSlotsTouched": 26,
+    "pairs": 66,
+    "conflictingPairs": 66,
+    "conflictRate": 1,
+    "avgSharedSlots": 2
+  }
+}

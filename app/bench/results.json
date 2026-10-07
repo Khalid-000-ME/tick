@@ -1,0 +1,68 @@
+{
+  "chainId": 10143,
+  "generatedAt": "2026-10-06T14:33:10.924Z",
+  "params": {
+    "wallets": 12,
+    "rounds": 1,
+    "stakeUsd": 2,
+    "shards": 64
+  },
+  "contracts": {
+    "sharded": "0x6C54f7F4adb7193e022ba73FcbcD477722C426bC",
+    "naive": "0xB6061bC7489bDAe71cAeFd8d86A5800a78fa9bE9"
+  },
+  "summary": {
+    "sharded": {
+      "label": "sharded",
+      "runs": 1,
+      "confirmed": 12,
+      "reverted": 0,
+      "blocks": 1,
+      "txPerBlock": 12,
+      "maxPerBlock": 12,
+      "avgWallMs": 1477,
+      "avgGas": 172819
+    },
+    "naive": {
+      "label": "naive",
+      "runs": 1,
+      "confirmed": 12,
+      "reverted": 0,
+      "blocks": 1,
+      "txPerBlock": 12,
+      "maxPerBlock": 12,
+      "avgWallMs": 1244,
+      "avgGas": 156074
+    }
+  },
+  "runs": [
+    {
+      "label": "sharded",
+      "sent": 12,
+      "confirmed": 12,
+      "reverted": 0,
+      "wallMs": 1477,
+      "blocks": [
+        68709858
+      ],
+      "maxPerBlock": 12,
+      "txPerBlock": 12,
+      "totalGas": "2073834",
+      "avgGas": "172819"
+    },
+    {
+      "label": "naive",
+      "sent": 12,
+      "confirmed": 12,
+      "reverted": 0,
+      "wallMs": 1244,
+      "blocks": [
+        68709871
+      ],
+      "maxPerBlock": 12,
+      "txPerBlock": 12,
+      "totalGas": "1872894",
+      "avgGas": "156074"
+    }
+  ]
+}
