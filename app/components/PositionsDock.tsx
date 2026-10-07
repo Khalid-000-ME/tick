@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { ArrowSquareOut, CaretDown, X } from "@phosphor-icons/react";
-import { statusOf, type Position, type PositionStatus } from "@/lib/usePositions";
+import { isRefundPending, statusOf, type Position, type PositionStatus } from "@/lib/usePositions";
 import { explorerTx } from "@/lib/chain/config";
 
 /**
@@ -23,7 +24,6 @@ const VERDICT: Record<PositionStatus, { label: string; tone: string }> = {
   won: { label: "Won", tone: "win" },
   lost: { label: "Lost", tone: "loss" },
   refunded: { label: "Refunded", tone: "neutral" },
-  claimed: { label: "Claimed", tone: "win" },
 };
 
 export function PositionsDock({
@@ -45,8 +45,7 @@ export function PositionsDock({
 
   const settled = positions.filter((p) => p.outcome !== 0);
   const wins = settled.filter((p) => {
-    const s = statusOf(p);
-    return s === "won" || s === "claimed";
+    return statusOf(p) === "won";
   }).length;
   const losses = settled.filter((p) => statusOf(p) === "lost").length;
   // Realised only against settled markets: a live stake has no result to count yet.
@@ -89,14 +88,14 @@ export function PositionsDock({
                       {pnl === null ? `${p.amount.toFixed(2)} staked` : `${pnl >= 0 ? "+" : "−"}${Math.abs(pnl).toFixed(2)}`}
                     </span>
                   </div>
-                  {(status === "won" || status === "refunded") && (p.payout ?? 0) > 0 && (
+                  {isRefundPending(p) && (
                     <button
                       type="button"
                       className="dock-claim"
                       disabled={claiming === p.id}
                       onClick={() => void claim(p.id)}
                     >
-                      {claiming === p.id ? "Claiming…" : `Claim ${p.payout!.toFixed(2)}`}
+                      {claiming === p.id ? "Claiming…" : `Claim refund ${p.amount.toFixed(2)}`}
                     </button>
                   )}
                   {p.stakeHash && (
@@ -108,6 +107,9 @@ export function PositionsDock({
               );
             })}
           </ul>
+        )}
+        {open && (
+          <Link className="dock-all" href="/portfolio">Full history →</Link>
         )}
       </div>
     </div>
@@ -131,7 +133,7 @@ function ResultCard({
   const headline =
     status === "refunded"
       ? "Refunded"
-      : status === "won" || status === "claimed"
+      : status === "won"
         ? "You won"
         : "You lost";
 
@@ -153,17 +155,21 @@ function ResultCard({
       {status === "refunded" && (
         <span className="result-detail">Only one side had money, so the market voided and every stake is returned.</span>
       )}
-      {(status === "won" || status === "refunded") && (position.payout ?? 0) > 0 && (
+      {isRefundPending(position) && (
         <button
           type="button"
           className="result-claim"
           disabled={claiming === position.id}
           onClick={() => void claim(position.id)}
         >
-          {claiming === position.id ? "Claiming…" : `Claim ${position.payout!.toFixed(2)} tUSD`}
+          {claiming === position.id ? "Claiming…" : `Claim refund ${position.amount.toFixed(2)} tUSD`}
         </button>
       )}
-      {status === "claimed" && <span className="result-detail">In your Tick balance — stake it straight into the next window.</span>}
+      {status === "won" && (
+        <span className="result-detail">
+          {position.claimed ? "Credited to your Tick balance." : "Crediting to your Tick balance…"}
+        </span>
+      )}
     </div>
   );
 }

@@ -31,7 +31,7 @@ const pub = createPublicClient({ chain: monadTestnet, transport: http() });
  * from the contract, never computed here.
  */
 
-export type PositionStatus = "live" | "awaiting" | "won" | "lost" | "refunded" | "claimed";
+export type PositionStatus = "live" | "awaiting" | "won" | "lost" | "refunded";
 
 export interface Position {
   id: `0x${string}`;
@@ -59,7 +59,7 @@ export interface Position {
 // v2: the contract was redeployed (settler bounty), so ids from v1 no longer exist.
 const KEY = "tick.positions.v2";
 /** Keeps the log useful without letting localStorage grow without bound. */
-const MAX_KEPT = 60;
+const MAX_KEPT = 500;
 
 function load(account: string | null): Position[] {
   if (!account || typeof window === "undefined") return [];
@@ -87,10 +87,14 @@ export function statusOf(p: Position): PositionStatus {
   if (p.outcome === OUTCOME.unresolved) {
     return Math.floor(Date.now() / 1000) < p.closesAt ? "live" : "awaiting";
   }
-  if (p.claimed) return "claimed";
   if (p.outcome === OUTCOME.void) return "refunded";
   const won = (p.outcome === OUTCOME.above) === (p.side === "ABOVE");
   return won ? "won" : "lost";
+}
+
+/** A voided stake whose money has not been pulled back into the balance yet. */
+export function isRefundPending(p: Position): boolean {
+  return p.outcome === OUTCOME.void && !p.claimed && p.amount > 0;
 }
 
 export function usePositions(account: `0x${string}` | null, walletClient: WalletClient | null) {
@@ -253,6 +257,43 @@ export function usePositions(account: `0x${string}` | null, walletClient: Wallet
     },
     [walletClient, account, update]
   );
+
+  // Winnings are credited without being asked: a winner has nothing to decide, so a
+  // button would only be a step between them and money they already earned. Refunds are
+  // left for the user to collect from the portfolio page.
+  const claimRef = useRef(claim);
+  const positionsRef = useRef(positions);
+  useEffect(() => {
+    claimRef.current = claim;
+    positionsRef.current = positions;
+  }, [claim, positions]);
+  const autoBusy = useRef(false);
+  const autoTried = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    if (!walletClient || !account) return;
+    const run = async () => {
+      if (autoBusy.current) return;
+      const due = positionsRef.current.find(
+        (p) =>
+          statusOf(p) === "won" &&
+          !p.claimed &&
+          (p.payout ?? 0) > 0 &&
+          Date.now() - (autoTried.current.get(`${p.id}-${p.side}`) ?? 0) > 20_000
+      );
+      if (!due) return;
+      autoBusy.current = true;
+      autoTried.current.set(`${due.id}-${due.side}`, Date.now());
+      try {
+        await claimRef.current(due.id);
+      } finally {
+        autoBusy.current = false;
+      }
+    };
+    void run();
+    const t = setInterval(() => void run(), 4000);
+    return () => clearInterval(t);
+  }, [walletClient, account]);
 
   const dismiss = useCallback(() => setJustResolved(null), []);
 

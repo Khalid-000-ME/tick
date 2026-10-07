@@ -118,6 +118,10 @@ export function MarketTerminal() {
           <span className="window-clock-label">Window closes in</span>
           <strong className="window-clock-value">{String(secondsToClose).padStart(2, "0")}<small>s</small></strong>
         </div>
+        <nav className="terminal-nav" aria-label="Account">
+          <Link href="/portfolio">Portfolio</Link>
+          <Link href="/fund">Fund</Link>
+        </nav>
         <button
           className="theme-toggle"
           type="button"
