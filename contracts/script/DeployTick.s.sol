@@ -6,11 +6,12 @@ import {Tick} from "../src/Tick.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {IPyth} from "../src/interfaces/IPyth.sol";
 
-/// @notice Redeploys Tick only, keeping the existing TestUSD so nobody's test balance is
-///         lost. Lists the four feeds this Pyth API key can actually read, with a strike
-///         step of 1 (exact strikes — /api/strike supplies the one shared value).
+/// @notice Deploys Tick against an existing stake token (Circle's USDC on Monad testnet is
+///         0x534b2f3A21130d7a60830c2Df862319e593943A3). Lists the four feeds this Pyth API
+///         key can actually read, with a strike step of 1 (exact strikes — /api/strike
+///         supplies the one shared value).
 ///
-///   TESTUSD=0x... forge script script/DeployTick.s.sol:DeployTick \
+///   TOKEN=0x... forge script script/DeployTick.s.sol:DeployTick \
 ///     --rpc-url https://testnet-rpc.monad.xyz --private-key $DEPLOYER_PK --broadcast
 contract DeployTick is Script {
     address constant PYTH = 0x2880aB155794e7179c9eE2e38200202908C17B43;
@@ -29,7 +30,7 @@ contract DeployTick is Script {
     uint32 constant SETTLE_TOLERANCE = 20;
     uint16 constant FEE_BPS = 200; // 2% of profit
 
-    /// @dev Half of a market's fee goes to whoever settles it, capped at 2 tUSD. Enough
+    /// @dev Half of a market's fee goes to whoever settles it, capped at 2 units of the stake token. Enough
     ///      that settling is worth a bot's while on a real pool, small enough that it is
     ///      never the point of the exercise.
     uint16 constant SETTLE_BOUNTY_BPS = 5_000;
@@ -38,7 +39,7 @@ contract DeployTick is Script {
     function run() external {
         uint256 pk = vm.envUint("DEPLOYER_PK");
         address deployer = vm.addr(pk);
-        address token = vm.envAddress("TESTUSD");
+        address token = vm.envAddress("TOKEN");
 
         vm.startBroadcast(pk);
         Tick tick = new Tick(
@@ -51,7 +52,7 @@ contract DeployTick is Script {
         vm.stopBroadcast();
 
         console.log("deployer       ", deployer);
-        console.log("TestUSD        ", token);
+        console.log("token          ", token);
         console.log("Tick           ", address(tick));
         console.log("settleBountyBps", tick.settleBountyBps());
         console.log("maxSettleBounty", tick.maxSettleBounty());

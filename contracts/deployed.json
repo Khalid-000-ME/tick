@@ -2,13 +2,10 @@
   "chainId": 10143,
   "rpc": "https://testnet-rpc.monad.xyz",
   "explorer": "https://testnet.monadscan.com",
-  "eventId": 1,
-  "shards": 64,
-  "operator": "0x1111d87736c9C90Bb9eAE83297BE83ae990699cE",
-  "reporter": "0x1111d87736c9C90Bb9eAE83297BE83ae990699cE",
+  "deployBlock": 69056362,
   "contracts": {
-    "TestUSD": "0x195758b71dAD14EdB1Dd7E75AAE3e8e7ae69f6A3",
-    "Tick": "0x6C54f7F4adb7193e022ba73FcbcD477722C426bC",
-    "TickNaive": "0xB6061bC7489bDAe71cAeFd8d86A5800a78fa9bE9"
+    "Tick": "0x8F6a59d397499636f8ff2Ed367DE1a8484b1b0cf",
+    "USDC": "0x534b2f3A21130d7a60830c2Df862319e593943A3",
+    "Pyth": "0x2880aB155794e7179c9eE2e38200202908C17B43"
   }
 }
