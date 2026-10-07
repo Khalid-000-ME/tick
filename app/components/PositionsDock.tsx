@@ -145,7 +145,7 @@ function ResultCard({
       </span>
       <strong className="result-headline">{headline}</strong>
       <span className="result-amount">
-        {status === "lost" ? `−${position.amount.toFixed(2)}` : `${pnl >= 0 ? "+" : "−"}${Math.abs(pnl).toFixed(2)}`} tUSD
+        {status === "lost" ? `−${position.amount.toFixed(2)}` : `${pnl >= 0 ? "+" : "−"}${Math.abs(pnl).toFixed(2)}`} USDC
       </span>
       {position.settlePrice !== null && (
         <span className="result-detail">
@@ -162,7 +162,7 @@ function ResultCard({
           disabled={claiming === position.id}
           onClick={() => void claim(position.id)}
         >
-          {claiming === position.id ? "Claiming…" : `Claim refund ${position.amount.toFixed(2)} tUSD`}
+          {claiming === position.id ? "Claiming…" : `Claim refund ${position.amount.toFixed(2)} USDC`}
         </button>
       )}
       {status === "won" && (

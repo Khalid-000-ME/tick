@@ -22,7 +22,7 @@ export const monadTestnet = defineChain({
 
 export const CONTRACTS = {
   tick: deployed.contracts.Tick as `0x${string}`,
-  testUsd: deployed.contracts.TestUSD as `0x${string}`,
+  usdc: deployed.contracts.USDC as `0x${string}`,
   pyth: deployed.contracts.Pyth as `0x${string}`,
 } as const;
 
@@ -42,7 +42,7 @@ export const SETTLE_TOLERANCE_S = deployed.settleToleranceSeconds;
 /** After this long with no settlement price, anyone may void and refund. */
 export const SETTLE_WINDOW_S = deployed.settleWindowSeconds;
 
-/** tUSD has 6 decimals. */
+/** Circle USDC has 6 decimals. */
 export const USD_DECIMALS = 6;
 export const FEE_BPS = deployed.feeBps;
 

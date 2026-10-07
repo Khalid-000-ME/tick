@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { createPublicClient, http, type WalletClient } from "viem";
-import { TickAbi, TestUSDAbi } from "@/lib/chain/abi";
+import { TickAbi, Erc20Abi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
 import type { MarketView } from "@/lib/useMarket";
 import type { Terms } from "@/lib/chain/market";
@@ -11,7 +11,7 @@ import type { FeedSpec } from "@/lib/pyth";
 const pub = createPublicClient({ chain: monadTestnet, transport: http() });
 
 /**
- * Sends the real stake: faucet -> approve -> deposit -> stakeOn, skipping whichever
+ * Sends the real stake: approve -> deposit -> stakeOn, skipping whichever
  * steps are already satisfied.
  *
  * Tick holds an internal balance, so the approve+deposit pair is a one-time setup and
@@ -82,10 +82,10 @@ export function useStake({
           };
         }
 
-        // --- tUSD balance. TestUSD has an open faucet on testnet.
+        // --- USDC balance. Circle USDC has no in-app faucet; the Fund page links to theirs.
         const bal = (await pub.readContract({
-          address: CONTRACTS.testUsd,
-          abi: TestUSDAbi,
+          address: CONTRACTS.usdc,
+          abi: Erc20Abi,
           functionName: "balanceOf",
           args: [account],
         })) as bigint;
@@ -101,72 +101,24 @@ export function useStake({
           const shortfall = units - deposited;
 
           if (bal < shortfall) {
-            // TestUSD's faucet is claim(), not faucet(): 500 tUSD per claim on a
-            // 6-hour cooldown. Check the cooldown first so the user gets a real
-            // explanation rather than a bare revert.
-            const [lastClaim, cooldown, faucetAmount] = (await Promise.all([
-              pub.readContract({
-                address: CONTRACTS.testUsd,
-                abi: TestUSDAbi,
-                functionName: "lastClaim",
-                args: [account],
-              }),
-              pub.readContract({
-                address: CONTRACTS.testUsd,
-                abi: TestUSDAbi,
-                functionName: "FAUCET_COOLDOWN",
-                args: [],
-              }),
-              pub.readContract({
-                address: CONTRACTS.testUsd,
-                abi: TestUSDAbi,
-                functionName: "FAUCET_AMOUNT",
-                args: [],
-              }),
-            ])) as [bigint, bigint, bigint];
-
-            const nowSec = BigInt(Math.floor(Date.now() / 1000));
-            const readyAt = lastClaim + cooldown;
-
-            if (lastClaim > 0n && nowSec < readyAt) {
-              const mins = Number((readyAt - nowSec) / 60n);
-              return {
-                ok: false,
-                message: `Not enough tUSD, and the faucet is on cooldown for another ${mins} minute${mins === 1 ? "" : "s"}. Try a smaller stake — you have ${Number(bal) / 1e6} tUSD plus ${Number(deposited) / 1e6} already deposited.`,
-              };
-            }
-
-            if (shortfall > faucetAmount) {
-              return {
-                ok: false,
-                message: `That is more than one faucet claim provides (${Number(faucetAmount) / 1e6} tUSD). Try a smaller stake.`,
-              };
-            }
-
-            setStep("Claiming test tUSD…");
-            const faucetHash = await walletClient.writeContract({
-              address: CONTRACTS.testUsd,
-              abi: TestUSDAbi,
-              functionName: "claim",
-              args: [],
-              account,
-              chain: monadTestnet,
-            });
-            await pub.waitForTransactionReceipt({ hash: faucetHash });
+            return {
+              ok: false,
+              message: `Not enough USDC: you have ${Number(bal) / 1e6} in your wallet and ${Number(deposited) / 1e6} deposited, and this stake needs ${amount}. Add USDC on the Fund page, or try a smaller stake.`,
+            };
           }
 
           const allowance = (await pub.readContract({
-            address: CONTRACTS.testUsd,
-            abi: TestUSDAbi,
+            address: CONTRACTS.usdc,
+            abi: Erc20Abi,
             functionName: "allowance",
             args: [account, CONTRACTS.tick],
           })) as bigint;
 
           if (allowance < shortfall) {
-            setStep("Approving tUSD (one time)…");
+            setStep("Approving USDC (one time)…");
             const approveHash = await walletClient.writeContract({
-              address: CONTRACTS.testUsd,
-              abi: TestUSDAbi,
+              address: CONTRACTS.usdc,
+              abi: Erc20Abi,
               functionName: "approve",
               args: [CONTRACTS.tick, 2n ** 255n],
               account,
@@ -244,7 +196,7 @@ export function useStake({
         }
         return {
           ok: true,
-          message: `Staked ${amount} tUSD ${side} on ${feed.symbol}. Settles when the window closes — anyone can settle it.`,
+          message: `Staked ${amount} USDC ${side} on ${feed.symbol}. Settles when the window closes — anyone can settle it.`,
           terms,
           id,
           hash,

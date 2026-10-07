@@ -10,10 +10,11 @@
   "settleToleranceSeconds": 20,
   "feeBps": 200,
   "contracts": {
-    "TestUSD": "0x2dDc814a107e8F982f356E3b409DC2D00F68b1b3",
-    "Tick": "0x54A8d52E72C0FdfB3ECF7014F47cE24D6229B763",
+    "Tick": "0x8F6a59d397499636f8ff2Ed367DE1a8484b1b0cf",
+    "USDC": "0x534b2f3A21130d7a60830c2Df862319e593943A3",
     "Pyth": "0x2880aB155794e7179c9eE2e38200202908C17B43"
   },
   "settleBountyBps": 5000,
-  "maxSettleBountyUsd": 2
+  "maxSettleBountyUsd": 2,
+  "deployBlock": 69056362
 }

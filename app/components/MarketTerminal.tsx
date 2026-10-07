@@ -102,7 +102,7 @@ export function MarketTerminal() {
       ? status === "wrong-chain" ? "Switch to Monad" : "Connect to take a side"
       : stake.busy
         ? stake.step
-        : `Stake ${amount} tUSD ${side}`;
+        : `Stake ${amount} USDC ${side}`;
 
   const secondsToClose = market.secondsToClose;
   const ageLabel = market.priceAge === null ? "—" : `${market.priceAge}s old`;
@@ -193,9 +193,9 @@ export function MarketTerminal() {
           <div className="pool-split"><div><span>Pool sentiment</span><strong>{impliedAbove.toFixed(0)}% above</strong></div><div className="pool-track"><span style={{ width: `${impliedAbove}%` }} /></div><div className="pool-labels"><span>{fmtUsd(market.poolAbove, 0)} ABOVE</span><span>{fmtUsd(market.poolBelow, 0)} BELOW</span></div></div>
           {!market.twoSided && (market.poolAbove > 0n || market.poolBelow > 0n) && <p className="ticket-disclosure">One side only so far — if nobody takes the other side this market voids and everyone is refunded.</p>}
           <fieldset className="side-picker"><legend>Take a side</legend><button type="button" className={`side-up ${side === "ABOVE" ? "is-active" : ""}`} aria-pressed={side === "ABOVE"} onClick={() => setSide("ABOVE")}><span>Above</span><strong>{impliedAbove.toFixed(0)}%</strong></button><button type="button" className={`side-down ${side === "BELOW" ? "is-active" : ""}`} aria-pressed={side === "BELOW"} onClick={() => setSide("BELOW")}><span>Below</span><strong>{(100 - impliedAbove).toFixed(0)}%</strong></button></fieldset>
-          <div className="amount-field"><label htmlFor="stake-amount">Stake</label><div><span>tUSD</span><input id="stake-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(Math.max(0, Number(event.target.value) || 0))} /></div></div>
+          <div className="amount-field"><label htmlFor="stake-amount">Stake</label><div><span>USDC</span><input id="stake-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(Math.max(0, Number(event.target.value) || 0))} /></div></div>
           <div className="amount-quick">{AMOUNTS.map((value) => <button key={value} type="button" className={amount === value ? "is-active" : ""} onClick={() => setAmount(value)}>{value}</button>)}</div>
-          <dl className="ticket-summary"><div><dt>Estimated return</dt><dd>{estimatedReturn.toFixed(2)} tUSD</dd></div></dl>
+          <dl className="ticket-summary"><div><dt>Estimated return</dt><dd>{estimatedReturn.toFixed(2)} USDC</dd></div></dl>
           <button className="ticket-primary" type="button" disabled={stake.busy} onClick={() => void primaryAction()}>{actionLabel}</button><p className="ticket-disclosure">Testnet points, no monetary value.</p>
         </aside>
       </main>

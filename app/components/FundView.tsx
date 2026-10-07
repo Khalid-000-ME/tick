@@ -1,51 +1,35 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Info } from "@phosphor-icons/react";
+import { Check, Copy } from "@phosphor-icons/react";
+import { formatEther } from "viem";
 import { AccountShell } from "@/components/AccountShell";
-import { TestUSDAbi, TickAbi } from "@/lib/chain/abi";
+import { Erc20Abi, TickAbi } from "@/lib/chain/abi";
 import { CONTRACTS, explorerAddress, monadTestnet, toUsd } from "@/lib/chain/config";
 import { readClient } from "@/lib/useWallet";
 import { useTickWallet } from "@/lib/useTickWallet";
-import { formatEther } from "viem";
 
 interface Balances {
   mon: number;
   wallet: number;
   tick: number;
-  lastClaim: number;
-  cooldown: number;
-  faucetAmount: number;
 }
 
 export function FundView() {
   const wallet = useTickWallet();
-  const { account, walletClient, status } = wallet;
+  const { account, status } = wallet;
   const [bal, setBal] = useState<Balances | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
 
   const load = useCallback(async () => {
     if (!account) return;
     try {
-      const [mon, wal, tick, last, cool, amt] = await Promise.all([
+      const [mon, wal, tick] = await Promise.all([
         readClient.getBalance({ address: account }),
-        readClient.readContract({ address: CONTRACTS.testUsd, abi: TestUSDAbi, functionName: "balanceOf", args: [account] }),
+        readClient.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "balanceOf", args: [account] }),
         readClient.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account] }),
-        readClient.readContract({ address: CONTRACTS.testUsd, abi: TestUSDAbi, functionName: "lastClaim", args: [account] }),
-        readClient.readContract({ address: CONTRACTS.testUsd, abi: TestUSDAbi, functionName: "FAUCET_COOLDOWN", args: [] }),
-        readClient.readContract({ address: CONTRACTS.testUsd, abi: TestUSDAbi, functionName: "FAUCET_AMOUNT", args: [] }),
       ]);
-      setBal({
-        mon: Number(formatEther(mon)),
-        wallet: toUsd(wal as bigint),
-        tick: toUsd(tick as bigint),
-        lastClaim: Number(last),
-        cooldown: Number(cool),
-        faucetAmount: toUsd(amt as bigint),
-      });
+      setBal({ mon: Number(formatEther(mon)), wallet: toUsd(wal as bigint), tick: toUsd(tick as bigint) });
     } catch {
       /* a failed poll keeps the last numbers on screen */
     }
@@ -53,7 +37,7 @@ export function FundView() {
 
   useEffect(() => {
     void load();
-    const t = setInterval(() => { void load(); setNow(Math.floor(Date.now() / 1000)); }, 5000);
+    const t = setInterval(() => void load(), 5000);
     return () => clearInterval(t);
   }, [load]);
 
@@ -64,39 +48,11 @@ export function FundView() {
     });
   }
 
-  const readyAt = bal ? bal.lastClaim + bal.cooldown : 0;
-  const cooling = bal !== null && bal.lastClaim > 0 && now < readyAt;
-  const minsLeft = Math.max(1, Math.ceil((readyAt - now) / 60));
-
-  async function faucet() {
-    if (!walletClient || !account) return;
-    setBusy(true);
-    setMessage(null);
-    try {
-      const hash = await walletClient.writeContract({
-        address: CONTRACTS.testUsd,
-        abi: TestUSDAbi,
-        functionName: "claim",
-        args: [],
-        account,
-        chain: monadTestnet,
-      });
-      await readClient.waitForTransactionReceipt({ hash });
-      setMessage(`${bal?.faucetAmount ?? ""} tUSD sent to your wallet.`);
-      await load();
-    } catch (e) {
-      const m = (e as { shortMessage?: string }).shortMessage ?? (e as Error).message;
-      setMessage(m.split("\n")[0]);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <AccountShell active="fund" wallet={wallet}>
       <section className="page-intro">
         <h1>Fund your account</h1>
-        <p>Stakes are paid from your Tick balance. Send funds to your wallet address and the app moves them in when you stake.</p>
+        <p>Stakes are paid in USDC from your Tick balance. Send USDC to your wallet address and the app moves it in when you stake.</p>
       </section>
 
       {status !== "ready" || !account ? (
@@ -119,29 +75,27 @@ export function FundView() {
 
           <section className="stat-row" aria-label="Balances">
             <div className="stat"><span>In Tick (stakeable)</span><strong>{bal ? bal.tick.toFixed(2) : "—"}</strong></div>
-            <div className="stat"><span>In wallet · tUSD</span><strong>{bal ? bal.wallet.toFixed(2) : "—"}</strong></div>
+            <div className="stat"><span>In wallet · USDC</span><strong>{bal ? bal.wallet.toFixed(2) : "—"}</strong></div>
             <div className="stat"><span>Gas · MON</span><strong>{bal ? bal.mon.toFixed(3) : "—"}</strong></div>
           </section>
 
           <section className="fund-grid">
             <article className="fund-option">
-              <h2>Send from another wallet</h2>
-              <p>Transfer the staking token to the address above. It shows up in your wallet balance within a block or two.</p>
+              <h2>Send USDC from another wallet</h2>
+              <p>Transfer USDC on Monad Testnet to the address above. It shows up in your wallet balance within a block or two.</p>
               <div className="fund-token">
-                <span>Token contract</span>
-                <code>{CONTRACTS.testUsd}</code>
-                <button type="button" className="btn-ghost small" onClick={() => copy("token", CONTRACTS.testUsd)}>
+                <span>USDC contract</span>
+                <code>{CONTRACTS.usdc}</code>
+                <button type="button" className="btn-ghost small" onClick={() => copy("token", CONTRACTS.usdc)}>
                   {copied === "token" ? "Copied" : "Copy"}
                 </button>
               </div>
             </article>
 
             <article className="fund-option">
-              <h2>Get test tUSD</h2>
-              <p>Free on testnet: {bal ? bal.faucetAmount : 500} tUSD per claim, once every {bal ? Math.round(bal.cooldown / 3600) : 6} hours.</p>
-              <button type="button" className="btn-solid" disabled={busy || cooling || !bal} onClick={() => void faucet()}>
-                {busy ? "Claiming…" : cooling ? `Available in ${minsLeft} min` : "Claim test tUSD"}
-              </button>
+              <h2>Get test USDC</h2>
+              <p>Circle&apos;s faucet sends free testnet USDC. Choose Monad Testnet and paste your address.</p>
+              <a className="btn-solid" href="https://faucet.circle.com" target="_blank" rel="noreferrer">Open Circle&apos;s faucet</a>
             </article>
 
             <article className="fund-option">
@@ -152,19 +106,9 @@ export function FundView() {
 
             <article className="fund-option is-muted">
               <h2>Buy with a card</h2>
-              <p>
-                Not available on testnet. Card purchases settle in real USDC on a supported mainnet, which Tick does not run yet.
-              </p>
+              <p>Not available on testnet. Card purchases settle in real USDC on mainnet, which Tick does not run yet.</p>
             </article>
           </section>
-
-          {message && (
-            <div className="page-note" role="status">
-              <Info weight="bold" />
-              <p>{message}</p>
-              <button type="button" onClick={() => setMessage(null)} aria-label="Dismiss">×</button>
-            </div>
-          )}
         </>
       )}
     </AccountShell>

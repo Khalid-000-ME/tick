@@ -125,7 +125,7 @@ export function PortfolioView() {
             <section className="refund-bar" role="status">
               <div>
                 <strong>
-                  {pendingRefunds.length} refund{pendingRefunds.length === 1 ? "" : "s"} waiting · {refundTotal.toFixed(2)} tUSD
+                  {pendingRefunds.length} refund{pendingRefunds.length === 1 ? "" : "s"} waiting · {refundTotal.toFixed(2)} USDC
                 </strong>
                 <span>These markets had no opposing stakes, so they were voided and your money is returned in full.</span>
               </div>

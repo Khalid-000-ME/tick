@@ -43,21 +43,21 @@ export interface Position {
   closesAt: number;
   strikeNumber: number;
   side: "ABOVE" | "BELOW";
-  /** Staked amount in tUSD. */
+  /** Staked amount in USDC. */
   amount: number;
   stakedAt: number;
   stakeHash?: string;
   /** 0 unresolved, 1 above, 2 below, 3 void. Read from settlements(). */
   outcome: number;
-  /** previewClaim(), in tUSD. Null until settled. */
+  /** previewClaim(), in USDC. Null until settled. */
   payout: number | null;
   settlePrice: number | null;
   claimed: boolean;
   claimHash?: string;
 }
 
-// v2: the contract was redeployed (settler bounty), so ids from v1 no longer exist.
-const KEY = "tick.positions.v2";
+// v3: redeployed against Circle USDC, so ids recorded under v2 no longer exist.
+const KEY = "tick.positions.v3";
 /** Keeps the log useful without letting localStorage grow without bound. */
 const MAX_KEPT = 500;
 
