@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: tick-indexer
+description: Stakes, settlements and claims for Tick, indexed from Monad testnet via HyperSync.
+ecosystem: evm
+
+contracts:
+  - name: Tick
+    abi_file_path: ./abis/Tick.json
+    events:
+      - event: Staked(bytes32 indexed marketId, address indexed user, bool above, uint256 amount, int64 priceAtStake, uint64 priceAge, bytes32 feedId, int64 strike, uint64 closesAt)
+      - event: Settled(bytes32 indexed marketId, uint8 outcome, int64 settlePrice, uint256 totalAbove, uint256 totalBelow, address indexed settler, uint256 bounty)
+      - event: Claimed(bytes32 indexed marketId, address indexed user, uint256 payout)
+
+field_selection:
+  transaction_fields:
+    - hash
+
+chains:
+  - id: 10143
+    # Block the current Tick deployment was mined in (from the forge broadcast record).
+    start_block: 69025508
+    contracts:
+      - name: Tick
+        address: "0x54A8d52E72C0FdfB3ECF7014F47cE24D6229B763"

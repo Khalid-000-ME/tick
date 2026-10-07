@@ -1,0 +1,38 @@
+# One row per market (feed + strike + close). Created by the first stake, completed by Settled.
+type Market {
+  id: ID!
+  feedId: String!
+  strike: BigInt!
+  closesAt: Int!
+  # 0 unresolved, 1 above, 2 below, 3 void
+  outcome: Int!
+  settlePrice: BigInt
+  totalAbove: BigInt
+  totalBelow: BigInt
+  settler: String
+  bounty: BigInt
+  settledAt: Int
+  stakes: [Stake!]! @derivedFrom(field: "market")
+  claims: [Claim!]! @derivedFrom(field: "market")
+}
+
+# One row per stakeOn transaction.
+type Stake {
+  id: ID!
+  market: Market!
+  user: String! @index
+  above: Boolean!
+  amount: BigInt!
+  stakedAt: Int! @index
+  txHash: String!
+}
+
+# One row per claim(); payout 0 means a losing side was collected.
+type Claim {
+  id: ID!
+  market: Market!
+  user: String! @index
+  payout: BigInt!
+  claimedAt: Int!
+  txHash: String!
+}
