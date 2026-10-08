@@ -6,7 +6,7 @@ import { TickAbi } from "@/lib/chain/abi";
 import { CONTRACTS, OUTCOME, toUsd, monadTestnet } from "@/lib/chain/config";
 import type { Terms } from "@/lib/chain/market";
 
-const pub = createPublicClient({ chain: monadTestnet, transport: http() });
+const pub = createPublicClient({ chain: monadTestnet, transport: http(), pollingInterval: 250 });
 
 /**
  * Every stake this wallet has taken, followed from "live" through to money in hand.

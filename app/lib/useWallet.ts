@@ -22,7 +22,7 @@ const setOff = (off: boolean) => {
 };
 
 /** Read-only client. Always available, so markets render before anyone connects. */
-export const readClient = createPublicClient({ chain: monadTestnet, transport: http() });
+export const readClient = createPublicClient({ chain: monadTestnet, transport: http(), pollingInterval: 250 });
 
 export function useWallet() {
   const [provider] = useState<EIP1193Provider | null>(() =>

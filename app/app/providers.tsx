@@ -45,6 +45,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultChain: monadTestnet,
         supportedChains: [monadTestnet],
         embeddedWallets: {
+          // No confirmation modal on every transaction. The embedded wallet signs
+          // silently, which is what makes a stake one tap. External wallets such as
+          // MetaMask still prompt, because their extension owns that UI.
+          showWalletUIs: false,
           ethereum: {
             createOnLogin: "users-without-wallets",
           },

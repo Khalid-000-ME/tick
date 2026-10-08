@@ -8,7 +8,14 @@ import type { MarketView } from "@/lib/useMarket";
 import type { Terms } from "@/lib/chain/market";
 import type { FeedSpec } from "@/lib/pyth";
 
-const pub = createPublicClient({ chain: monadTestnet, transport: http() });
+// viem polls for receipts every 4s by default; Monad blocks are ~0.4s, so that default alone
+// adds seconds to every confirmation.
+const pub = createPublicClient({ chain: monadTestnet, transport: http(), pollingInterval: 250 });
+
+// Monad charges the gas LIMIT, not gas used. stakeOn measures ~100k, so a fixed 300k leaves
+// headroom for Monad's dearer cold storage, skips gas estimation, and costs less than the
+// wallet's own padded estimate. approve and deposit are measured the same way.
+const GAS = { approve: 80_000n, deposit: 140_000n, stake: 300_000n } as const;
 
 /**
  * Sends the real stake: approve -> deposit -> stakeOn, skipping whichever
@@ -71,31 +78,23 @@ export function useStake({
       const units = BigInt(Math.round(amount * 1e6));
       setBusy(true);
       try {
-        // --- gas check. Monad charges the gas LIMIT, not gas used, so a wallet with a
-        // little MON can still have a transaction rejected outright by the RPC.
+        // All four reads are independent, so they go out together instead of one by one.
         setStep("Checking balance…");
-        const mon = await pub.getBalance({ address: account });
+        const [mon, bal, deposited, allowance] = await Promise.all([
+          pub.getBalance({ address: account }),
+          pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "balanceOf", args: [account] }) as Promise<bigint>,
+          pub.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account] }) as Promise<bigint>,
+          pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "allowance", args: [account, CONTRACTS.tick] }) as Promise<bigint>,
+        ]);
+
+        // Monad charges the gas LIMIT, so a wallet with a little MON can still have a
+        // transaction rejected outright by the RPC.
         if (mon === 0n) {
           return {
             ok: false,
             message: `This wallet has no MON for gas. Fund ${account.slice(0, 10)}… at faucet.monad.xyz, then try again.`,
           };
         }
-
-        // --- USDC balance. Circle USDC has no in-app faucet; the Fund page links to theirs.
-        const bal = (await pub.readContract({
-          address: CONTRACTS.usdc,
-          abi: Erc20Abi,
-          functionName: "balanceOf",
-          args: [account],
-        })) as bigint;
-
-        const deposited = (await pub.readContract({
-          address: CONTRACTS.tick,
-          abi: TickAbi,
-          functionName: "deposits",
-          args: [account],
-        })) as bigint;
 
         if (deposited < units) {
           const shortfall = units - deposited;
@@ -107,14 +106,10 @@ export function useStake({
             };
           }
 
-          const allowance = (await pub.readContract({
-            address: CONTRACTS.usdc,
-            abi: Erc20Abi,
-            functionName: "allowance",
-            args: [account, CONTRACTS.tick],
-          })) as bigint;
-
-          if (allowance < shortfall) {
+          // One-time setup. Approve once for good, and move the WHOLE wallet balance into
+          // Tick rather than just this stake, so every later stake is a single transaction
+          // with nothing to approve or deposit. It stays withdrawable from the Fund page.
+          if (allowance < bal) {
             setStep("Approving USDC (one time)…");
             const approveHash = await walletClient.writeContract({
               address: CONTRACTS.usdc,
@@ -123,18 +118,20 @@ export function useStake({
               args: [CONTRACTS.tick, 2n ** 255n],
               account,
               chain: monadTestnet,
+              gas: GAS.approve,
             });
             await pub.waitForTransactionReceipt({ hash: approveHash });
           }
 
-          setStep("Depositing…");
+          setStep("Moving USDC into Tick…");
           const depositHash = await walletClient.writeContract({
             address: CONTRACTS.tick,
             abi: TickAbi,
             functionName: "deposit",
-            args: [shortfall],
+            args: [bal],
             account,
             chain: monadTestnet,
+            gas: GAS.deposit,
           });
           await pub.waitForTransactionReceipt({ hash: depositHash });
         }
@@ -186,6 +183,7 @@ export function useStake({
           args: [terms, side === "ABOVE", units],
           account,
           chain: monadTestnet,
+          gas: GAS.stake,
         });
         setLastHash(hash);
         const rc = await pub.waitForTransactionReceipt({ hash });
