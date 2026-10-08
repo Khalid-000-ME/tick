@@ -56,8 +56,8 @@ export interface Position {
   claimHash?: string;
 }
 
-// v3: redeployed against Circle USDC, so ids recorded under v2 no longer exist.
-const KEY = "tick.positions.v3";
+// v4: redeployed with unique-price settlement; state under earlier keys belongs to old contracts.
+const KEY = "tick.positions.v4";
 /** Keeps the log useful without letting localStorage grow without bound. */
 const MAX_KEPT = 500;
 
