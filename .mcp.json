@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "tick": {
+      "command": "node",
+      "args": ["app/node_modules/tsx/dist/cli.mjs", "app/mcp/server.ts"]
+    }
+  }
+}

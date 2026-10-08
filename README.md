@@ -30,6 +30,21 @@
 
 Sign-in is Privy (email or passkey, with an embedded wallet). Wins are credited to the Tick balance automatically; voided stakes are refunded from the Portfolio page.
 
+## Trade from Claude Code (MCP)
+
+`.mcp.json` registers a `tick` MCP server, so Claude Code can trade Tick in conversation:
+
+| Tool | What it does |
+|---|---|
+| `tick_markets` | Live Pyth price, current window, strike, pools and price freshness for every market |
+| `tick_wallet` | The demo wallet's MON, USDC and Tick balances |
+| `tick_stake` | Stakes ABOVE or BELOW; does one-time setup and refreshes the on-chain price if needed |
+| `tick_settle` | Settles closed markets with Pyth's signed close price and collects the bounty |
+| `tick_collect` | Claims wins and refunds into the Tick balance |
+| `tick_positions`, `tick_withdraw` | History and record; move USDC back to the wallet |
+
+It signs with a dedicated testnet key, `TICK_MCP_PK` in `app/.env.local`, and caps one stake at `TICK_MCP_MAX_STAKE` (default 25 USDC). Run `npm install` in `app/`, then approve the `tick` server when Claude Code asks.
+
 ## Run it
 
 ```bash
