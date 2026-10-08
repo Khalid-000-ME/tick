@@ -39,6 +39,7 @@ import {
   fmtPrice,
   snapToGrid,
   toDecimal,
+  fetchUpdateForWindow,
 } from "../lib/pyth.js";
 import { ACCEPT_MARGIN_S, SETTLE_TOLERANCE_S, WINDOW_S } from "../lib/chain/config.js";
 
@@ -278,23 +279,22 @@ async function main() {
     await sleep(Math.min(3000, (closesAt - ts) * 1000));
   }
 
-  const settleRefresh = await refreshPrice(feed.id, "refresh at close");
-  const settlePx = await onChainPrice(feed.id);
-  console.log(
-    `   settlement price $${fmtPrice(settlePx.price, settlePx.expo)} published ${settlePx.publishTime}` +
-      ` (close ${closesAt}, tolerance ${SETTLE_TOLERANCE_S}s)`
-  );
+  // The contract takes only the FIRST signed Pyth price at or after the close, fetched from
+  // Hermes. Nothing needs posting to Pyth's own storage first.
+  const { updateData, publishTime } = await fetchUpdateForWindow(feed.id, closesAt, SETTLE_TOLERANCE_S);
+  console.log(`   settlement price published ${publishTime} (close ${closesAt}, tolerance ${SETTLE_TOLERANCE_S}s)`);
 
   // Anyone may settle. Use a participant wallet with no privileged role at all.
   const settled = await sendTimed("settle (by a wallet with no role)", () =>
     b.wallet.writeContract({
       address: CONTRACTS.tick,
       abi: TickAbi,
-      functionName: "settle",
-      args: [terms],
+      functionName: "settleWithUpdate",
+      args: [terms, updateData],
+      value: 10n,
       account: b.account,
       chain: null,
-      gas: 1_400_000n,
+      gas: 1_800_000n,
     })
   );
 
@@ -348,7 +348,7 @@ async function main() {
   console.log(`  fees accrued   ${usd(fees)}`);
   console.log(`  solvency       ${paid + fees <= above + below ? "ok — payouts + fees <= staked" : "*** VIOLATED ***"}`);
 
-  const lat = [first.ms, stakeA.ms, stakeB.ms, settleRefresh.ms, settled.ms].sort((x, y) => x - y);
+  const lat = [first.ms, stakeA.ms, stakeB.ms, settled.ms].sort((x, y) => x - y);
   console.log(`\ninclusion latency (ms): min ${lat[0]} median ${lat[Math.floor(lat.length / 2)]} max ${lat[lat.length - 1]}`);
   console.log(
     `The acceptance margin can never be tighter than inclusion time, so these numbers\n` +

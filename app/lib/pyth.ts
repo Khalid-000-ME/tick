@@ -173,13 +173,14 @@ export async function fetchPriceUpdate(feedIds: readonly string[]): Promise<Pric
 }
 
 /**
- * The signed update for a specific second, from Hermes' history. This is what makes a
- * settlement exact: Tick.settleWithUpdate has Pyth verify the price was published inside
- * [closesAt, closesAt + tolerance], so the outcome is the price AT the close no matter
- * when the settler gets round to submitting it.
+ * The signed update that settles a market: the FIRST price Pyth published at or after the
+ * close. Tick.settleWithUpdate has Pyth verify prevPublishTime < closesAt <= publishTime
+ * <= closesAt + tolerance, so there is exactly one acceptable price per close and a
+ * settler cannot choose among the many ticks in the window.
  *
- * Tries successive seconds because a feed may have no update in exactly that second;
- * Hermes then answers with an earlier one, which the contract (rightly) refuses.
+ * Tries successive seconds because a feed may have no update in exactly the close second.
+ * Hermes answers with the latest update at or before the timestamp asked for, so the
+ * update to take is the first one whose own predecessor is still before the close.
  */
 export async function fetchUpdateForWindow(
   feedId: string,
@@ -202,11 +203,18 @@ export async function fetchUpdateForWindow(
         }
         const body = (await res.json()) as {
           binary: { data: string[] };
-          parsed: { price: { publish_time: number } }[];
+          parsed: { price: { publish_time: number }; metadata?: { prev_publish_time?: number } }[];
         };
         const publishTime = body.parsed?.[0]?.price.publish_time;
-        // Only a price actually published at or after the close can settle the market.
+        const prev = body.parsed?.[0]?.metadata?.prev_publish_time;
+        // Not yet at the close: try the next second.
         if (publishTime === undefined || publishTime < closesAt) break;
+        // Past the first update: an earlier one at/after the close exists, which is the
+        // only one the contract will take. Asking for a later second cannot fix that.
+        if (prev === undefined || prev >= closesAt) {
+          failures.push(`${host}@${ts} -> publish ${publishTime} is not the first update after the close`);
+          break;
+        }
         return {
           updateData: body.binary.data.map((h) => (h.startsWith("0x") ? h : `0x${h}`) as `0x${string}`),
           publishTime,
