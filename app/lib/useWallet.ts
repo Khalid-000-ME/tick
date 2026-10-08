@@ -13,6 +13,14 @@ import { monadTestnet } from "@/lib/chain/config";
 
 export type WalletStatus = "unsupported" | "disconnected" | "wrong-chain" | "ready";
 
+const OFF_KEY = "tick.wallet.disconnected";
+const isOff = () => {
+  try { return window.localStorage.getItem(OFF_KEY) === "1"; } catch { return false; }
+};
+const setOff = (off: boolean) => {
+  try { if (off) window.localStorage.setItem(OFF_KEY, "1"); else window.localStorage.removeItem(OFF_KEY); } catch { /* storage blocked */ }
+};
+
 /** Read-only client. Always available, so markets render before anyone connects. */
 export const readClient = createPublicClient({ chain: monadTestnet, transport: http() });
 
@@ -35,7 +43,9 @@ export function useWallet() {
     void (async () => {
       try {
         const accounts = (await eth.request({ method: "eth_accounts" })) as `0x${string}`[];
-        if (accounts.length > 0) setAccount(accounts[0]);
+        // A deliberate disconnect sticks: an injected wallet stays authorised in the
+        // extension, so without this a reload would silently reconnect.
+        if (accounts.length > 0 && !isOff()) setAccount(accounts[0]);
         const id = (await eth.request({ method: "eth_chainId" })) as string;
         setChainId(Number.parseInt(id, 16));
       } catch {
@@ -45,6 +55,7 @@ export function useWallet() {
 
     const onAccounts = (...args: unknown[]) => {
       const accounts = args[0] as `0x${string}`[];
+      if (isOff()) return;
       setAccount(accounts.length > 0 ? accounts[0] : null);
     };
     const onChain = (...args: unknown[]) => {
@@ -73,6 +84,7 @@ export function useWallet() {
     setError(null);
     try {
       const accounts = (await provider.request({ method: "eth_requestAccounts" })) as `0x${string}`[];
+      setOff(false);
       setAccount(accounts[0] ?? null);
       const id = (await provider.request({ method: "eth_chainId" })) as string;
       setChainId(Number.parseInt(id, 16));
@@ -82,6 +94,12 @@ export function useWallet() {
       setBusy(false);
     }
   }, [provider]);
+
+  /** Forgets the account in this app. The extension keeps its own authorisation. */
+  const disconnect = useCallback(async () => {
+    setOff(true);
+    setAccount(null);
+  }, []);
 
   /** Switch to Monad testnet, adding the network if the wallet does not know it. */
   const switchChain = useCallback(async () => {
@@ -131,7 +149,7 @@ export function useWallet() {
     });
   }, [provider, account, chainId]);
 
-  return { status, account, chainId, connect, switchChain, walletClient, busy, error, setError };
+  return { status, account, chainId, connect, disconnect, switchChain, walletClient, busy, error, setError };
 }
 
 /** Wallet errors are verbose and user-hostile. Surface the useful line only. */

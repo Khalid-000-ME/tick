@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, Moon, Sun } from "@phosphor-icons/react";
+import { WalletMenu } from "@/components/WalletMenu";
 import { Brand } from "@/components/Brand";
 import { useTheme } from "@/lib/useTheme";
 import { useTickWallet } from "@/lib/useTickWallet";
@@ -18,7 +19,6 @@ export function AccountShell({
   children: React.ReactNode;
 }) {
   const { theme, toggle } = useTheme();
-  const { status, account, connect, switchChain } = wallet;
 
   return (
     <div className="terminal-shell page-shell">
@@ -38,20 +38,7 @@ export function AccountShell({
         >
           {theme === "dark" ? <Sun weight="bold" /> : <Moon weight="bold" />}
         </button>
-        <button
-          className="terminal-wallet"
-          type="button"
-          onClick={() => {
-            if (status === "wrong-chain") void switchChain();
-            else if (status !== "ready" || !account) void connect();
-          }}
-        >
-          {status === "ready" && account
-            ? `${account.slice(0, 6)}…${account.slice(-4)}`
-            : status === "wrong-chain"
-              ? "Switch to Monad"
-              : "Connect"}
-        </button>
+        <WalletMenu wallet={wallet} />
       </header>
       <main className="page-main">{children}</main>
     </div>

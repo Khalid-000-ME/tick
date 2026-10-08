@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, Wallet, X } from "@phosphor-icons/react";
+import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
+import { WalletMenu } from "@/components/WalletMenu";
 import { PositionsDock } from "@/components/PositionsDock";
 import { useTickWallet } from "@/lib/useTickWallet";
 import { useMarket } from "@/lib/useMarket";
@@ -37,7 +38,8 @@ export function MarketTerminal() {
   const [amount, setAmount] = useState(25);
   const [side, setSide] = useState<"ABOVE" | "BELOW">("ABOVE");
   const [notice, setNotice] = useState<string | null>(null);
-  const { status, account, connect, switchChain, walletClient } = useTickWallet();
+  const wallet = useTickWallet();
+  const { status, account, connect, switchChain, walletClient } = wallet;
   const { theme, toggle: toggleTheme } = useTheme();
 
   const market = useMarket(feed);
@@ -129,19 +131,10 @@ export function MarketTerminal() {
           aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
           title={theme === "dark" ? "Light theme" : "Dark theme"}
         >{theme === "dark" ? <Sun weight="bold" /> : <Moon weight="bold" />}</button>
-        <button
-          className="terminal-wallet"
-          type="button"
-          title={account ? `${account} — click to copy` : "Connect a wallet"}
-          onClick={() => {
-            if (status === "wrong-chain") { void switchChain(); return; }
-            if (status !== "ready" || !account) { void connect(); return; }
-            // An embedded wallet's address is otherwise impossible to discover from the
-            // UI, and you need it in full to fund it from the faucet.
-            void navigator.clipboard?.writeText(account);
-            setNotice(`Wallet address copied: ${account}. Fund it with MON at faucet.monad.xyz — an embedded wallet starts empty and cannot pay gas.`);
-          }}
-        ><Wallet weight="bold" />{account ? `${account.slice(0, 6)}…${account.slice(-4)}` : "Connect"}</button>
+        <WalletMenu
+          wallet={wallet}
+          onCopied={(addr) => setNotice(`Wallet address copied: ${addr}. Fund it with MON at faucet.monad.xyz — an embedded wallet starts empty and cannot pay gas.`)}
+        />
       </header>
       {/* Draining bar under the header: the same countdown, readable without reading. */}
       <div className={`window-bar ${secondsToClose <= URGENT_AT ? "is-urgent" : ""}`} aria-hidden="true">
