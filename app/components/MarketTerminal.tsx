@@ -134,6 +134,7 @@ export function MarketTerminal() {
         <nav className="terminal-nav" aria-label="Account">
           <Link href="/portfolio">Portfolio</Link>
           <Link href="/fund">Fund</Link>
+          <Link href="/settlers">Settlers</Link>
         </nav>
         <button
           className="theme-toggle"
