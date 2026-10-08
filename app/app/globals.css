@@ -1430,7 +1430,9 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .stat strong { font: 600 22px var(--font-geist-mono), monospace; }
 .stat strong.is-up { color: var(--t-up); } .stat strong.is-down { color: var(--t-down); }
 .btn-solid, .btn-ghost { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-.btn-solid { background: var(--t-ink); color: var(--t-bg); }
+.btn-solid, .terminal-shell a.btn-solid { background: var(--t-ink); color: var(--t-bg); }
+.btn-solid:hover { opacity: .88; }
+.soon-pill { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; background: var(--t-line); color: var(--t-dim); font-weight: 600; }
 .btn-ghost { border: 1px solid var(--t-line); color: var(--t-ink); background: transparent; }
 .btn-solid.small, .btn-ghost.small { padding: 7px 11px; font-size: 12px; }
 .btn-solid:disabled { opacity: .5; cursor: default; }

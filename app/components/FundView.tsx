@@ -153,8 +153,11 @@ export function FundView() {
             </article>
 
             <article className="fund-option is-muted">
-              <h2>Buy with a card</h2>
-              <p>Not available on testnet. Card purchases settle in real USDC on mainnet, which Tick does not run yet.</p>
+              <h2>Buy stablecoins with a card <span className="soon-pill">Coming soon</span></h2>
+              <p>
+                A Stripe-powered checkout is planned, so you can buy USDC with a card or bank transfer without leaving Tick
+                and have it land straight in your wallet. It is not live on testnet, where USDC is free from the faucet above.
+              </p>
             </article>
           </section>
 
