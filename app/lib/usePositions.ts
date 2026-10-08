@@ -299,5 +299,11 @@ export function usePositions(account: `0x${string}` | null, walletClient: Wallet
 
   const clear = useCallback(() => update([]), [update]);
 
-  return { positions, record, claim, claiming, justResolved, dismiss, clear };
+  /** Takes back an optimistic entry whose transaction ended up reverting. */
+  const forget = useCallback(
+    (id: `0x${string}`, side: "ABOVE" | "BELOW") => update((prev) => prev.filter((p) => !(p.id === id && p.side === side))),
+    [update]
+  );
+
+  return { positions, record, forget, claim, claiming, justResolved, dismiss, clear };
 }

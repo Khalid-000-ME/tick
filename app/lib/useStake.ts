@@ -42,6 +42,8 @@ export interface StakeResult {
   terms?: Terms;
   id?: `0x${string}`;
   hash?: `0x${string}`;
+  /** Resolves when the stake is mined; present when ok is true. */
+  confirm?: Promise<{ ok: boolean; message: string }>;
 }
 
 export function useStake({
@@ -160,19 +162,10 @@ export function useStake({
           };
         }
 
+        // No pre-send simulation: with the price kept warm it almost never fails, and a
+        // simulation is a full extra round trip on the critical path. A failure is still
+        // explained from the contract's own error below.
         setStep("Staking…");
-        try {
-          await pub.simulateContract({
-            address: CONTRACTS.tick,
-            abi: TickAbi,
-            functionName: "stakeOn",
-            args: [terms, side === "ABOVE", units],
-            account,
-          });
-        } catch (e) {
-          return { ok: false, message: explain(e, market, feed) };
-        }
-
         const hash = await walletClient.writeContract({
           address: CONTRACTS.tick,
           abi: TickAbi,
@@ -183,18 +176,30 @@ export function useStake({
           gas: GAS.stake,
         });
         setLastHash(hash);
-        const rc = await pub.waitForTransactionReceipt({ hash });
-        market.refetch();
 
-        if (rc.status !== "success") {
-          return { ok: false, message: "The stake reverted on chain. Nothing was taken from your balance." };
-        }
+        // Report as soon as the transaction is accepted. Confirmation takes ~1s more and
+        // the caller follows it, so a stake that does revert is taken back out of the UI.
+        const confirm = pub.waitForTransactionReceipt({ hash }).then(
+          (rc): { ok: boolean; message: string } => {
+            market.refetch();
+            return rc.status === "success"
+              ? { ok: true, message: `Staked ${amount} USDC ${side} on ${feed.symbol}. Settles when the window closes — anyone can settle it.` }
+              : {
+                  ok: false,
+                  message:
+                    "The stake reverted on chain, most likely because the price went stale or the window closed first. Nothing was taken from your balance.",
+                };
+          },
+          () => ({ ok: false, message: "Could not confirm the stake. Check the Portfolio page." })
+        );
+
         return {
           ok: true,
-          message: `Staked ${amount} USDC ${side} on ${feed.symbol}. Settles when the window closes — anyone can settle it.`,
+          message: `Staking ${amount} USDC ${side} on ${feed.symbol}…`,
           terms,
           id,
           hash,
+          confirm,
         };
       } catch (e) {
         return { ok: false, message: explain(e, market, feed) };

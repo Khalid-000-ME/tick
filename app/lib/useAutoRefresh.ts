@@ -13,6 +13,8 @@ export interface AutoRefreshState {
   /** Refresh transactions this session, so the gas cost is visible rather than hidden. */
   count: number;
   refreshNow: () => Promise<void>;
+  /** Keeps the price warm for the next while: call when the user shows intent to stake. */
+  arm: () => void;
 }
 
 /**
@@ -52,6 +54,7 @@ export function useAutoRefresh(
   // rebuilt every time the price age ticks.
   const inFlight = useRef(false);
   const backoffUntil = useRef(0);
+  const armedUntil = useRef(0);
   const ageRef = useRef(priceAge);
   const feedRef = useRef(feed);
   const onRefreshedRef = useRef(onRefreshed);
@@ -100,8 +103,13 @@ export function useAutoRefresh(
     }
   }, []);
 
+  // Intent keeps the price fresh for a while, so the stake itself never waits on an
+  // oracle post. It lapses on its own: nothing is spent on an idle page.
+  const arm = useCallback(() => {
+    armedUntil.current = Date.now() + 45_000;
+  }, []);
+
   useEffect(() => {
-    if (!enabled) return;
 
     // Refresh once the price has used half its allowance. Going faster no longer makes
     // the chart smoother (it reads Pyth directly) and costs real MON on every post: a
@@ -109,6 +117,7 @@ export function useAutoRefresh(
     const threshold = Math.max(3, Math.floor(acceptMargin / 2));
 
     const tick = () => {
+      if (!enabled && Date.now() > armedUntil.current) return;
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       if (Date.now() < backoffUntil.current) return;
       const age = ageRef.current;
@@ -130,5 +139,5 @@ export function useAutoRefresh(
     };
   }, [enabled, acceptMargin, post]);
 
-  return { enabled, setEnabled, busy, error, count, refreshNow: post };
+  return { enabled, setEnabled, busy, error, count, refreshNow: post, arm };
 }

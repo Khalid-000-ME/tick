@@ -50,6 +50,9 @@ export function MarketTerminal() {
   // Keeps the on-chain price fresh so the cutoff stays open. Pauses on a hidden tab and
   // can be switched off, because every refresh is a real transaction paid in MON.
   const auto = useAutoRefresh(feed, market.priceAge, market.acceptMargin, market.refetch);
+  const { arm } = auto;
+  // Picking a side, an amount or a market means a stake is coming: keep the price warm.
+  useEffect(() => { if (status === "ready") arm(); }, [side, amount, feed, status, arm]);
 
   // Observed price history: real readings accumulated since this page loaded, not a
   // generated series. Starts empty by design — the proper fix for a longer window is an
@@ -86,7 +89,8 @@ export function MarketTerminal() {
       // The contract refuses a stake against a price older than the margin. Post a fresh
       // one only when the stored price is actually near that — otherwise a stake costs
       // no oracle post at all.
-      if ((market.priceAge ?? 99) >= 4) {
+      // 7s leaves 3s of the 10s margin for signing and inclusion (~1.2s measured).
+      if ((market.priceAge ?? 99) >= 7) {
         await auto.refreshNow();
         market.refetch();
       }
@@ -96,6 +100,13 @@ export function MarketTerminal() {
     // their hash, so dropping them here would make the position impossible to follow.
     if (result.ok && result.terms && result.id) {
       positions.record(result.terms, side, amount, feed.symbol, result.id, result.hash);
+      // The position and the notice appear the moment the transaction is accepted; the
+      // receipt follows about a second later and takes the entry back out if it reverted.
+      const { id } = result;
+      void result.confirm?.then((done) => {
+        setNotice(done.message);
+        if (!done.ok) positions.forget(id, side);
+      });
     }
   }
 
