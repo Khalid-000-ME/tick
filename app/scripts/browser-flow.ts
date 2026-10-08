@@ -49,13 +49,13 @@ async function main() {
     }
     const allow = (await pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "allowance", args: [p.account.address, CONTRACTS.tick] })) as bigint;
     if (allow < STAKE) {
-      const h = await p.wallet.writeContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "approve", args: [CONTRACTS.tick, 2n ** 255n], account: p.account, chain: null, gas: 80_000n });
+      const h = await p.wallet.writeContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "approve", args: [CONTRACTS.tick, 2n ** 255n], account: p.account, chain: null, gas: 180_000n });
       await pub.waitForTransactionReceipt({ hash: h });
       console.log("  approved");
     }
     const dep = (await pub.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [p.account.address] })) as bigint;
     if (dep < STAKE) {
-      const h = await p.wallet.writeContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposit", args: [STAKE - dep], account: p.account, chain: null, gas: 120_000n });
+      const h = await p.wallet.writeContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposit", args: [STAKE - dep], account: p.account, chain: null, gas: 280_000n });
       await pub.waitForTransactionReceipt({ hash: h });
       console.log("  deposited");
     }

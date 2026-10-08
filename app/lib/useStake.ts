@@ -13,10 +13,11 @@ import { gasShortfall } from "@/lib/gasCheck";
 // adds seconds to every confirmation.
 const pub = createPublicClient({ chain: monadTestnet, transport: http(), pollingInterval: 250 });
 
-// Monad charges the gas LIMIT, not gas used. stakeOn measures ~100k, so a fixed 300k leaves
-// headroom for Monad's dearer cold storage, skips gas estimation, and costs less than the
-// wallet's own padded estimate. approve and deposit are measured the same way.
-const GAS = { approve: 80_000n, deposit: 140_000n, stake: 300_000n } as const;
+// Monad charges the gas LIMIT, not gas used, and a limit below the real need reverts and
+// still pays. Estimated on chain against Circle USDC: stakeOn 158k, approve 88k (first
+// time), deposit 137k. Each limit is roughly 2x its estimate: enough headroom to never
+// revert, still well under a wallet's own padded estimate.
+const GAS = { approve: 180_000n, deposit: 280_000n, stake: 300_000n } as const;
 
 /**
  * Sends the real stake: approve -> deposit -> stakeOn, skipping whichever

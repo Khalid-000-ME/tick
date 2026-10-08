@@ -52,7 +52,7 @@ export function FundView() {
     }
     setWithdrawing(true);
     try {
-      const short = await gasShortfall(readClient, account, [120_000n]);
+      const short = await gasShortfall(readClient, account, [220_000n]);
       if (short) {
         setNote(short);
         return;
@@ -69,7 +69,7 @@ export function FundView() {
         args: [raw],
         account,
         chain: monadTestnet,
-        gas: 120_000n,
+        gas: 220_000n,
       });
       const rc = await readClient.waitForTransactionReceipt({ hash });
       setNote(rc.status === "success" ? `${toUsd(raw).toFixed(2)} USDC moved back to your wallet.` : "The withdrawal reverted on chain. Nothing was moved.");
