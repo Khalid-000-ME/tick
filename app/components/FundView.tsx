@@ -7,6 +7,7 @@ import { AccountShell } from "@/components/AccountShell";
 import { Erc20Abi, TickAbi } from "@/lib/chain/abi";
 import { CONTRACTS, explorerAddress, monadTestnet, toUsd } from "@/lib/chain/config";
 import { readClient } from "@/lib/useWallet";
+import { gasShortfall } from "@/lib/gasCheck";
 import { useTickWallet } from "@/lib/useTickWallet";
 
 interface Balances {
@@ -44,12 +45,23 @@ export function FundView() {
   }, [load]);
 
   async function withdrawAll() {
-    if (!walletClient || !account) return;
-    setWithdrawing(true);
     setNote(null);
+    if (!walletClient || !account) {
+      setNote("The wallet is not ready to sign yet. Reconnect it and try again.");
+      return;
+    }
+    setWithdrawing(true);
     try {
+      const short = await gasShortfall(readClient, account, [120_000n]);
+      if (short) {
+        setNote(short);
+        return;
+      }
       const raw = (await readClient.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account] })) as bigint;
-      if (raw === 0n) return;
+      if (raw === 0n) {
+        setNote("Nothing to withdraw: your Tick balance is empty.");
+        return;
+      }
       const hash = await walletClient.writeContract({
         address: CONTRACTS.tick,
         abi: TickAbi,
@@ -59,8 +71,8 @@ export function FundView() {
         chain: monadTestnet,
         gas: 120_000n,
       });
-      await readClient.waitForTransactionReceipt({ hash });
-      setNote(`${toUsd(raw).toFixed(2)} USDC moved back to your wallet.`);
+      const rc = await readClient.waitForTransactionReceipt({ hash });
+      setNote(rc.status === "success" ? `${toUsd(raw).toFixed(2)} USDC moved back to your wallet.` : "The withdrawal reverted on chain. Nothing was moved.");
       await load();
     } catch (e) {
       setNote(((e as { shortMessage?: string }).shortMessage ?? (e as Error).message).split("\n")[0]);

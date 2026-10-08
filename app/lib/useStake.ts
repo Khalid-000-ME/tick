@@ -7,6 +7,7 @@ import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
 import type { MarketView } from "@/lib/useMarket";
 import type { Terms } from "@/lib/chain/market";
 import type { FeedSpec } from "@/lib/pyth";
+import { gasShortfall } from "@/lib/gasCheck";
 
 // viem polls for receipts every 4s by default; Monad blocks are ~0.4s, so that default alone
 // adds seconds to every confirmation.
@@ -78,23 +79,19 @@ export function useStake({
       const units = BigInt(Math.round(amount * 1e6));
       setBusy(true);
       try {
-        // All four reads are independent, so they go out together instead of one by one.
+        // The reads are independent, so they go out together instead of one by one.
         setStep("Checking balance…");
-        const [mon, bal, deposited, allowance] = await Promise.all([
-          pub.getBalance({ address: account }),
+        const [bal, deposited, allowance] = await Promise.all([
           pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "balanceOf", args: [account] }) as Promise<bigint>,
           pub.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account] }) as Promise<bigint>,
           pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "allowance", args: [account, CONTRACTS.tick] }) as Promise<bigint>,
         ]);
 
-        // Monad charges the gas LIMIT, so a wallet with a little MON can still have a
-        // transaction rejected outright by the RPC.
-        if (mon === 0n) {
-          return {
-            ok: false,
-            message: `This wallet has no MON for gas. Fund ${account.slice(0, 10)}… at faucet.monad.xyz, then try again.`,
-          };
-        }
+        // The setup transactions are only sent when needed, so only count those.
+        const planned: bigint[] = [GAS.stake];
+        if (deposited < units) planned.push(GAS.deposit, ...(allowance < bal ? [GAS.approve] : []));
+        const short = await gasShortfall(pub, account, planned);
+        if (short) return { ok: false, message: short };
 
         if (deposited < units) {
           const shortfall = units - deposited;
