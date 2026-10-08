@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { ArrowSquareOut, Info } from "@phosphor-icons/react";
 import { AccountShell } from "@/components/AccountShell";
+import { VerifyPanel } from "@/components/VerifyPanel";
 import { useTickWallet } from "@/lib/useTickWallet";
 import { useIndexedPositions } from "@/lib/useIndexedPositions";
 import { isRefundPending, statusOf, usePositions, type Position, type PositionStatus } from "@/lib/usePositions";
@@ -55,6 +56,7 @@ export function PortfolioView() {
   const [filter, setFilter] = useState<Filter>("all");
   const [message, setMessage] = useState<string | null>(null);
   const [claimingAll, setClaimingAll] = useState(false);
+  const [verifying, setVerifying] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const counts = useMemo(() => {
@@ -188,8 +190,10 @@ export function PortfolioView() {
               {visible.map((p) => {
                 const s = statusOf(p);
                 const pnl = p.payout === null ? null : p.payout - p.amount;
+                const rowKey = `${p.id}-${p.side}`;
                 return (
-                  <div key={`${p.id}-${p.side}`} className={`stake-row tone-${s}`} role="row">
+                  <div key={rowKey} className="stake-group">
+                  <div className={`stake-row tone-${s}`} role="row">
                     <span className="stake-market">
                       <strong>{p.symbol}</strong>
                       <small>{new Date(p.stakedAt * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</small>
@@ -212,10 +216,17 @@ export function PortfolioView() {
                           {claiming === p.id ? "Claiming…" : "Claim refund"}
                         </button>
                       )}
+                      {p.outcome !== 0 && (
+                        <button type="button" className="btn-ghost small" aria-expanded={verifying === rowKey} onClick={() => setVerifying(verifying === rowKey ? null : rowKey)}>
+                          {verifying === rowKey ? "Hide" : "Verify"}
+                        </button>
+                      )}
                       {p.stakeHash && (
                         <a href={explorerTx(p.stakeHash)} target="_blank" rel="noreferrer" aria-label="View on the explorer"><ArrowSquareOut /></a>
                       )}
                     </span>
+                  </div>
+                  {verifying === rowKey && <VerifyPanel position={p} />}
                   </div>
                 );
               })}

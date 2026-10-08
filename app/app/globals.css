@@ -1488,3 +1488,26 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .wallet-pop button { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; font-size: 13px; font-weight: 500; text-align: left; color: inherit; background: none; cursor: pointer; }
 .wallet-pop button:hover { background: var(--t-line); }
 .wallet-pop button.is-danger { color: var(--t-down); }
+
+/* ---- verify panel + settlers ---- */
+.stake-group { border-bottom: 1px solid var(--t-line); }
+.stake-group .stake-row { border-bottom: 0; }
+.verify-panel { margin: 0 4px 14px; padding: 14px 16px; border: 1px solid var(--t-line); border-radius: 12px; background: var(--t-surface); font-size: 13px; }
+.verify-list { display: flex; flex-direction: column; gap: 12px; }
+.verify-list li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; }
+.verify-list li > svg { margin-top: 2px; }
+.verify-list li.is-ok > svg { color: var(--t-up); } .verify-list li.is-bad > svg { color: var(--t-down); }
+.verify-list strong { display: block; font-weight: 600; }
+.verify-list span { display: block; margin-top: 2px; color: var(--t-dim); line-height: 1.5; }
+.verify-meta { margin-top: 12px; color: var(--t-ink); }
+.verify-meta code { font: 12px var(--font-geist-mono), monospace; padding: 1px 6px; border-radius: 6px; background: var(--t-line); }
+.verify-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--t-line); font-size: 12px; color: var(--t-dim); }
+.verify-loading, .verify-error { color: var(--t-dim); display: flex; align-items: center; gap: 8px; }
+.verify-error { color: var(--t-down); }
+.spin { animation: spin 900ms linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
+.section-title { margin: 32px 0 4px; font-size: 14px; font-weight: 600; color: var(--t-ink); }
+.settler-table .stake-head, .settler-table .stake-row { grid-template-columns: 1.6fr 1fr 1.3fr 1.2fr; }
+.settler-cta { margin-top: 34px; padding: 20px; border: 1px solid var(--t-line); border-radius: 14px; background: var(--t-surface); }
+.settler-cta h2 { font-size: 15px; font-weight: 600; }
+.settler-cta p { margin-top: 6px; font-size: 13px; color: var(--t-dim); max-width: 64ch; }
+.settler-cta pre { margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: var(--t-bg); border: 1px solid var(--t-line); overflow-x: auto; font: 12px var(--font-geist-mono), monospace; }

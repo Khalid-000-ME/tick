@@ -186,7 +186,7 @@ export async function fetchUpdateForWindow(
   feedId: string,
   closesAt: number,
   toleranceSeconds: number
-): Promise<{ updateData: `0x${string}`[]; publishTime: number }> {
+): Promise<{ updateData: `0x${string}`[]; publishTime: number; prevPublishTime: number; price: bigint; expo: number }> {
   const key = apiKey();
   const failures: string[] = [];
   for (let offset = 0; offset <= Math.min(toleranceSeconds, 6); offset++) {
@@ -203,7 +203,7 @@ export async function fetchUpdateForWindow(
         }
         const body = (await res.json()) as {
           binary: { data: string[] };
-          parsed: { price: { publish_time: number }; metadata?: { prev_publish_time?: number } }[];
+          parsed: { price: { price: string; expo: number; publish_time: number }; metadata?: { prev_publish_time?: number } }[];
         };
         const publishTime = body.parsed?.[0]?.price.publish_time;
         const prev = body.parsed?.[0]?.metadata?.prev_publish_time;
@@ -218,6 +218,9 @@ export async function fetchUpdateForWindow(
         return {
           updateData: body.binary.data.map((h) => (h.startsWith("0x") ? h : `0x${h}`) as `0x${string}`),
           publishTime,
+          prevPublishTime: prev,
+          price: BigInt(body.parsed[0].price.price),
+          expo: body.parsed[0].price.expo,
         };
       } catch (e) {
         failures.push(`${host}@${ts} -> ${(e as Error).message}`);
@@ -225,6 +228,32 @@ export async function fetchUpdateForWindow(
     }
   }
   throw new Error(`no Hermes update inside the settlement window: ${failures.slice(0, 3).join("; ")}`);
+}
+
+/**
+ * Pyth's price at the instant a window OPENED (the latest update at or before it). This is
+ * the value a strike is meant to equal, so anyone can check a strike against public data.
+ */
+export async function fetchOpenPrice(
+  feedId: string,
+  openAt: number
+): Promise<{ price: bigint; expo: number; publishTime: number }> {
+  const key = apiKey();
+  for (const host of HERMES_HOSTS) {
+    try {
+      const res = await fetch(`${host}/v2/updates/price/${openAt}?ids[]=${feedId}&parsed=true&encoding=hex`, {
+        headers: { Authorization: `Bearer ${key}` },
+        cache: "no-store",
+      });
+      if (!res.ok) continue;
+      const body = (await res.json()) as { parsed?: { price: { price: string; expo: number; publish_time: number } }[] };
+      const p = body.parsed?.[0]?.price;
+      if (p) return { price: BigInt(p.price), expo: p.expo, publishTime: p.publish_time };
+    } catch {
+      /* next host */
+    }
+  }
+  throw new Error("window-open price unavailable from Hermes");
 }
 
 /** Human-readable price from feed units. */
