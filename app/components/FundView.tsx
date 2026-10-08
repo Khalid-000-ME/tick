@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy } from "@phosphor-icons/react";
+import { Check, Copy, Info } from "@phosphor-icons/react";
 import { formatEther } from "viem";
 import { AccountShell } from "@/components/AccountShell";
 import { Erc20Abi, TickAbi } from "@/lib/chain/abi";
@@ -17,9 +17,11 @@ interface Balances {
 
 export function FundView() {
   const wallet = useTickWallet();
-  const { account, status } = wallet;
+  const { account, status, walletClient } = wallet;
   const [bal, setBal] = useState<Balances | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!account) return;
@@ -40,6 +42,32 @@ export function FundView() {
     const t = setInterval(() => void load(), 5000);
     return () => clearInterval(t);
   }, [load]);
+
+  async function withdrawAll() {
+    if (!walletClient || !account) return;
+    setWithdrawing(true);
+    setNote(null);
+    try {
+      const raw = (await readClient.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account] })) as bigint;
+      if (raw === 0n) return;
+      const hash = await walletClient.writeContract({
+        address: CONTRACTS.tick,
+        abi: TickAbi,
+        functionName: "withdraw",
+        args: [raw],
+        account,
+        chain: monadTestnet,
+        gas: 120_000n,
+      });
+      await readClient.waitForTransactionReceipt({ hash });
+      setNote(`${toUsd(raw).toFixed(2)} USDC moved back to your wallet.`);
+      await load();
+    } catch (e) {
+      setNote(((e as { shortMessage?: string }).shortMessage ?? (e as Error).message).split("\n")[0]);
+    } finally {
+      setWithdrawing(false);
+    }
+  }
 
   function copy(key: string, value: string) {
     void navigator.clipboard.writeText(value).then(() => {
@@ -74,7 +102,15 @@ export function FundView() {
           </section>
 
           <section className="stat-row" aria-label="Balances">
-            <div className="stat"><span>In Tick (stakeable)</span><strong>{bal ? bal.tick.toFixed(2) : "—"}</strong></div>
+            <div className="stat">
+              <span>In Tick (stakeable)</span>
+              <strong>{bal ? bal.tick.toFixed(2) : "—"}</strong>
+              {bal && bal.tick > 0 && (
+                <button type="button" className="btn-ghost small" disabled={withdrawing} onClick={() => void withdrawAll()}>
+                  {withdrawing ? "Withdrawing…" : "Withdraw to wallet"}
+                </button>
+              )}
+            </div>
             <div className="stat"><span>In wallet · USDC</span><strong>{bal ? bal.wallet.toFixed(2) : "—"}</strong></div>
             <div className="stat"><span>Gas · MON</span><strong>{bal ? bal.mon.toFixed(3) : "—"}</strong></div>
           </section>
@@ -109,6 +145,14 @@ export function FundView() {
               <p>Not available on testnet. Card purchases settle in real USDC on mainnet, which Tick does not run yet.</p>
             </article>
           </section>
+
+          {note && (
+            <div className="page-note" role="status">
+              <Info weight="bold" />
+              <p>{note}</p>
+              <button type="button" onClick={() => setNote(null)} aria-label="Dismiss">×</button>
+            </div>
+          )}
         </>
       )}
     </AccountShell>
