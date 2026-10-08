@@ -222,8 +222,9 @@ contract ConcurrencyTest is Test {
 
         bytes32 id = tick.marketId(t);
         vm.warp(t.closesAt);
-        pyth.set(BTC, 90_001e8, EXPO, block.timestamp);
-        tick.settle(t);
+        bytes[] memory u = new bytes[](1);
+        u[0] = pyth.encodeWithPrev(t.feedId, 90_001e8, EXPO, t.closesAt, uint256(t.closesAt) - 1);
+        tick.settleWithUpdate{value: 1}(t, u);
 
         vm.startStateDiffRecording();
         vm.prank(alice);

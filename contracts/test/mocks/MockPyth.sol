@@ -57,16 +57,17 @@ contract MockPyth is IPyth {
     function updatePriceFeeds(bytes[] calldata updateData) external payable {
         updateCount += 1;
         for (uint256 i; i < updateData.length; ++i) {
-            (bytes32 id, int64 price, int32 expo, uint256 publishTime) =
-                abi.decode(updateData[i], (bytes32, int64, int32, uint256));
+            (bytes32 id, int64 price, int32 expo, uint256 publishTime,) =
+                abi.decode(updateData[i], (bytes32, int64, int32, uint256, uint256));
             prices[id] = Price({price: price, conf: 0, expo: expo, publishTime: publishTime});
             exists[id] = true;
         }
     }
 
-    /// @dev Mirrors the real call: verifies nothing was signed (the mock has no signatures)
-    ///      but enforces the publishTime range and, like the real one, writes NO storage.
-    function parsePriceFeedUpdates(
+    /// @dev Mirrors the real "unique" call: verifies nothing was signed (the mock has no
+    ///      signatures) but enforces prevPublishTime < min <= publishTime <= max, so only the
+    ///      FIRST update at or after the close is accepted. Like the real one, writes NO storage.
+    function parsePriceFeedUpdatesUnique(
         bytes[] calldata updateData,
         bytes32[] calldata priceIds,
         uint64 minPublishTime,
@@ -76,9 +77,12 @@ contract MockPyth is IPyth {
         for (uint256 k; k < priceIds.length; ++k) {
             bool found;
             for (uint256 i; i < updateData.length && !found; ++i) {
-                (bytes32 id, int64 price, int32 expo, uint256 publishTime) =
-                    abi.decode(updateData[i], (bytes32, int64, int32, uint256));
-                if (id == priceIds[k] && publishTime >= minPublishTime && publishTime <= maxPublishTime) {
+                (bytes32 id, int64 price, int32 expo, uint256 publishTime, uint256 prev) =
+                    abi.decode(updateData[i], (bytes32, int64, int32, uint256, uint256));
+                if (
+                    id == priceIds[k] && publishTime >= minPublishTime && publishTime <= maxPublishTime
+                        && prev < minPublishTime
+                ) {
                     Price memory p = Price({price: price, conf: 0, expo: expo, publishTime: publishTime});
                     out[k] = PriceFeed({id: id, price: p, emaPrice: p});
                     found = true;
@@ -88,12 +92,18 @@ contract MockPyth is IPyth {
         }
     }
 
-    /// @notice Encodes an update the way this mock's updatePriceFeeds expects.
-    function encode(bytes32 id, int64 price, int32 expo, uint256 publishTime)
-        external
+    /// @notice Encodes an update with the given predecessor time (what makes it "first").
+    function encodeWithPrev(bytes32 id, int64 price, int32 expo, uint256 publishTime, uint256 prev)
+        public
         pure
         returns (bytes memory)
     {
-        return abi.encode(id, price, expo, publishTime);
+        return abi.encode(id, price, expo, publishTime, prev);
+    }
+
+    /// @notice Encodes an update whose predecessor is the previous second, i.e. a price that
+    ///         is the first one at or after any time up to its own publishTime.
+    function encode(bytes32 id, int64 price, int32 expo, uint256 publishTime) external pure returns (bytes memory) {
+        return abi.encode(id, price, expo, publishTime, publishTime == 0 ? 0 : publishTime - 1);
     }
 }

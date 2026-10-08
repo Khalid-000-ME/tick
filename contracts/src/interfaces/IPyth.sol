@@ -23,12 +23,14 @@ interface IPyth {
         Price emaPrice;
     }
 
-    /// @notice Verifies signed updates and returns the price of each requested id whose
-    ///         publishTime lies in [minPublishTime, maxPublishTime]; reverts if any id has
-    ///         none in range. Payable (getUpdateFee). Does NOT write Pyth's storage, so
-    ///         using it contends with nobody. Verified live on Monad testnet: called with
-    ///         a Hermes update for a past second it returned that second's BTC/USD price.
-    function parsePriceFeedUpdates(
+    /// @notice Like parsePriceFeedUpdates, but accepts ONLY the first update published at or
+    ///         after minPublishTime: it requires prevPublishTime < minPublishTime <=
+    ///         publishTime <= maxPublishTime. Without that, anyone settling could choose
+    ///         the most favourable of the many signed prices inside the window. With it
+    ///         there is exactly one acceptable price for a given close, so the outcome is
+    ///         a fact anyone can recompute. Payable (getUpdateFee); writes no Pyth
+    ///         storage. Verified live on Monad testnet with a Hermes update.
+    function parsePriceFeedUpdatesUnique(
         bytes[] calldata updateData,
         bytes32[] calldata priceIds,
         uint64 minPublishTime,

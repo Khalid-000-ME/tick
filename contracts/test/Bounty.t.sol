@@ -68,14 +68,15 @@ contract BountyTest is Test {
 
     function _update(Tick.Terms memory t, int64 price, uint256 at) internal view returns (bytes[] memory u) {
         u = new bytes[](1);
-        u[0] = pyth.encode(t.feedId, price, EXPO, at);
+        // The first update at or after the close, published at `at`.
+        u[0] = pyth.encodeWithPrev(t.feedId, price, EXPO, at, uint256(t.closesAt) - 1);
     }
 
     function _settleViaStored(Tick.Terms memory t, int64 price) internal {
         vm.warp(t.closesAt);
-        pyth.set(BTC, price, EXPO, block.timestamp);
+        bytes[] memory u = _update(t, price, t.closesAt);
         vm.prank(settler);
-        tick.settle(t);
+        tick.settleWithUpdate{value: 1}(t, u);
     }
 
     // ---------------------------------------------------------------- bounty
@@ -176,9 +177,9 @@ contract BountyTest is Test {
         vm.stopPrank();
 
         vm.warp(t.closesAt);
-        pyth.set(BTC, 90_001e8, EXPO, block.timestamp);
+        bytes[] memory u2 = _update(t, 90_001e8, t.closesAt);
         vm.prank(settler);
-        t2.settle(t);
+        t2.settleWithUpdate{value: 1}(t, u2);
 
         uint256 paid;
         vm.prank(alice);

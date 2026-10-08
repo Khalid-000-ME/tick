@@ -255,7 +255,6 @@ contract Tick {
     error AlreadySettled();
     error NotClosed();
     error PriceTooStale(uint256 publishTime, uint256 margin);
-    error NoSettlementPrice(uint256 publishTime, uint64 closesAt);
     error SettleWindowOpen();
     error ZeroAmount();
     error InsufficientDeposit();
@@ -419,32 +418,13 @@ contract Tick {
 
     // ---------------------------------------------------------------- settlement
 
-    /// @notice Settle against the price Pyth has STORED on chain. Permissionless, and
-    ///         there is nothing to trust: the outcome is a comparison anyone can recompute.
-    ///
-    /// @dev The stored price must have been published in [closesAt, closesAt + tolerance].
-    ///      Pyth stores only its latest price, so this works only while a refresh from just
-    ///      after the close is still the latest one. settleWithUpdate has no such limit.
-    function settle(Terms calldata t) external returns (uint8 outcome) {
-        (bytes32 id, Settlement storage s, uint16 feeBps, uint32 tolerance) = _beforeSettle(t);
-
-        IPyth.Price memory p = pyth.getPriceUnsafe(t.feedId);
-        if (p.expo != t.expo) return _finalise(s, id, VOID, 0, 0);
-        if (p.publishTime < t.closesAt || p.publishTime > uint256(t.closesAt) + tolerance) {
-            revert NoSettlementPrice(p.publishTime, t.closesAt);
-        }
-
-        outcome = p.price >= t.strike ? ABOVE : BELOW;
-        return _finalise(s, id, outcome, p.price, feeBps);
-    }
-
-    /// @notice Settle by supplying Pyth's signed update for the close. Payable: the caller
-    ///         pays Pyth's update fee (1 wei on Monad testnet); any excess is refunded.
-    ///
-    /// @dev Pyth verifies the signatures and that the price was published within
-    ///      [closesAt, closesAt + tolerance], so the outcome is pinned to the exact close
-    ///      no matter when this is called, up to settleWindow. Nothing is written to Pyth,
-    ///      so this contends with no one. Fetch the update from Hermes at `closesAt`.
+    /// @notice Settles a closed market from a signed Pyth update. Permissionless: the caller
+    ///         earns a share of the market's fee. Pyth verifies the signature and, because
+    ///         this uses the "unique" parse, accepts ONLY the first price published at or
+    ///         after the close (and no later than `tolerance` seconds after it). There is
+    ///         no stored-price settle path on purpose: anyone could post any signed price
+    ///         from the window to Pyth's storage first and so pick the outcome. Here the
+    ///         settler has exactly one valid price to submit, so the outcome is a fact.
     function settleWithUpdate(Terms calldata t, bytes[] calldata updateData)
         external
         payable
@@ -493,7 +473,7 @@ contract Tick {
 
         bytes32[] memory ids = new bytes32[](1);
         ids[0] = t.feedId;
-        IPyth.PriceFeed[] memory out = pyth.parsePriceFeedUpdates{value: fee}(
+        IPyth.PriceFeed[] memory out = pyth.parsePriceFeedUpdatesUnique{value: fee}(
             updateData, ids, t.closesAt, uint64(uint256(t.closesAt) + tolerance)
         );
         if (out.length != 1 || out[0].id != t.feedId) revert BadUpdate();

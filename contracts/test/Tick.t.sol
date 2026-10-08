@@ -70,8 +70,13 @@ contract TickTest is Test {
     /// @dev Refreshes the feed at close and settles, the way a keeper would.
     function _settleAt(Tick.Terms memory t, int64 price) internal returns (uint8) {
         vm.warp(t.closesAt);
-        pyth.set(BTC, price, EXPO, block.timestamp);
-        return tick.settle(t);
+        return tick.settleWithUpdate{value: 1}(t, _first(t, price, t.closesAt));
+    }
+
+    /// @dev A signed update that is the FIRST one at or after the close, published at `at`.
+    function _first(Tick.Terms memory t, int64 price, uint256 at) internal view returns (bytes[] memory u) {
+        u = new bytes[](1);
+        u[0] = pyth.encodeWithPrev(t.feedId, price, EXPO, at, uint256(t.closesAt) - 1);
     }
 
     function _twoSided() internal returns (Tick.Terms memory t, bytes32 id) {
@@ -220,11 +225,12 @@ contract TickTest is Test {
         (Tick.Terms memory t, bytes32 id) = _twoSided();
 
         vm.warp(t.closesAt);
-        pyth.set(BTC, 90_001e8, EXPO, block.timestamp);
+        bytes[] memory u = _first(t, 90_001e8, t.closesAt);
 
-        // carol has no role and no permission. She settles anyway.
+        // carol has no role and no permission, only a wei for Pyth's fee. She settles anyway.
+        vm.deal(carol, 1);
         vm.prank(carol);
-        assertEq(tick.settle(t), tick.ABOVE());
+        assertEq(tick.settleWithUpdate{value: 1}(t, u), tick.ABOVE());
 
         (uint8 stored,, int64 price,,,) = tick.settlements(id);
         assertEq(stored, tick.ABOVE());
@@ -243,34 +249,54 @@ contract TickTest is Test {
 
     function test_settle_beforeCloseReverts() public {
         (Tick.Terms memory t,) = _twoSided();
+        bytes[] memory u = _first(t, 90_001e8, t.closesAt);
         vm.expectRevert(Tick.NotClosed.selector);
-        tick.settle(t);
+        tick.settleWithUpdate{value: 1}(t, u);
     }
 
     function test_settle_doubleSettleReverts() public {
         (Tick.Terms memory t,) = _twoSided();
         _settleAt(t, 90_001e8);
+        bytes[] memory u = _first(t, 90_001e8, t.closesAt);
         vm.expectRevert(Tick.AlreadySettled.selector);
-        tick.settle(t);
+        tick.settleWithUpdate{value: 1}(t, u);
     }
 
     /// @notice Settlement is pinned to the close: a price from before it cannot settle the
-    ///         market, and neither can one published long after. Otherwise whoever called
-    ///         settle would choose the outcome by choosing when to call.
+    ///         market, and neither can one published after the tolerance.
     function test_settle_requiresPricePublishedJustAfterClose() public {
         (Tick.Terms memory t,) = _twoSided();
+        vm.warp(uint256(t.closesAt) + SETTLE_TOLERANCE + 5);
 
-        vm.warp(uint256(t.closesAt) + 1);
-        uint256 tooEarly = uint256(t.closesAt) - 1;
-        pyth.set(BTC, 90_001e8, EXPO, tooEarly);
-        vm.expectRevert(abi.encodeWithSelector(Tick.NoSettlementPrice.selector, tooEarly, t.closesAt));
-        tick.settle(t);
+        bytes[] memory early = _first(t, 90_001e8, uint256(t.closesAt) - 1);
+        vm.expectRevert(MockPyth.PriceFeedNotFoundWithinRange.selector);
+        tick.settleWithUpdate{value: 1}(t, early);
 
-        uint256 tooLate = uint256(t.closesAt) + SETTLE_TOLERANCE + 1;
-        vm.warp(tooLate);
-        pyth.set(BTC, 90_001e8, EXPO, tooLate);
-        vm.expectRevert(abi.encodeWithSelector(Tick.NoSettlementPrice.selector, tooLate, t.closesAt));
-        tick.settle(t);
+        bytes[] memory late = _first(t, 90_001e8, uint256(t.closesAt) + SETTLE_TOLERANCE + 1);
+        vm.expectRevert(MockPyth.PriceFeedNotFoundWithinRange.selector);
+        tick.settleWithUpdate{value: 1}(t, late);
+    }
+
+    /// @notice THE trust property. Pyth publishes many signed prices inside the settle
+    ///         window. If any of them were acceptable, whoever settles could pick the one
+    ///         that favours the side they staked. Only the first price at or after the
+    ///         close is valid, so there is nothing to choose.
+    function test_settle_rejectsACherryPickedLaterPrice() public {
+        (Tick.Terms memory t,) = _twoSided();
+        vm.warp(uint256(t.closesAt) + 8);
+
+        // A real later tick (published close+5), whose predecessor (close+4) is itself
+        // after the close, so it is NOT the first. Favourable to ABOVE, but unusable.
+        bytes[] memory later = new bytes[](1);
+        later[0] = pyth.encodeWithPrev(t.feedId, 95_000e8, EXPO, uint256(t.closesAt) + 5, uint256(t.closesAt) + 4);
+        vm.expectRevert(MockPyth.PriceFeedNotFoundWithinRange.selector);
+        tick.settleWithUpdate{value: 1}(t, later);
+
+        // The first price (published close+1, predecessor before the close) is accepted,
+        // and it is the one that decides the market, here BELOW.
+        bytes[] memory first = new bytes[](1);
+        first[0] = pyth.encodeWithPrev(t.feedId, 89_000e8, EXPO, uint256(t.closesAt) + 1, uint256(t.closesAt) - 1);
+        assertEq(tick.settleWithUpdate{value: 1}(t, first), tick.BELOW());
     }
 
     function test_voidStale_refundsEveryone() public {
