@@ -8,6 +8,7 @@ import type { MarketView } from "@/lib/useMarket";
 import type { Terms } from "@/lib/chain/market";
 import type { FeedSpec } from "@/lib/pyth";
 import { gasShortfall } from "@/lib/gasCheck";
+import { requestGas } from "@/lib/requestGas";
 
 // viem polls for receipts every 4s by default; Monad blocks are ~0.4s, so that default alone
 // adds seconds to every confirmation.
@@ -93,7 +94,13 @@ export function useStake({
         // The setup transactions are only sent when needed, so only count those.
         const planned: bigint[] = [GAS.stake];
         if (deposited < units) planned.push(GAS.deposit, ...(allowance < bal ? [GAS.approve] : []));
-        const short = await gasShortfall(pub, account, planned);
+        let short = await gasShortfall(pub, account, planned);
+        if (short) {
+          // A new wallet starts with no MON. Ask the app for starter gas rather than sending
+          // the user to a faucet in the middle of their first stake.
+          setStep("Getting starter gas…");
+          if (await requestGas(account)) short = await gasShortfall(pub, account, planned);
+        }
         if (short) return { ok: false, message: short };
 
         if (deposited < units) {

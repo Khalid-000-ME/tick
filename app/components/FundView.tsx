@@ -8,6 +8,7 @@ import { Erc20Abi, TickAbi } from "@/lib/chain/abi";
 import { CONTRACTS, explorerAddress, monadTestnet, toUsd } from "@/lib/chain/config";
 import { readClient } from "@/lib/useWallet";
 import { gasShortfall } from "@/lib/gasCheck";
+import { requestGas } from "@/lib/requestGas";
 import { useTickWallet } from "@/lib/useTickWallet";
 
 interface Balances {
@@ -149,6 +150,18 @@ export function FundView() {
             <article className="fund-option">
               <h2>Get MON for gas</h2>
               <p>Every transaction is paid in MON. {bal && bal.mon < 0.05 ? "Your balance is low." : "Top up from the testnet faucet when it runs low."}</p>
+              {bal && bal.mon < 0.05 && (
+                <button
+                  type="button"
+                  className="btn-solid"
+                  onClick={async () => {
+                    setNote((await requestGas(account)) ? "Sent 0.2 MON to your wallet." : "Could not send gas right now; use the Monad faucet instead.");
+                    await load();
+                  }}
+                >
+                  Get 0.2 MON now
+                </button>
+              )}
               <a className="btn-ghost" href="https://faucet.monad.xyz" target="_blank" rel="noreferrer">Open the Monad faucet</a>
             </article>
 

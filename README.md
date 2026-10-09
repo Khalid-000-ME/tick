@@ -6,6 +6,7 @@
 
 - **A market is its terms.** `(feedId, strike, expo, closesAt)` hashes to the market id, so there is no "create market" transaction. Windows sit on a 30-second grid and the strike for a window is Pyth's price at window open, served identically to every client by `/api/strike`.
 - **Parimutuel.** Winners split the losing pool pro rata, minus a 2% fee on profit. A one-sided market voids and refunds everyone.
+- **Settlement is a race.** The app's own settler waits 10 seconds after the close (`SETTLE_GRACE_S`) before stepping in, so an outside bot gets first shot at the bounty; the app only settles as a fallback. `npm run settler` is such a bot, and `/settlers` shows who won.
 - **Settlement is permissionless and paid.** `settleWithUpdate` takes a signed Pyth update for the exact close second and has Pyth verify it, so a market settles correctly whenever someone gets round to it inside the settle window. The caller earns half the market's fee (capped at 2 USDC), so outside bots have a reason to do it. `app/scripts/settler.ts` is one.
 - **Fresh-price cutoff.** A stake is only accepted while the on-chain price is within 10 seconds of fresh. This is the residual latency-arbitrage window, and it is on screen rather than hidden.
 - **Built for Monad's parallelism.** Pools are sharded 64 ways. `contracts/test/Concurrency.t.sol` measures read-after-write conflicts directly and finds none between stakers.
@@ -68,7 +69,7 @@ cd indexer && npm install && npm run codegen && npm run dev
 | `PRIVY_APP_SECRET` | Server-only |
 | `NEXT_PUBLIC_INDEXER_URL` | Envio GraphQL endpoint; public. Unset, history falls back to this browser |
 
-Fund a wallet with MON at faucet.monad.xyz and USDC at faucet.circle.com (choose Monad Testnet).
+A new wallet with no MON is sent 0.2 MON automatically on its first stake (`/api/gas`, rate-limited and capped per day, testnet only). Otherwise fund a wallet with MON at faucet.monad.xyz and USDC at faucet.circle.com (choose Monad Testnet).
 
 ## Proven on chain
 
