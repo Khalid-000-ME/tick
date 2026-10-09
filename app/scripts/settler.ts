@@ -128,7 +128,7 @@ async function main() {
     const r = await pass();
     console.log(`pass: ${r.seen} market(s) seen, ${r.settled} settled`);
     if (once) break;
-    await sleep(15_000);
+    await sleep(Number(process.env.SETTLER_POLL_MS ?? 3_000));
   } while (true);
 }
 

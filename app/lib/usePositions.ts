@@ -165,6 +165,8 @@ export function usePositions(account: `0x${string}` | null, walletClient: Wallet
       for (const p of open) {
         // Two seconds of grace: the settlement price must have been published AFTER the
         // close, so there is nothing to settle against the instant the window shuts.
+        // The server leaves the first ~10s for outside settlers, so there is no point asking
+        // for it sooner; reading the result back still happens every pass.
         if (now < p.closesAt + 2) continue;
         if (settleTried.current.has(p.id)) continue;
 

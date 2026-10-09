@@ -81,6 +81,16 @@ export async function POST(request: Request) {
   if (now < closesAt) {
     return NextResponse.json({ error: "This window has not closed yet." }, { status: 409 });
   }
+  // The app settles only as a fallback. For the first few seconds after the close the
+  // bounty is left for outside settlers, so settlement is a real race and not a service
+  // the app quietly performs. If nobody takes it, the app does, so no market is stranded.
+  const grace = Number(process.env.SETTLE_GRACE_S ?? 10);
+  if (now < closesAt + grace) {
+    return NextResponse.json(
+      { error: "Waiting a few seconds for an outside settler to take the bounty.", retriable: true },
+      { status: 409 }
+    );
+  }
   // Past the settle window the price is long gone; voidStale is the right call, and it is
   // open to anyone forever, so there is no hurry and no reason to spend operator gas here.
   if (now > closesAt + SETTLE_WINDOW_S) {
