@@ -6,6 +6,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { WalletMenu } from "@/components/WalletMenu";
+import { TickerStrip } from "@/components/TickerStrip";
+import { NewsPanel } from "@/components/NewsPanel";
 import { PositionsDock } from "@/components/PositionsDock";
 import { useTickWallet } from "@/lib/useTickWallet";
 import { useMarket } from "@/lib/useMarket";
@@ -122,6 +124,7 @@ export function MarketTerminal() {
 
   return (
     <div className="terminal-shell">
+      <TickerStrip />
       <header className="terminal-header">
         <Link href="/" className="terminal-back" aria-label="Back to landing page"><ArrowLeft /></Link><Brand />
         {/* The countdown is the product. A 30-second window that you have to hunt for in
@@ -193,6 +196,8 @@ export function MarketTerminal() {
             {!chart && <div className="chart-empty">Waiting for the first onchain price…</div>}
                       </div>
         </section>
+        <div className="terminal-rail">
+        <NewsPanel feed={feed} />
         <aside className="terminal-ticket" aria-label="Market order">
           <div className="ticket-heading"><h1>Will {feed.symbol} close above ${strikeNumber === null ? "—" : formatPrice(strikeNumber)}?</h1></div>
           <div className="pool-split"><div><span>Pool sentiment</span><strong>{impliedAbove.toFixed(0)}% above</strong></div><div className="pool-track"><span style={{ width: `${impliedAbove}%` }} /></div><div className="pool-labels"><span>{fmtUsd(market.poolAbove, 0)} ABOVE</span><span>{fmtUsd(market.poolBelow, 0)} BELOW</span></div></div>
@@ -203,6 +208,7 @@ export function MarketTerminal() {
           <dl className="ticket-summary"><div><dt>Estimated return</dt><dd>{estimatedReturn.toFixed(2)} USDC</dd></div></dl>
           <button className="ticket-primary" type="button" disabled={stake.busy} onClick={() => void primaryAction()}>{actionLabel}</button><p className="ticket-disclosure">Testnet points, no monetary value.</p>
         </aside>
+        </div>
       </main>
       <footer className="terminal-footer">
         <span><i /> Monad testnet</span>
