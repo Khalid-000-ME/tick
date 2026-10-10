@@ -31,6 +31,9 @@ interface Price {
   publishTime: number;
 }
 
+/** Rough width of one cell, for sizing the loop. Only affects how often it wraps. */
+const CELL_PX = 150;
+
 const fmt = (raw: string, expo: number) => {
   const v = Number(raw) * 10 ** expo;
   return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -98,18 +101,14 @@ export function TickerStrip() {
           <em className={dir.get(p.symbol) ? `is-${dir.get(p.symbol)}` : ""}>${fmt(p.price, p.expo)}</em>
         </span>
       ))}
-      {trades.length > 0 ? (
-        trades.map((t, i) => (
-          <span className="tick-cell is-trade" key={`t-${i}`}>
-            <i className={t.side === "ABOVE" ? "side-up" : "side-down"}>{t.side}</i>
-            <b>{t.symbol}</b>
-            <em>{t.amount.toFixed(2)} USDC</em>
-            <small>{t.user.slice(0, 6)}…</small>
-          </span>
-        ))
-      ) : (
-        <span className="tick-cell is-quiet">No stakes in the last few blocks — take a side and yours shows up here</span>
-      )}
+      {trades.map((t, i) => (
+        <span className="tick-cell is-trade" key={`t-${i}`}>
+          <i className={t.side === "ABOVE" ? "side-up" : "side-down"}>{t.side}</i>
+          <b>{t.symbol}</b>
+          <em>{t.amount.toFixed(2)} USDC</em>
+          <small>{t.user.slice(0, 6)}…</small>
+        </span>
+      ))}
     </>
   );
 
@@ -119,11 +118,30 @@ export function TickerStrip() {
     return <div className="ticker-strip is-waiting" aria-hidden="true" />;
   }
 
+  // A marquee only loops seamlessly while its content is wider than the screen, and with
+  // no trades to show there may be just four price cells. So the set is repeated until it
+  // comfortably outruns a wide viewport, and the track shifts by exactly one set's width
+  // (100/reps of the whole track), which is what makes the wrap invisible.
+  const count = prices.length + trades.length;
+  const reps = Math.min(8, Math.max(2, Math.ceil(2400 / Math.max(1, count * CELL_PX))));
+  const sets = Array.from({ length: reps });
+
   return (
     <div className="ticker-strip" aria-label="Live prices and recent stakes">
-      <div className="ticker-track">
-        <div className="ticker-run">{cells}</div>
-        <div className="ticker-run" aria-hidden="true">{cells}</div>
+      <div
+        className="ticker-track"
+        style={{
+          // Shift one set per cycle, at a steady reading speed regardless of how much
+          // there is to show.
+          ["--shift" as string]: `-${100 / reps}%`,
+          ["--dur" as string]: `${Math.max(12, (count * CELL_PX) / 55)}s`,
+        }}
+      >
+        {sets.map((_, i) => (
+          <div className="ticker-run" key={i} aria-hidden={i > 0 || undefined}>
+            {cells}
+          </div>
+        ))}
       </div>
     </div>
   );
