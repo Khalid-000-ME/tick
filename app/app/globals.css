@@ -2001,3 +2001,9 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .match-side-col > .news-panel.is-panel { margin-bottom: 16px; }
 .match-side-col > .news-panel.is-panel .news-list { max-height: 260px; }
 .side-picker button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Strip: closed equities and fixtures. */
+.tick-cell.is-closed em { opacity: .55; }
+.tick-cell.is-closed small { text-transform: uppercase; letter-spacing: .06em; font-size: 9px; }
+.tick-cell .tick-live { padding: 1px 5px; border-radius: 4px; background: var(--t-down); color: #fff; font-size: 9px; }
+.tick-cell.is-fixture.is-post em { opacity: .6; }

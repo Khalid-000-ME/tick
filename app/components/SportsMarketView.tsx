@@ -2,6 +2,7 @@
 
 import { AmountPicker } from "@/components/AmountPicker";
 import { NewsPanel } from "@/components/NewsPanel";
+import { TickerStrip } from "@/components/TickerStrip";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, SealCheck } from "@phosphor-icons/react";
@@ -142,11 +143,11 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
   }
 
   if (event === undefined) {
-    return <AccountShell active="markets" wallet={wallet}><div className="page-empty">Loading the match...</div></AccountShell>;
+    return <AccountShell active="markets" wallet={wallet} strip={<TickerStrip mode="sports" />}><div className="page-empty">Loading the match...</div></AccountShell>;
   }
   if (event === null) {
     return (
-      <AccountShell active="markets" wallet={wallet}>
+      <AccountShell active="markets" wallet={wallet} strip={<TickerStrip mode="sports" />}>
         <div className="page-empty">This fixture is no longer on the scoreboard. <Link href="/markets">Back to markets</Link></div>
       </AccountShell>
     );
@@ -163,7 +164,7 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
   const pick = pending ? sides.find((s) => s.side === pending)! : null;
 
   return (
-    <AccountShell active="markets" wallet={wallet}>
+    <AccountShell active="markets" wallet={wallet} strip={<TickerStrip mode="sports" />}>
       <Link href="/markets" className="match-back"><ArrowLeft /> Markets</Link>
 
       <div className="match-hero has-banner">

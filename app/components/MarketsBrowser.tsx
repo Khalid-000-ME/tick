@@ -13,6 +13,7 @@ import { marketId } from "@/lib/chain/market";
 import { readClient } from "@/lib/useWallet";
 import { SportsCard, type SportsEvent } from "@/components/SportsCard";
 import { NewsPanel } from "@/components/NewsPanel";
+import { TickerStrip } from "@/components/TickerStrip";
 import { nextOpenLabel } from "@/lib/marketHours";
 import { MicroBoard } from "@/components/MicroMarkets";
 import { WalletMenu } from "@/components/WalletMenu";
@@ -168,6 +169,7 @@ export function MarketsBrowser() {
         </button>
         <WalletMenu wallet={wallet} />
       </header>
+      <TickerStrip mode={kind} />
 
       <main className="board-main">
         <div className="board-head">

@@ -13,10 +13,13 @@ export function AccountShell({
   active,
   wallet,
   children,
+  strip,
 }: {
   active: "markets" | "portfolio" | "fund" | "settlers" | "leaderboard" | "profile";
   wallet: Wallet;
   children: React.ReactNode;
+  /** A running strip under the header, as the board and terminal have. */
+  strip?: React.ReactNode;
 }) {
   const { theme, toggle } = useTheme();
 
@@ -42,6 +45,7 @@ export function AccountShell({
         </button>
         <WalletMenu wallet={wallet} />
       </header>
+      {strip}
       <main className="page-main">{children}</main>
     </div>
   );
