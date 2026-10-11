@@ -147,6 +147,7 @@ export function MarketTerminal() {
           <strong className="window-clock-value">{String(secondsToClose).padStart(2, "0")}<small>s</small></strong>
         </div>
         <nav className="terminal-nav" aria-label="Account">
+          <Link href="/markets">Markets</Link>
           <Link href="/portfolio">Portfolio</Link>
           <Link href="/fund">Fund</Link>
         </nav>

@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import { MarketsBrowser } from "@/components/MarketsBrowser";
+
+export const metadata = { title: "Markets — Tick" };
 
 export default function MarketsPage() {
-  redirect("/trade");
+  return <MarketsBrowser />;
 }

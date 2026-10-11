@@ -37,6 +37,42 @@ export const SHARDS = deployed.shards;
 export const ACCEPT_MARGIN_S = deployed.acceptMarginSeconds;
 /** Market windows are aligned to this grid, in seconds. */
 export const WINDOW_S = deployed.windowSeconds;
+
+/**
+ * Window lengths a market can run for.
+ *
+ * The contract only asks that closesAt falls on its 30-second grid and has not passed, so
+ * every multiple of 30 is a valid close — a "three minute market" is simply a close three
+ * minutes out rather than thirty seconds out. No redeploy, no new feed config. Each
+ * duration snaps to its OWN grid (a 2-minute close is always on a 120-second boundary) so
+ * two people choosing the same duration land in the same pool instead of two lonely ones.
+ */
+export const DURATIONS = [
+  { seconds: 30, label: "30s" },
+  { seconds: 60, label: "1m" },
+  { seconds: 90, label: "1.5m" },
+  { seconds: 120, label: "2m" },
+  { seconds: 150, label: "2.5m" },
+  { seconds: 180, label: "3m" },
+  { seconds: 210, label: "3.5m" },
+  { seconds: 300, label: "5m" },
+] as const;
+
+export type Duration = (typeof DURATIONS)[number];
+
+/**
+ * The close of the market a given duration is currently running.
+ *
+ * It is the next boundary of that duration, never the one after. Rolling forward to give
+ * a card more time on the clock would put the market's OPENING instant in the future, and
+ * a strike is Pyth's price at that instant — which has not been published yet, so the
+ * market could not be priced at all. A pool you join is already running, as it is on any
+ * parimutuel board: the window length names the market, and the clock shows what is
+ * actually left of it.
+ */
+export function closeFor(seconds: number, now = Math.floor(Date.now() / 1000)): number {
+  return (Math.floor(now / seconds) + 1) * seconds;
+}
 /** Settlement price must be published within this long after close. */
 export const SETTLE_TOLERANCE_S = deployed.settleToleranceSeconds;
 /** After this long with no settlement price, anyone may void and refund. */

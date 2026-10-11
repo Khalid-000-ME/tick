@@ -26,7 +26,8 @@ export function AccountShell({
         <Link href="/trade" className="terminal-back" aria-label="Back to the market"><ArrowLeft /></Link>
         <Brand />
         <nav className="terminal-nav page-nav" aria-label="Account">
-          <Link href="/trade">Market</Link>
+          <Link href="/markets">Markets</Link>
+          <Link href="/trade">Terminal</Link>
           <Link href="/portfolio" aria-current={active === "portfolio" ? "page" : undefined}>Portfolio</Link>
           <Link href="/fund" aria-current={active === "fund" ? "page" : undefined}>Fund</Link>
         </nav>

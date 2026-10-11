@@ -46,7 +46,7 @@ export function LandingExperience() {
         <Brand />
         <nav aria-label="Primary navigation">
           <a href="#how">How it works</a><a href="#market">Market</a><a href="#trust">Trust</a>
-          <Link href="/trade" className="landing-nav-cta">Start free <ArrowUpRight weight="bold" /></Link>
+          <Link href="/markets" className="landing-nav-cta">Start free <ArrowUpRight weight="bold" /></Link>
         </nav>
       </header>
       <main>
@@ -64,7 +64,7 @@ export function LandingExperience() {
               you lost.
             </p>
             <div className="landing-actions">
-              <Link href="/trade" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
+              <Link href="/markets" className="landing-primary">Browse live markets <ArrowUpRight weight="bold" /></Link>
               <a href="#how" className="landing-secondary">How it works <ArrowDown /></a>
             </div>
           </motion.div>
@@ -186,14 +186,14 @@ export function LandingExperience() {
               <div><dt>Who settles</dt><dd>Anyone, for a fee share</dd></div>
               <div><dt>Payouts</dt><dd>Automatic, no claim step</dd></div>
             </dl>
-            <Link href="/trade" className="landing-text-cta">Open the market <ArrowUpRight /></Link>
+            <Link href="/markets" className="landing-text-cta">Open the markets board <ArrowUpRight /></Link>
           </motion.div>
         </section>
 
         <section className="landing-close">
           <p>BTC. ETH. SOL. TSLA.</p>
           <h2>One line.<br />Two sides.<br /><em>Thirty seconds.</em></h2>
-          <Link href="/trade" className="landing-primary">Make your call <ArrowUpRight weight="bold" /></Link>
+          <Link href="/markets" className="landing-primary">Make your call <ArrowUpRight weight="bold" /></Link>
         </section>
       </main>
       <footer className="landing-footer"><Brand /><span>Built on Monad</span><span>Testnet USDC. No real-money wagering.</span></footer>

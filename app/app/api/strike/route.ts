@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { WINDOW_S } from "@/lib/chain/config";
+import { DURATIONS, WINDOW_S } from "@/lib/chain/config";
 import { feedById, snapToGrid } from "@/lib/pyth";
 
 /**
@@ -28,20 +28,27 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const feed = feedById(url.searchParams.get("feedId") ?? "");
   const closesAt = Number(url.searchParams.get("closesAt"));
+  // Window length in seconds. Every listed duration is a multiple of the contract's 30s
+  // grid, so a longer market is just a further-out close on the same grid: the chain
+  // needs no change, only a strike struck at the right opening instant.
+  const windowS = Number(url.searchParams.get("window") ?? WINDOW_S);
   if (!feed) return NextResponse.json({ error: "Unknown feed." }, { status: 400 });
-  if (!Number.isInteger(closesAt) || closesAt % WINDOW_S !== 0) {
+  if (!DURATIONS.some((d) => d.seconds === windowS)) {
+    return NextResponse.json({ error: "Unsupported window length." }, { status: 400 });
+  }
+  if (!Number.isInteger(closesAt) || closesAt % windowS !== 0) {
     return NextResponse.json({ error: "closesAt is off the window grid." }, { status: 400 });
   }
 
-  const openAt = closesAt - WINDOW_S;
+  const openAt = closesAt - windowS;
   const now = Math.floor(Date.now() / 1000);
   // Only recent windows: this must not become an open proxy to Hermes history on the
   // server's key.
-  if (openAt > now || openAt < now - 3 * WINDOW_S) {
+  if (openAt > now || openAt < now - 3 * windowS) {
     return NextResponse.json({ error: "Window is not current." }, { status: 400 });
   }
 
-  const key = `${feed.id}:${closesAt}`;
+  const key = `${feed.id}:${closesAt}:${windowS}`;
   const hit = cache.get(key);
   if (hit) return NextResponse.json(hit);
 
