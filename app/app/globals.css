@@ -1890,3 +1890,11 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .terminal-shell ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--t-accent) 45%, transparent); border-radius: 99px; border: 2px solid transparent; background-clip: padding-box; transition: background 200ms; }
 .terminal-shell ::-webkit-scrollbar-thumb:hover { background: var(--t-accent); background-clip: padding-box; }
 .micro-strip { scrollbar-gutter: stable; }
+
+/* ---- sports positions ---- */
+.sports-portfolio { margin-top: 30px; }
+.sp-table .stake-head, .sp-table .stake-row { grid-template-columns: 1.4fr 1.2fr .7fr 1.1fr 1fr; }
+.match-mine { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--t-line); display: flex; flex-direction: column; gap: 6px; }
+.match-mine li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; font-size: 12px; }
+.match-mine-status { font: 600 10px var(--font-geist-mono), monospace; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px; background: var(--t-line); color: var(--t-dim); }
+.match-mine-status.is-won { background: var(--t-up); color: #fff; } .match-mine-status.is-lost { background: var(--t-down); color: #fff; }

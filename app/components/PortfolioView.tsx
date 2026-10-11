@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { ArrowSquareOut, Info } from "@phosphor-icons/react";
 import { AccountShell } from "@/components/AccountShell";
 import { VerifyPanel } from "@/components/VerifyPanel";
+import { SportsPortfolio } from "@/components/SportsPortfolio";
 import { useTickWallet } from "@/lib/useTickWallet";
 import { useIndexedPositions } from "@/lib/useIndexedPositions";
 import { isRefundPending, statusOf, usePositions, type Position, type PositionStatus } from "@/lib/usePositions";
@@ -232,6 +233,7 @@ export function PortfolioView() {
               })}
             </div>
           )}
+          <SportsPortfolio account={account} walletClient={walletClient} onNotice={setMessage} />
           <p className="page-foot">{indexed.state === "ready" ? "History is read from the on-chain event index, so it follows this wallet to any device." : indexed.state === "error" ? "The history index is unreachable; showing this browser's record only." : "History is kept in this browser, up to the last 500 stakes."} Every result shown was read back from the contract.</p>
         </>
       )}

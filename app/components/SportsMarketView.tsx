@@ -12,6 +12,7 @@ import { createPublicClient, http } from "viem";
 import { TickSportsAbi } from "@/lib/chain/abi";
 import { ATTESTOR, CONTRACTS, explorerAddress, monadTestnet, toUsd } from "@/lib/chain/config";
 import { useSportsStake } from "@/lib/useSportsStake";
+import { sportsStatus, useSportsPositions } from "@/lib/useSportsPositions";
 import { useTickWallet } from "@/lib/useTickWallet";
 
 /**
@@ -36,6 +37,10 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
   const [owed, setOwed] = useState(0n);
   const [claiming, setClaiming] = useState(false);
   const stake = useSportsStake(wallet.walletClient, wallet.account);
+  const sportsPositions = useSportsPositions(wallet.account, wallet.walletClient);
+  // Bumped after a stake confirms, so the pool and odds reload at once instead of on the
+  // next poll.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // The board links here with the in-play window that was clicked.
   useEffect(() => {
@@ -61,12 +66,12 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
       }
     }
     void load();
-    const t = setInterval(load, 10_000);
+    const t = setInterval(load, 5000);
     return () => {
       off = true;
       clearInterval(t);
     };
-  }, [espnId]);
+  }, [espnId, refreshKey]);
 
   async function place(side: "HOME" | "AWAY") {
     if (!event) return;
@@ -74,7 +79,16 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
     const team = side === "HOME" ? event.home.short : event.away.short;
     const res = await stake.submit({ eventId: event.eventId, closesAt: BigInt(event.kickoff) }, side === "HOME", amount, team);
     setNotice(res.message);
-    void res.confirm?.then((d) => setNotice(d.message));
+    if (res.ok) {
+      sportsPositions.record({
+        id: event.id, kind: "match", espnId: event.espnId, eventId: event.eventId, closesAt: event.kickoff,
+        side, amount, label: team, fixture: `${event.away.abbr} @ ${event.home.abbr}`, league: event.league,
+      });
+    }
+    void res.confirm?.then((d) => {
+      setNotice(d.message);
+      setRefreshKey((k) => k + 1);
+    });
   }
 
   async function settle() {
@@ -211,11 +225,37 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
               ))}
             </div>
             {!event.open && <p className="match-note">Staking closed at kickoff.</p>}
+            {sportsPositions.positions.filter((p) => p.espnId === espnId).length > 0 && (
+              <ul className="match-mine">
+                {sportsPositions.positions.filter((p) => p.espnId === espnId).map((p) => (
+                  <li key={`${p.id}:${p.side}`}>
+                    <span>{p.label}</span>
+                    <span className="mono">{p.amount.toFixed(2)} USDC</span>
+                    <span className={`match-mine-status is-${sportsStatus(p)}`}>{sportsStatus(p)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             {stake.busy && <p className="match-note">{stake.step || "Working..."}</p>}
           </section>
 
           {event.state === "in" && (
-            <MicroOrders espnId={espnId} initialWindow={initialWindow} walletClient={wallet.walletClient} account={wallet.account} onNotice={setNotice} />
+            <MicroOrders
+              espnId={espnId}
+              initialWindow={initialWindow}
+              walletClient={wallet.walletClient}
+              account={wallet.account}
+              onNotice={setNotice}
+              onStaked={(m, home, amt) =>
+                sportsPositions.record({
+                  id: m.id, kind: "micro", espnId: m.espnId, eventId: m.eventId, closesAt: m.closesAt,
+                  side: home ? "HOME" : "AWAY", amount: amt,
+                  label: `${home ? m.home.abbr : m.away.abbr}, next ${m.windowLabel}`,
+                  fixture: `${m.away.abbr} @ ${m.home.abbr}`, league: m.league,
+                  micro: { openHome: m.openHome, openAway: m.openAway },
+                })
+              }
+            />
           )}
         </aside>
       </div>

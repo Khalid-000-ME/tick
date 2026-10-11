@@ -96,12 +96,15 @@ export function MicroOrders({
   walletClient,
   account,
   onNotice,
+  onStaked,
 }: {
   espnId: string;
   initialWindow?: number;
   walletClient: WalletClient | null;
   account: `0x${string}` | null;
   onNotice: (message: string) => void;
+  /** Gets the window's terms, including its opening score, which settling it needs later. */
+  onStaked?: (m: MicroMarket, home: boolean, amount: number) => void;
 }) {
   const markets = useMicro(espnId);
   const [windowS, setWindowS] = useState(initialWindow ?? 120);
@@ -119,6 +122,7 @@ export function MicroOrders({
       `${home ? m.home.short : m.away.short} to win the next ${m.windowLabel}`
     );
     onNotice(res.message);
+    if (res.ok) onStaked?.(m, home, amount);
     void res.confirm?.then((d) => onNotice(d.message));
   }
 

@@ -12,7 +12,7 @@ import { fetchAllFixtures, sportsMarketId } from "@/lib/sports";
  */
 export const dynamic = "force-dynamic";
 
-const TTL_MS = 20_000;
+const TTL_MS = 4000;
 let cache: { at: number; body: unknown } | null = null;
 
 export async function GET() {
