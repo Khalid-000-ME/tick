@@ -25,6 +25,7 @@ export const CONTRACTS = {
   usdc: deployed.contracts.USDC as `0x${string}`,
   pyth: deployed.contracts.Pyth as `0x${string}`,
   tickSports: deployed.contracts.TickSports as `0x${string}`,
+  tickProfiles: deployed.contracts.TickProfiles as `0x${string}`,
 } as const;
 
 /** Lists feeds and receives fees. Cannot influence any outcome. */
