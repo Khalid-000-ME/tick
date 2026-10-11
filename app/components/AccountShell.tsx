@@ -29,7 +29,6 @@ export function AccountShell({
           <Link href="/trade">Market</Link>
           <Link href="/portfolio" aria-current={active === "portfolio" ? "page" : undefined}>Portfolio</Link>
           <Link href="/fund" aria-current={active === "fund" ? "page" : undefined}>Fund</Link>
-          <Link href="/settlers" aria-current={active === "settlers" ? "page" : undefined}>Settlers</Link>
         </nav>
         <button
           className="theme-toggle"
