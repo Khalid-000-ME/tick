@@ -101,7 +101,8 @@ export function TVChart({
       },
       grid: { vertLines: { color: line + "55" }, horzLines: { color: line + "55" } },
       rightPriceScale: { borderColor: line },
-      timeScale: { borderColor: line, timeVisible: true, secondsVisible: true, rightOffset: 6 },
+      // The default 6px bar spacing left two minutes of candles as a sliver of a wide chart.
+      timeScale: { borderColor: line, timeVisible: true, secondsVisible: true, rightOffset: 4, barSpacing: 18, minBarSpacing: 4 },
       crosshair: { vertLine: { color: dim, labelBackgroundColor: ink }, horzLine: { color: dim, labelBackgroundColor: ink } },
       localization: { priceFormatter: (v: number) => (v < 1 ? v.toFixed(5) : v.toLocaleString("en-US", { maximumFractionDigits: 2 })) },
     });
@@ -141,7 +142,8 @@ export function TVChart({
         const live = points.current;
         points.current = [...b.points, ...live.filter((x) => x.t > (b.points!.at(-1)?.t ?? 0))];
         candles.current?.setData(toCandles(points.current, frameRef.current));
-        chart.current?.timeScale().scrollToRealTime();
+        // Fill the width with what there is; new candles then shift it along.
+        chart.current?.timeScale().fitContent();
       })
       .catch(() => {});
     return () => { off = true; };
@@ -162,6 +164,7 @@ export function TVChart({
   useEffect(() => {
     frameRef.current = frame;
     candles.current?.setData(toCandles(points.current, frame));
+    chart.current?.timeScale().fitContent();
   }, [frame, ready]);
 
   // The strike, as a dashed line the candles can be read against.
