@@ -1298,7 +1298,7 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 /* Chart: edge to edge, the dominant part of the screen. */
 .terminal-main { max-width: none; grid-template-columns: minmax(0, 1fr) 340px; min-height: 0; }
 .terminal-shell .terminal-chart-panel { padding: 0; border-right: 1px solid var(--t-line); display: flex; flex-direction: column; }
-.terminal-shell .terminal-toolbar { padding: 14px 22px; border-bottom: 1px solid var(--t-line); gap: 16px; }
+.terminal-shell .terminal-toolbar { flex: 0 0 auto; flex-wrap: wrap; row-gap: 10px; padding: 14px 22px; border-bottom: 1px solid var(--t-line); gap: 16px; }
 .terminal-shell .asset-select { background: var(--t-surface); border-color: var(--t-line); color: var(--t-ink); }
 .terminal-shell .asset-menu { background: var(--t-surface); border-color: var(--t-line); }
 .terminal-shell .asset-menu button { color: var(--t-ink); }
@@ -1816,7 +1816,7 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .match-hero .card-banner-mark .fixture-score { font-size: 24px; }
 .match-title { padding: 16px 26px 18px; font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
 .match-grid { margin-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
-.match-main, .match-side-col { display: flex; flex-direction: column; gap: 16px; }
+.match-main, .match-side-col { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 .match-panel { padding: 18px 20px; border: 1px solid var(--t-line); border-radius: 14px; background: var(--t-surface); }
 .match-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .match-panel-head h2 { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 600; }
@@ -1842,7 +1842,9 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .match-result { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; margin-bottom: 10px; }
 .match-result > svg { color: var(--t-up); }
 .match-result span { font: 13px var(--font-geist-mono), monospace; color: var(--t-dim); font-weight: 500; }
-@media (max-width: 900px) { .match-grid { grid-template-columns: 1fr; } }
+/* minmax(0,1fr), not 1fr: a grid item defaults to min-width:auto, so the odds chart
+   (a full-width SVG) stretched the column past the screen on a phone. */
+@media (max-width: 900px) { .match-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---- strike stepper (cards and terminal) ---- */
 .strike-stepper { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--t-line); border-radius: 10px; background: var(--t-bg); position: relative; z-index: 2; }
@@ -2038,3 +2040,35 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   .hero-reel-glow, .landing-hero::after { animation: none; }
 }
 @media (max-width: 640px) { .landing-hero-index { display: none; } }
+
+/* ---- Phone layout ----
+   The account pages put their nav on a second header row, so the header must grow to fit
+   it: with a fixed height the links fell out of the header and landed on the ticker. The
+   nav and the market filters scroll sideways instead of wrapping, which keeps every
+   destination reachable on a 390px screen without a hamburger. */
+@media (max-width: 760px) {
+  .page-shell .terminal-header { height: auto; row-gap: 2px; padding-top: 10px; padding-bottom: 6px; }
+  .page-shell .terminal-nav {
+    width: 100%; margin: 0 -14px; padding: 2px 14px 6px; gap: 2px;
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .page-shell .terminal-nav::-webkit-scrollbar { display: none; }
+  .page-shell .terminal-nav a { flex: 0 0 auto; padding: 7px 10px; font-size: 12px; }
+  /* Filters and window pills: one scrolling row each, never a wrapped block that pushes
+     the first market below the fold. */
+  .board-cats, .board-durations, .board-assets, .term-durations {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
+  }
+  .board-cats::-webkit-scrollbar, .board-durations::-webkit-scrollbar,
+  .board-assets::-webkit-scrollbar, .term-durations::-webkit-scrollbar { display: none; }
+  .board-cats > *, .board-durations > *, .board-assets > *, .term-durations > * { flex: 0 0 auto; }
+  /* The candle-length row and its legend collided; the legend is the first thing to go. */
+  .tv-frames { flex-wrap: wrap; row-gap: 4px; }
+  .terminal-shell .terminal-toolbar { padding: 12px 14px; row-gap: 8px; }
+  .term-durations { width: 100%; }
+  .tv-legend { display: none; }
+  .fund-gas-row { gap: 10px; }
+  .amount-picker { gap: 5px; }
+  .amount-custom input { width: 48px; }
+  .match-side-col > .news-panel.is-panel .news-list { max-height: 220px; }
+}
