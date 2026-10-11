@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
+import { scoreAt, scoreTimeline, summaryUrl } from "@/lib/server/scoreTimeline";
 import { VOID, findFixture, microDescriptor, microEventId, microOutcome, sportsMarketId, type MicroKey } from "@/lib/sports";
 
 /**
@@ -59,15 +60,12 @@ export async function POST(request: Request) {
       if (Math.floor(Date.now() / 1000) < key.closesAt) {
         return NextResponse.json({ error: "That window has not closed yet." }, { status: 409 });
       }
-      // The score at the CLOSE, caught as it happened. Without it the honest result is a
-      // refund: the scoreboard now shows a later moment, which is not what was traded.
-      let close: { home: number; away: number } | null = null;
-      try {
-        const r = await fetch(`${new URL(request.url).origin}/api/sports/micro?close=${espnId}:${key.closesAt}`, { cache: "no-store" });
-        close = ((await r.json()) as { close: { home: number; away: number } | null }).close;
-      } catch {
-        close = null;
-      }
+      // The score at the CLOSE, rebuilt from ESPN's play log rather than from a snapshot
+      // someone had to be awake to take. This settles correctly however long afterwards
+      // it runs, and a reader can recompute it from the summary feed named below. Only a
+      // fixture with no readable log refunds, because then there is no evidence either way.
+      const timeline = await scoreTimeline(fixture.leagueKey, espnId);
+      const close = timeline ? scoreAt(timeline, key.closesAt) : null;
       const outcome = close ? microOutcome(key, close.home, close.away) : VOID;
       const eventId = microEventId(key);
       const id = sportsMarketId(eventId, key.closesAt);
@@ -83,7 +81,8 @@ export async function POST(request: Request) {
           descriptor: microDescriptor(key),
           fixture: fixture.name,
           openedAt: `${key.openHome}-${key.openAway}`,
-          closedAt: close ? `${close.home}-${close.away}` : "not observed at the close, so refunded",
+          closedAt: close ? `${close.home}-${close.away}` : "no readable play log, so refunded",
+          source: summaryUrl(fixture.leagueKey, espnId),
         },
       });
     }

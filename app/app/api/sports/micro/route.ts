@@ -3,6 +3,7 @@ import { TickSportsAbi } from "@/lib/chain/abi";
 import { CONTRACTS, toUsd } from "@/lib/chain/config";
 import { pub } from "@/lib/server/oracle";
 import { MICRO_WINDOWS, fetchAllFixtures, microCloseFor, microDescriptor, microEventId, sportsMarketId } from "@/lib/sports";
+import { scoreAt, scoreTimeline, summaryUrl } from "@/lib/server/scoreTimeline";
 
 /**
  * The short markets running inside matches that are in play.
@@ -16,73 +17,44 @@ export const dynamic = "force-dynamic";
 const TTL_MS = 3000;
 let cache: { at: number; body: unknown } | null = null;
 
-/**
- * The score each window OPENED at, fixed for the life of that window.
- *
- * The market id commits to the opening scoreline. Reading the score fresh on every request
- * instead meant that in a basketball game, where the score moves every few seconds, each
- * basket minted a new market mid-window: a stake landed in a pool the page had already
- * stopped showing, and two traders almost never met. The first score seen for a window is
- * kept until that window closes, so everyone staking in it shares one pool.
- */
-const opens = new Map<string, { home: number; away: number }>();
-
-/**
- * The score each window CLOSED at, keyed by fixture and close instant.
- *
- * Settling an in-play window compares the score it opened at with the score it closed at.
- * ESPN offers no "score at a past second", so the close has to be caught as it happens:
- * any request in the first 20 seconds after a close records the score then. Settlement
- * reads this; a window whose close nobody observed settles as a refund rather than on a
- * score from some later moment, which would be a different market.
- */
-const closes = new Map<string, { home: number; away: number; at: number }>();
-
-export async function GET(request: Request) {
-  // Settlement asks for a close snapshot directly.
-  const closeOf = new URL(request.url).searchParams.get("close");
-  if (closeOf) return NextResponse.json({ close: closes.get(closeOf) ?? null });
-
+export async function GET() {
   if (cache && Date.now() - cache.at < TTL_MS) return NextResponse.json(cache.body);
 
   try {
     const all = await fetchAllFixtures();
     const live = all.filter((f) => f.state === "in");
 
-    // Catch every window that has just closed, on fixtures still playing or just finished.
-    const nowC = Math.floor(Date.now() / 1000);
-    for (const slot of opens.keys()) {
-      const [espnId, , closesAtS] = slot.split(":");
-      const closesAt = Number(closesAtS);
-      const k = `${espnId}:${closesAt}`;
-      if (closes.has(k) || nowC < closesAt || nowC > closesAt + 20) continue;
-      const f = all.find((x) => x.espnId === espnId);
-      if (f && f.home.score !== null && f.away.score !== null) closes.set(k, { home: f.home.score, away: f.away.score, at: nowC });
-    }
-    for (const [k, v] of closes) if (v.at < nowC - 86_400) closes.delete(k);
     if (live.length === 0) {
       const body = { markets: [], live: 0, at: Math.floor(Date.now() / 1000) };
       cache = { at: Date.now(), body };
       return NextResponse.json(body);
     }
 
-    const nowS = Math.floor(Date.now() / 1000);
-    for (const k of opens.keys()) if (Number(k.split(":")[2]) < nowS - 600) opens.delete(k);
+    // The opening scoreline comes from ESPN's play log at the instant the window opened,
+    // so every copy of this server computes the same market id and settlement can rebuild
+    // it afterwards. A fixture whose log is unreadable gets no in-play markets: offering
+    // one that cannot be settled from evidence would be worse than offering none.
+    const timelines = new Map(
+      await Promise.all(live.map(async (f) => [f.espnId, await scoreTimeline(f.leagueKey, f.espnId)] as const))
+    );
 
-    const planned = live.flatMap((f) =>
-      MICRO_WINDOWS.map((w) => {
+    const planned = live.flatMap((f) => {
+      const timeline = timelines.get(f.espnId);
+      if (!timeline) return [];
+      return MICRO_WINDOWS.map((w) => {
         const closesAt = microCloseFor(w.seconds);
-        const slot = `${f.espnId}:${w.seconds}:${closesAt}`;
-        let open = opens.get(slot);
-        if (!open) {
-          open = { home: f.home.score ?? 0, away: f.away.score ?? 0 };
-          opens.set(slot, open);
-        }
+        const open = scoreAt(timeline, closesAt - w.seconds);
         const key = { espnId: f.espnId, closesAt, openHome: open.home, openAway: open.away };
         const eventId = microEventId(key);
         return { fixture: f, window: w, key, eventId, id: sportsMarketId(eventId, key.closesAt) };
-      })
-    );
+      });
+    });
+
+    if (planned.length === 0) {
+      const body = { markets: [], live: 0, at: Math.floor(Date.now() / 1000) };
+      cache = { at: Date.now(), body };
+      return NextResponse.json(body);
+    }
 
     const pools = (await pub.multicall({
       allowFailure: true,
@@ -119,6 +91,7 @@ export async function GET(request: Request) {
         poolAway: toUsd(away),
         volume: toUsd(total),
         impliedHome: total === 0n ? 50 : Number((home * 10_000n) / total) / 100,
+        evidence: summaryUrl(m.fixture.leagueKey, m.fixture.espnId),
       };
     });
 
