@@ -165,7 +165,7 @@ export function useStake({
             ok: false,
             message:
               "Your wallet is set up, but the 30-second window rolled while that was " +
-              "confirming — and the next one has its own strike. Nothing was staked. " +
+              "confirming, and the next one has its own strike. Nothing was staked. " +
               "Tap Stake again and it goes through in one transaction.",
           };
         }
@@ -191,7 +191,7 @@ export function useStake({
           (rc): { ok: boolean; message: string } => {
             market.refetch();
             return rc.status === "success"
-              ? { ok: true, message: `Staked ${amount} USDC ${side} on ${feed.symbol}. Settles when the window closes — anyone can settle it.` }
+              ? { ok: true, message: `Staked ${amount} USDC ${side} on ${feed.symbol}. Settles when the window closes. Anyone can settle it.` }
               : {
                   ok: false,
                   message:
@@ -233,7 +233,7 @@ function explain(e: unknown, market: MarketView, feed: FeedSpec): string {
   switch (name) {
     case "PriceTooStale": {
       const age = market.priceAge ?? "?";
-      return `Refused: the on-chain ${feed.symbol} price is ${age}s old, past the ${market.acceptMargin}s acceptance margin. This is the cutoff working — a stake placed against a stale price is exactly what it exists to stop. It reopens the moment the price is refreshed.`;
+      return `Refused: the on-chain ${feed.symbol} price is ${age}s old, past the ${market.acceptMargin}s acceptance margin. This is the cutoff working: a stake placed against a stale price is exactly what it exists to stop. It reopens the moment the price is refreshed.`;
     }
     case "NotOpen":
       return "This window has already closed. The next one is loading.";
@@ -244,7 +244,7 @@ function explain(e: unknown, market: MarketView, feed: FeedSpec): string {
     case "OffWindowGrid":
       return "That close time is off the 30-second window grid.";
     case "ExpoMismatch":
-      return `The ${feed.symbol} feed changed its exponent. Reload to pick it up — the contract refuses rather than guessing at a redenominated strike.`;
+      return `The ${feed.symbol} feed changed its exponent. Reload to pick it up. The contract refuses rather than guessing at a redenominated strike.`;
     case "FeedNotListed":
       return `${feed.symbol} is not listed on this deployment.`;
     case "InsufficientDeposit":

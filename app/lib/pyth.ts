@@ -71,7 +71,7 @@ export const FEEDS: readonly FeedSpec[] = [
 
 export const feedBySymbol = (symbol: string): FeedSpec => {
   const f = FEEDS.find((x) => x.symbol.toLowerCase() === symbol.toLowerCase());
-  if (!f) throw new Error(`unknown feed "${symbol}" — known: ${FEEDS.map((x) => x.symbol).join(", ")}`);
+  if (!f) throw new Error(`unknown feed "${symbol}". Known: ${FEEDS.map((x) => x.symbol).join(", ")}`);
   return f;
 };
 
@@ -99,7 +99,7 @@ function apiKey(): string {
   if (!key) {
     throw new Error(
       "PYTH_API_KEY is not set. Hermes has required a bearer token since 2026-08-26 " +
-        "and returns 401 without one. Put it in contracts/.env or app/.env.local — " +
+        "and returns 401 without one. Put it in contracts/.env or app/.env.local, " +
         "never with a NEXT_PUBLIC_ prefix, which would ship it to the browser."
     );
   }

@@ -114,7 +114,7 @@ export function PortfolioView() {
         <>
           <section className="stat-row" aria-label="Summary">
             <Stat label="Record" value={`${stats.wins}W · ${stats.losses}L`} />
-            <Stat label="Win rate" value={stats.rate === null ? "—" : `${stats.rate.toFixed(0)}%`} />
+            <Stat label="Win rate" value={stats.rate === null ? "-" : `${stats.rate.toFixed(0)}%`} />
             <Stat
               label="Net result"
               value={`${stats.net >= 0 ? "+" : "−"}${Math.abs(stats.net).toFixed(2)}`}
@@ -200,7 +200,7 @@ export function PortfolioView() {
                     </span>
                     <span className={p.side === "ABOVE" ? "side-up" : "side-down"}>{p.side}</span>
                     <span className="mono">${fmt(p.strikeNumber)}</span>
-                    <span className="mono">{p.settlePrice === null ? "—" : `$${fmt(p.settlePrice)}`}</span>
+                    <span className="mono">{p.settlePrice === null ? "-" : `$${fmt(p.settlePrice)}`}</span>
                     <span className="mono">{p.amount.toFixed(2)}</span>
                     <span className="stake-result">
                       <b className="pill">{LABEL[s]}</b>

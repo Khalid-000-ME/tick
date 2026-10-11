@@ -145,7 +145,7 @@ export function MarketTerminal() {
 
 
   const secondsToClose = market.secondsToClose;
-  const ageLabel = market.priceAge === null ? "—" : `${market.priceAge}s old`;
+  const ageLabel = market.priceAge === null ? "-" : `${market.priceAge}s old`;
 
   return (
     <div className="terminal-shell">
@@ -174,7 +174,7 @@ export function MarketTerminal() {
         >{theme === "dark" ? <Sun weight="bold" /> : <Moon weight="bold" />}</button>
         <WalletMenu
           wallet={wallet}
-          onCopied={(addr) => setNotice(`Wallet address copied: ${addr}. Fund it with MON at faucet.monad.xyz — an embedded wallet starts empty and cannot pay gas.`)}
+          onCopied={(addr) => setNotice(`Wallet address copied: ${addr}. Fund it with MON at faucet.monad.xyz. An embedded wallet starts empty and cannot pay gas.`)}
         />
       </header>
       {/* Draining bar under the header: the same countdown, readable without reading. */}
@@ -195,7 +195,7 @@ export function MarketTerminal() {
                 <button key={d.seconds} type="button" role="tab" aria-selected={windowS === d.seconds} className={windowS === d.seconds ? "is-active" : ""} onClick={() => setWindowS(d.seconds)}>{d.label}</button>
               ))}
             </div>
-            <div className="terminal-price"><strong>${shownPrice === null ? "—" : formatPrice(shownPrice)}</strong><span className={history.change >= 0 ? "positive" : "negative"}>{history.change >= 0 ? "+" : ""}{history.change.toFixed(2)}%</span></div>
+            <div className="terminal-price"><strong>${shownPrice === null ? "-" : formatPrice(shownPrice)}</strong><span className={history.change >= 0 ? "positive" : "negative"}>{history.change >= 0 ? "+" : ""}{history.change.toFixed(2)}%</span></div>
             {/* One dot instead of a card. The cutoff only matters as open or shut, and
                 when it is shut the useful thing is a way to reopen it. */}
             <button
@@ -230,9 +230,9 @@ export function MarketTerminal() {
         <div className="terminal-rail">
         <NewsPanel feed={feed} />
         <aside className="terminal-ticket" aria-label="Market order">
-          <div className="ticket-heading"><h1>Will {feed.symbol} close above ${strikeNumber === null ? "—" : formatPrice(strikeNumber)}?</h1></div>
+          <div className="ticket-heading"><h1>Will {feed.symbol} close above ${strikeNumber === null ? "-" : formatPrice(strikeNumber)}?</h1></div>
           <div className="pool-split"><div><span>Pool sentiment</span><strong>{impliedAbove.toFixed(0)}% above</strong></div><div className="pool-track"><span style={{ width: `${impliedAbove}%` }} /></div><div className="pool-labels"><span>{fmtUsd(market.poolAbove, 0)} ABOVE</span><span>{fmtUsd(market.poolBelow, 0)} BELOW</span></div></div>
-          {!market.twoSided && (market.poolAbove > 0n || market.poolBelow > 0n) && <p className="ticket-disclosure">One side only so far — if nobody takes the other side this market voids and everyone is refunded.</p>}
+          {!market.twoSided && (market.poolAbove > 0n || market.poolBelow > 0n) && <p className="ticket-disclosure">One side only so far. If nobody takes the other side this market voids and everyone is refunded.</p>}
           <fieldset className="side-picker is-order"><legend>{status !== "ready" ? "Connect to take a side" : stake.busy ? stake.step || "Staking…" : `Tap a side to stake ${amount} USDC`}</legend>
             <button type="button" className="side-up" disabled={stake.busy} onClick={() => requestStake("ABOVE")}>
               <span>Above</span><strong>{impliedAbove.toFixed(0)}%</strong><small>wins {returnFor("ABOVE").toFixed(2)}</small>
@@ -259,7 +259,7 @@ export function MarketTerminal() {
           className={`footer-toggle ${auto.enabled ? "is-on" : ""}`}
           onClick={() => auto.setEnabled(!auto.enabled)}
           title={auto.enabled
-            ? "Posting a Pyth update every few seconds. Each one is a real transaction paid in MON — click to stop."
+            ? "Posting a Pyth update every few seconds. Each one is a real transaction paid in MON. Click to stop."
             : "A fresh price is posted only when you stake, so nothing is spent while idle. Click to keep it warm instead."}
         >
           <span className="footer-toggle-dot" />
@@ -334,7 +334,7 @@ function ConfirmStake({
         </div>
         <label className="confirm-skip">
           <input type="checkbox" checked={skip} onChange={(e) => setSkip(e.target.checked)} />
-          Don&apos;t ask again — stake on one tap
+          Don&apos;t ask again, stake in one tap
         </label>
       </div>
     </div>

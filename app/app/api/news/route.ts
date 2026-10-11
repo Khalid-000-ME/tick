@@ -52,6 +52,8 @@ function decode(s: string): string {
     .replace(/&apos;|&#39;/g, "'")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
+    // House style is no em dashes anywhere on the site, including quoted headlines.
+    .replace(/\s*[\u2014]\s*/g, " - ")
     .replace(/\s+/g, " ")
     .trim();
 }

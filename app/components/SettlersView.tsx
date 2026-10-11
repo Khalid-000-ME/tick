@@ -125,7 +125,7 @@ export function SettlersView() {
             <div className="stat"><span>Paid to settlers</span><strong>{toUsd(stats.paid).toFixed(2)}</strong></div>
             <div className="stat">
               <span>Median time to settle</span>
-              <strong>{stats.medianLatency === null ? "—" : `${stats.medianLatency}s`}</strong>
+              <strong>{stats.medianLatency === null ? "-" : `${stats.medianLatency}s`}</strong>
             </div>
             <div className="stat">
               <span>Settled by someone else</span>
@@ -149,7 +149,7 @@ export function SettlersView() {
                 </span>
                 <span className="mono">{s.n}</span>
                 <span className="mono">{toUsd(s.bounty).toFixed(2)} USDC</span>
-                <span className="mono">{s.latency === null ? "—" : `${s.latency}s`}</span>
+                <span className="mono">{s.latency === null ? "-" : `${s.latency}s`}</span>
               </div>
             ))}
           </div>

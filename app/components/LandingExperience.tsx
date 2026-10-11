@@ -59,7 +59,7 @@ export function LandingExperience() {
             <p className="landing-kicker"><span /> Free to play · no deposit, no KYC</p>
             <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
             <p className="landing-lede">
-              Bitcoin, Ether, Solana or Tesla — tap green or red on any of them. If you are right, you split what
+              Crypto, equities and live sport. Tap green or red. If you are right, you split what
               the other side staked. There is no house taking the other end of your bet and no one who can decide
               you lost.
             </p>
@@ -72,7 +72,7 @@ export function LandingExperience() {
         </section>
 
         <section className="landing-signal" aria-label="At a glance">
-          <span><i /> A new market every 30 seconds</span><span>2,880 windows a day, per asset</span><span>4 live price feeds</span><span>Free testnet USDC</span>
+          <span><i /> A new market every 30 seconds</span><span>2,880 windows a day, per asset</span><span>10 assets plus live sport</span><span>Free testnet USDC</span>
         </section>
 
         <section className="landing-mechanism" id="how">
@@ -94,7 +94,7 @@ export function LandingExperience() {
           </motion.div>
 
           <div className="market-stats">
-            <div><strong>$50B</strong><span>Combined monthly volume on Kalshi and Polymarket, July 2026 — up from under $5B in September 2025</span></div>
+            <div><strong>$50B</strong><span>Combined monthly volume on Kalshi and Polymarket, July 2026, up from under $5B in September 2025</span></div>
             <div><strong>80%</strong><span>Share of Kalshi&apos;s volume that is sports: short, repeatable events, not year-long questions</span></div>
             <div><strong>$22B</strong><span>Kalshi&apos;s valuation at its May 2026 Series F, on roughly $4B of annualised revenue</span></div>
           </div>
@@ -108,7 +108,7 @@ export function LandingExperience() {
             </p>
             <p>
               That is <strong>2,880 markets a day per asset</strong> instead of a handful a week. It turns
-              prediction from something you check back on into something you do — the difference between a betting
+              prediction from something you check back on into something you do: the difference between a betting
               slip and a game.
             </p>
           </div>
@@ -117,7 +117,7 @@ export function LandingExperience() {
             <h3>How Tick earns, and what that is worth</h3>
             <p className="revenue-intro">
               The deployed contract takes <strong>2% of profit</strong> and pays half of it to whoever settles the
-              market, so the protocol keeps about 1% of profit — roughly <strong>0.5% of everything staked</strong>{" "}
+              market, so the protocol keeps about 1% of profit, roughly <strong>0.5% of everything staked</strong>{" "}
               once pools are balanced. At the 5–14x revenue multiples Kalshi and Polymarket are being funded at, that
               compounds quickly.
             </p>
@@ -137,13 +137,13 @@ export function LandingExperience() {
             </table>
             <p className="revenue-target">
               Our target is the middle row. <strong>$10M a day is about 0.6% of today&apos;s prediction-market
-              volume</strong> — a ~$18M annual revenue business, which at the multiples above puts Tick near
+              volume</strong>, a ~$18M annual revenue business, which at the multiples above puts Tick near
               <strong> $180M</strong>. We are not trying to beat Kalshi at sports. We are taking the slice nobody
               can serve, because thirty-second settlement needs a chain that can take the write load.
             </p>
             <p className="landing-note">
               Volume, valuation and revenue figures are press reports, not filings, and the two platforms count
-              volume differently — Kalshi reports contracts, Polymarket reports dollars — so combined totals are
+              volume differently (Kalshi reports contracts, Polymarket reports dollars), so combined totals are
               approximate. Revenue and valuation rows above are arithmetic from the deployed 2% fee assuming
               balanced pools, shown so the working can be checked. They are not a forecast.
               {" "}
@@ -177,7 +177,7 @@ export function LandingExperience() {
             <p className="landing-proof-label">Why you can trust the result</p><h2>Nobody can decide you lost.</h2>
             <p>
               The outcome is a comparison between Pyth&apos;s published price at the close and the strike. No reporter
-              files it, no admin confirms it, and there is no dispute window — because there is no judgement to
+              files it, no admin confirms it, and there is no dispute window, because there is no judgement to
               dispute. Every settled bet has a Verify button that recomputes the result from Pyth in your own
               browser, so you never have to take our word for it.
             </p>
@@ -191,7 +191,7 @@ export function LandingExperience() {
         </section>
 
         <section className="landing-close">
-          <p>BTC. ETH. SOL. TSLA.</p>
+          <p>Crypto. Equities. Sport.</p>
           <h2>One line.<br />Two sides.<br /><em>Thirty seconds.</em></h2>
           <Link href="/markets" className="landing-primary">Make your call <ArrowUpRight weight="bold" /></Link>
         </section>

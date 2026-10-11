@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   if (!appId) {
     if (process.env.NODE_ENV !== "production") {
       console.warn(
-        "NEXT_PUBLIC_PRIVY_APP_ID is not set — Privy login is disabled and the app " +
+        "NEXT_PUBLIC_PRIVY_APP_ID is not set. Privy login is disabled and the app " +
           "will fall back to raw window.ethereum. Get an app id at dashboard.privy.io " +
           "and set it in app/.env.local to enable email/passkey onboarding."
       );

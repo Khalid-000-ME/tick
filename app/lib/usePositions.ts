@@ -245,7 +245,7 @@ export function usePositions(account: `0x${string}` | null, walletClient: Wallet
         if (rc.status !== "success") return { ok: false, message: "The claim reverted." };
         update((prev) => prev.map((p) => (p.id === id ? { ...p, claimed: true, claimHash: hash } : p)));
         setJustResolved((prev) => (prev && prev.id === id ? { ...prev, claimed: true, claimHash: hash } : prev));
-        return { ok: true, message: "Claimed into your Tick balance — ready for the next window." };
+        return { ok: true, message: "Claimed into your Tick balance, ready for the next window." };
       } catch (e) {
         const data = (e as { cause?: { data?: { errorName?: string } } }).cause?.data;
         if (data?.errorName === "NothingStaked") {

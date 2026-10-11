@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tick — a market for the next thirty seconds",
+  title: "Tick | A market for the next thirty seconds",
   description:
-    "30-second price markets on Monad, settled by reading Pyth. A stake is only accepted while the on-chain price is fresh — nobody referees the outcome.",
+    "30-second price markets on Monad, settled by reading Pyth. A stake is only accepted while the on-chain price is fresh. Nobody referees the outcome.",
 };
 
 export const viewport: Viewport = {
