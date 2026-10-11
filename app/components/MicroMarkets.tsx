@@ -8,7 +8,9 @@ import { payout } from "@/components/SportsCard";
 import type { WalletClient } from "viem";
 
 /**
- * In-play windows: who scores next in the next N minutes, home, away, or nobody.
+ * In-play windows: which side outscores the other over the next N minutes. In football
+ * that is usually "who scores next"; in basketball, where both sides score every minute,
+ * it is who wins that stretch. A tied window refunds, which is the contract's VOID.
  *
  * On the board these are doors to the match page. On the match page (`espnId` given) they
  * are the order entry itself. "Nobody scores" refunds, which is the contract's VOID, so it
@@ -75,10 +77,10 @@ export function MicroBoard() {
               <b>{m.away.abbr} {m.openAway}:{m.openHome} {m.home.abbr}</b>
               <em className={m.secondsLeft <= 15 ? "is-urgent" : ""}>{Math.max(0, m.secondsLeft)}s</em>
             </span>
-            <span className="micro-tile-q">Next goal, {m.windowLabel}</span>
+            <span className="micro-tile-q">Wins the next {m.windowLabel}</span>
             <span className="micro-tile-odds">
-              <i className="tone-up">{m.home.abbr} {m.impliedHome.toFixed(0)}%</i>
               <i className="tone-down">{m.away.abbr} {(100 - m.impliedHome).toFixed(0)}%</i>
+              <i className="tone-up">{m.home.abbr} {m.impliedHome.toFixed(0)}%</i>
             </span>
           </Link>
         ))}
@@ -114,7 +116,7 @@ export function MicroOrders({
       { eventId: m.eventId, closesAt: BigInt(m.closesAt) },
       home,
       amount,
-      `${home ? m.home.short : m.away.short} to score in the next ${m.windowLabel}`
+      `${home ? m.home.short : m.away.short} to win the next ${m.windowLabel}`
     );
     onNotice(res.message);
     void res.confirm?.then((d) => onNotice(d.message));
@@ -123,7 +125,7 @@ export function MicroOrders({
   return (
     <section className="match-panel">
       <header className="match-panel-head">
-        <h2><Lightning weight="fill" /> Next goal</h2>
+        <h2><Lightning weight="fill" /> Wins the next {m.windowLabel}</h2>
         <span className={`card-chip is-dark ${m.secondsLeft <= 15 ? "is-urgent" : ""}`}>{Math.max(0, m.secondsLeft)}s</span>
       </header>
       <div className="board-durations">
@@ -149,7 +151,7 @@ export function MicroOrders({
           <button key={v} type="button" className={amount === v ? "is-active" : ""} onClick={() => setAmount(v)}>{v} USDC</button>
         ))}
       </div>
-      <p className="match-note">No goal in the window refunds both sides. Opened at {m.openAway}:{m.openHome}.</p>
+      <p className="match-note">Most points in the window wins. A tie refunds both sides. Opened at {m.openAway}:{m.openHome}.</p>
       {stake.busy && <p className="match-note">{stake.step || "Working..."}</p>}
     </section>
   );
