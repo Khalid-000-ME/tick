@@ -1979,3 +1979,18 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .fund-gas-row .match-amounts { margin-top: 0; }
 .fund-quote { margin: 0 0 12px; font-size: 13px; color: var(--t-dim); }
 .fund-quote strong { color: var(--t-ink); font-family: var(--font-geist-mono), monospace; }
+
+/* News: live marker, new-arrival flag, and the standalone card used on sports pages. */
+.news-live { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font: 10px var(--font-geist-mono), monospace; color: var(--t-dim); text-transform: uppercase; letter-spacing: .06em; }
+.news-live i { width: 6px; height: 6px; border-radius: 50%; background: var(--t-up); animation: news-pulse 2s ease-in-out infinite; }
+@keyframes news-pulse { 50% { opacity: .35; } }
+.news-meta em { font-style: normal; padding: 1px 5px; border-radius: 4px; background: var(--t-up); color: #fff; font-weight: 600; }
+.news-list li.is-new { animation: news-in .6s ease-out; }
+@keyframes news-in { from { background: color-mix(in srgb, var(--t-up) 14%, transparent); } }
+.news-panel.is-panel { max-height: none; border: 1px solid var(--t-line); border-radius: 14px; overflow: hidden; }
+.news-panel.is-panel::after { display: none; }
+.news-panel.is-panel .news-list { max-height: 520px; }
+.match-main .news-panel.is-panel { margin-top: 16px; }
+.board-sports { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.board-sports .news-panel { position: sticky; top: 16px; }
+@media (max-width: 1000px) { .board-sports { grid-template-columns: minmax(0, 1fr); } .board-sports .news-panel { position: static; } }

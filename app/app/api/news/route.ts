@@ -2,42 +2,72 @@ import { NextResponse } from "next/server";
 import { FEEDS } from "@/lib/pyth";
 
 /**
- * Headlines from public crypto news RSS, tagged with the Tick market each one is about.
+ * Headlines from publishers' public RSS feeds, tagged with what each one is about.
  *
- * WHY IT IS HERE. A 30-second market is a bet on where a price goes next, and the thing
- * that moves a price next is usually news. Showing the headline next to the chart is the
- * difference between guessing and having a reason.
+ * Two desks: `markets` (crypto and equities, for the price terminal) and `sports` (for
+ * fixtures and in-play markets). A short market is a bet on the next move, and the next
+ * move usually has a cause; the headline belongs next to the stake.
  *
- * Server-side so the browser never hits a cross-origin feed, and cached so a room full of
- * tabs costs the publishers one request every few minutes. No API key: these are the
- * publishers' own public feeds. Nothing here is generated — if the feeds are unreachable
- * the panel says so rather than inventing a headline.
+ * Server-side so the browser never hits a cross-origin feed. Cached for 30 seconds per
+ * desk, which keeps it close to live while a room full of tabs still costs each publisher
+ * about two requests a minute. No API key. Nothing here is generated: if every feed is
+ * unreachable the panel says so rather than inventing a headline.
  */
 export const dynamic = "force-dynamic";
 
-const SOURCES = [
-  { name: "Cointelegraph", url: "https://cointelegraph.com/rss" },
-  { name: "Decrypt", url: "https://decrypt.co/feed" },
-] as const;
+type Topic = "markets" | "sports";
+
+const SOURCES: Record<Topic, { name: string; url: string; tag?: string }[]> = {
+  markets: [
+    { name: "Cointelegraph", url: "https://cointelegraph.com/rss" },
+    { name: "Decrypt", url: "https://decrypt.co/feed" },
+    { name: "CoinDesk", url: "https://www.coindesk.com/arc/outboundfeeds/rss/" },
+  ],
+  sports: [
+    { name: "ESPN", url: "https://www.espn.com/espn/rss/news" },
+    { name: "ESPN", url: "https://www.espn.com/espn/rss/nba/news", tag: "NBA" },
+    { name: "ESPN", url: "https://www.espn.com/espn/rss/nfl/news", tag: "NFL" },
+    { name: "ESPN", url: "https://www.espn.com/espn/rss/soccer/news", tag: "Soccer" },
+    { name: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/rss.xml" },
+  ],
+};
 
 /** Which listed market a headline is about. Word-boundary matched, so "ETH" does not hit "whether". */
-const TAGS: { symbol: string; re: RegExp }[] = [
-  { symbol: "BTC/USD", re: /\b(bitcoin|btc)\b/i },
-  { symbol: "ETH/USD", re: /\b(ethereum|ether|eth)\b/i },
-  { symbol: "SOL/USD", re: /\b(solana|sol)\b/i },
-  { symbol: "TSLA", re: /\b(tesla|tsla|musk)\b/i },
+const MARKET_TAGS: { tag: string; re: RegExp }[] = [
+  { tag: "BTC/USD", re: /\b(bitcoin|btc)\b/i },
+  { tag: "ETH/USD", re: /\b(ethereum|ether|eth)\b/i },
+  { tag: "SOL/USD", re: /\b(solana|sol)\b/i },
+  { tag: "BNB/USD", re: /\b(bnb|binance)\b/i },
+  { tag: "XRP/USD", re: /\b(xrp|ripple)\b/i },
+  { tag: "DOGE/USD", re: /\b(dogecoin|doge)\b/i },
+  { tag: "HYPE/USD", re: /\b(hyperliquid|hype)\b/i },
+  { tag: "PYTH/USD", re: /\bpyth\b/i },
+  { tag: "TSLA", re: /\b(tesla|tsla|musk)\b/i },
+  { tag: "QQQ", re: /\b(nasdaq|qqq|tech stocks|fed|fomc|cpi|inflation)\b/i },
 ];
 
-const TTL_MS = 180_000;
-let cache: { at: number; items: NewsItem[] } | null = null;
+const SPORTS_TAGS: { tag: string; re: RegExp }[] = [
+  { tag: "NBA", re: /\b(nba|lakers|celtics|warriors|knicks|nuggets|bucks|76ers|heat|suns|mavericks|thunder|cavaliers)\b/i },
+  { tag: "NFL", re: /\b(nfl|quarterback|touchdown|chiefs|eagles|cowboys|49ers|bills|ravens|packers|lions)\b/i },
+  { tag: "Premier League", re: /\b(premier league|arsenal|chelsea|liverpool|man city|manchester|tottenham|newcastle|aston villa)\b/i },
+  { tag: "La Liga", re: /\b(la liga|real madrid|barcelona|atletico|sevilla|villarreal)\b/i },
+];
+
+const TTL_MS = 30_000;
+const cache = new Map<Topic, { at: number; items: NewsItem[] }>();
+/**
+ * Some feeds (ESPN's top news) carry no publish date. Those are dated by when this server
+ * first saw them, which stays put across refreshes, instead of "now" on every poll.
+ */
+const firstSeen = new Map<string, number>();
 
 export interface NewsItem {
   title: string;
   url: string;
   source: string;
   publishedAt: number;
-  /** Symbols of the listed markets this headline mentions, if any. */
-  symbols: string[];
+  /** Markets or leagues this headline mentions. */
+  tags: string[];
 }
 
 function decode(s: string): string {
@@ -53,12 +83,13 @@ function decode(s: string): string {
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     // House style is no em dashes anywhere on the site, including quoted headlines.
-    .replace(/\s*[\u2014]\s*/g, " - ")
+    .replace(/\s*[—]\s*/g, " - ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function parse(xml: string, source: string): NewsItem[] {
+function parse(xml: string, source: string, topic: Topic, sourceTag?: string): NewsItem[] {
+  const tags = topic === "markets" ? MARKET_TAGS : SPORTS_TAGS;
   const out: NewsItem[] = [];
   for (const block of xml.split(/<item[\s>]/).slice(1)) {
     const item = block.split("</item>")[0];
@@ -69,60 +100,86 @@ function parse(xml: string, source: string): NewsItem[] {
     const text = decode(title[1]);
     const url = decode(link[1]);
     if (!text || !/^https?:\/\//.test(url)) continue;
-    const when = date ? Date.parse(decode(date[1])) : NaN;
-    out.push({
-      title: text,
-      url,
-      source,
-      publishedAt: Number.isNaN(when) ? Date.now() : when,
-      symbols: TAGS.filter((t) => t.re.test(text)).map((t) => t.symbol),
-    });
+    let when = date ? Date.parse(decode(date[1])) : NaN;
+    // ESPN stamps New York daylight time with an "EST" label, which parses an hour into
+    // the future. A publisher cannot post from the future, so step back to the real time.
+    for (let i = 0; i < 2 && when > Date.now() + 60_000; i++) when -= 3_600_000;
+    const found = tags.filter((t) => t.re.test(text)).map((t) => t.tag);
+    if (sourceTag && !found.includes(sourceTag)) found.unshift(sourceTag);
+    if (!firstSeen.has(url)) {
+      if (firstSeen.size > 2000) firstSeen.clear();
+      firstSeen.set(url, Date.now());
+    }
+    out.push({ title: text, url, source, publishedAt: Number.isNaN(when) ? firstSeen.get(url)! : when, tags: found });
   }
   return out;
 }
 
-export async function GET(request: Request) {
-  const want = new URL(request.url).searchParams.get("symbol");
+async function load(topic: Topic): Promise<{ items: NewsItem[]; at: number; stale?: boolean } | null> {
   const now = Date.now();
+  const hit = cache.get(topic);
+  if (hit && now - hit.at < TTL_MS) return hit;
 
-  if (!cache || now - cache.at > TTL_MS) {
-    const batches = await Promise.all(
-      SOURCES.map(async (s) => {
-        try {
-          const res = await fetch(s.url, {
-            headers: { "User-Agent": "Tick/0.1 (+https://github.com/Khalid-000-ME/tick)", Accept: "application/rss+xml, application/xml, text/xml" },
-            cache: "no-store",
-            signal: AbortSignal.timeout(8000),
-          });
-          if (!res.ok) return [];
-          return parse(await res.text(), s.name);
-        } catch {
-          return [];
-        }
-      })
-    );
-    const items = batches.flat().sort((a, b) => b.publishedAt - a.publishedAt);
-    // Keep the previous batch if every source failed, rather than blanking the panel.
-    if (items.length === 0 && cache) {
-      return NextResponse.json({ items: filter(cache.items, want), stale: true });
-    }
-    if (items.length === 0) {
-      console.error("[news] every source failed or returned no items");
-      return NextResponse.json({ error: "No news sources reachable right now." }, { status: 503 });
-    }
-    cache = { at: now, items: items.slice(0, 60) };
-  }
+  const batches = await Promise.all(
+    SOURCES[topic].map(async (s) => {
+      try {
+        const res = await fetch(s.url, {
+          headers: { "User-Agent": "Tick/0.1 (+https://github.com/Khalid-000-ME/tick)", Accept: "application/rss+xml, application/xml, text/xml" },
+          cache: "no-store",
+          redirect: "follow",
+          signal: AbortSignal.timeout(6000),
+        });
+        if (!res.ok) return [];
+        return parse(await res.text(), s.name, topic, s.tag);
+      } catch {
+        return [];
+      }
+    })
+  );
+  // The same story often appears in two feeds (ESPN top news and its league feed).
+  const seen = new Set<string>();
+  const items = batches
+    .flat()
+    .sort((a, b) => b.publishedAt - a.publishedAt)
+    .filter((i) => {
+      const k = i.title.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    // A feed occasionally dates an item in the future; never show "in 3h".
+    .map((i) => (i.publishedAt > now ? { ...i, publishedAt: now } : i));
 
-  return NextResponse.json({ items: filter(cache.items, want) });
+  // Keep the previous batch if every source failed, rather than blanking the panel.
+  if (items.length === 0) return hit ? { ...hit, stale: true } : null;
+  const next = { at: now, items: items.slice(0, 80) };
+  cache.set(topic, next);
+  return next;
 }
 
-function filter(items: NewsItem[], symbol: string | null): NewsItem[] {
-  if (!symbol) return items.slice(0, 24);
-  const known = FEEDS.some((f) => f.symbol === symbol);
-  if (!known) return items.slice(0, 24);
-  // The market's own headlines first, then everything else, so the panel is never empty
-  // just because nobody wrote about Solana in the last hour.
-  const mine = items.filter((i) => i.symbols.includes(symbol));
-  const rest = items.filter((i) => !i.symbols.includes(symbol));
-  return [...mine, ...rest].slice(0, 24);
+export async function GET(request: Request) {
+  const q = new URL(request.url).searchParams;
+  const topic: Topic = q.get("topic") === "sports" ? "sports" : "markets";
+  const data = await load(topic);
+  if (!data) {
+    console.error(`[news] every ${topic} source failed or returned no items`);
+    return NextResponse.json({ error: "No news sources reachable right now." }, { status: 503 });
+  }
+
+  // What to put first: a market symbol, a league, and/or team names (sports).
+  const symbol = q.get("symbol");
+  const league = q.get("league");
+  const teams = (q.get("teams") ?? "").split(",").map((t) => t.trim()).filter((t) => t.length >= 3);
+  const teamRes = teams.map((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i"));
+
+  const score = (i: NewsItem) => {
+    if (teamRes.some((re) => re.test(i.title))) return 3;
+    if (symbol && FEEDS.some((f) => f.symbol === symbol) && i.tags.includes(symbol)) return 2;
+    if (league && i.tags.includes(league)) return 1;
+    return 0;
+  };
+  // Relevant headlines first, newest first within each group, so the panel is never empty
+  // just because nobody wrote about this team in the last hour.
+  const ranked = data.items.map((i) => ({ ...i, rank: score(i) })).sort((a, b) => b.rank - a.rank || b.publishedAt - a.publishedAt);
+  return NextResponse.json({ items: ranked.slice(0, 24), fetchedAt: data.at, stale: data.stale ?? false });
 }

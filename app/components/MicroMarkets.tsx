@@ -74,7 +74,7 @@ export function MicroBoard() {
       <h2 className="section-title micro-title"><Lightning weight="fill" /> In play</h2>
       <div className="micro-strip">
         {markets.map((m) => (
-          <Link key={m.id} href={`/sports/${m.espnId}?window=${m.windowS}`} className="micro-tile">
+          <Link key={`${m.id}:${m.windowS}`} href={`/sports/${m.espnId}?window=${m.windowS}`} className="micro-tile">
             <span className="micro-tile-top">
               <b>{m.away.abbr} {m.openAway}:{m.openHome} {m.home.abbr}</b>
               <em className={m.secondsLeft <= 15 ? "is-urgent" : ""}>{Math.max(0, m.secondsLeft)}s</em>

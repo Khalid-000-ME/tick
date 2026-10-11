@@ -12,6 +12,7 @@ import { CONTRACTS, toUsd as toUsdc } from "@/lib/chain/config";
 import { marketId } from "@/lib/chain/market";
 import { readClient } from "@/lib/useWallet";
 import { SportsCard, type SportsEvent } from "@/components/SportsCard";
+import { NewsPanel } from "@/components/NewsPanel";
 import { MicroBoard } from "@/components/MicroMarkets";
 import { WalletMenu } from "@/components/WalletMenu";
 import { DURATIONS } from "@/lib/chain/config";
@@ -208,10 +209,13 @@ export function MarketsBrowser() {
           ) : (
             <>
             <MicroBoard />
-            <div className="board-grid">
-              {sports.map((e) => (
-                <SportsCard key={e.id} event={e} />
-              ))}
+            <div className="board-sports">
+              <div className="board-grid">
+                {sports.map((e) => (
+                  <SportsCard key={e.id} event={e} />
+                ))}
+              </div>
+              <NewsPanel topic="sports" variant="panel" title="Sports news" limit={10} />
             </div>
             </>
           )

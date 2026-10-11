@@ -1,6 +1,7 @@
 "use client";
 
 import { AmountPicker } from "@/components/AmountPicker";
+import { NewsPanel } from "@/components/NewsPanel";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, SealCheck } from "@phosphor-icons/react";
@@ -212,6 +213,15 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
               {" "}Key <a href={explorerAddress(ATTESTOR)} target="_blank" rel="noreferrer">{ATTESTOR.slice(0, 8)}...</a>.
             </p>
           </section>
+
+          <NewsPanel
+            topic="sports"
+            variant="panel"
+            title={`${event.league} news`}
+            league={event.league}
+            teams={[event.home.name, event.home.short, event.away.name, event.away.short]}
+            limit={8}
+          />
         </div>
 
         <aside className="match-side-col">

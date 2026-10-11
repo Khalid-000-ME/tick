@@ -220,7 +220,7 @@ export function MarketTerminal() {
           </div>
         </section>
         <div className="terminal-rail">
-        <NewsPanel feed={feed} />
+        <NewsPanel title={`What's moving ${feed.symbol}`} symbol={feed.symbol} />
         <aside className="terminal-ticket" aria-label="Market order">
           <div className="ticket-heading"><h1>Will {feed.symbol} close above</h1></div>
           <StrikeStepper open={market.openStrike} value={strikeOverride} expo={feed.expo} onChange={setStrikeOverride} />
