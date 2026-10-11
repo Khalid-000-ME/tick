@@ -17,7 +17,7 @@ import { useLivePrice } from "@/lib/useLivePrice";
 import { usePositions } from "@/lib/usePositions";
 import { useTheme } from "@/lib/useTheme";
 import { FEEDS, type FeedSpec } from "@/lib/pyth";
-import { WINDOW_S, fmtUsd, toUsd } from "@/lib/chain/config";
+import { DURATIONS, WINDOW_S, fmtUsd, toUsd } from "@/lib/chain/config";
 
 /** Display metadata only. Every number comes from the chain — see useMarket(). */
 const ICONS: Record<string, string> = {
@@ -36,6 +36,19 @@ const NOW_X = 850;
 
 export function MarketTerminal() {
   const [feed, setFeed] = useState<FeedSpec>(FEEDS[0]);
+  const [windowS, setWindowS] = useState<number>(WINDOW_S);
+
+  // The board links here carrying the market it was showing, so a card and the terminal
+  // are the same market rather than two that merely look alike. Read after mount rather
+  // than with useSearchParams, which would opt the whole route out of server rendering
+  // and blank the terminal until hydration.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const asked = FEEDS.find((f) => f.symbol === q.get("feed"));
+    if (asked) setFeed(asked);
+    const w = Number(q.get("window"));
+    if (DURATIONS.some((d) => d.seconds === w)) setWindowS(w);
+  }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [amount, setAmount] = useState(25);
   // No selected side any more: a side IS the action. `pending` holds the side awaiting
@@ -47,7 +60,7 @@ export function MarketTerminal() {
   const { status, account, connect, switchChain, walletClient } = wallet;
   const { theme, toggle: toggleTheme } = useTheme();
 
-  const market = useMarket(feed);
+  const market = useMarket(feed, windowS);
   const stake = useStake({ walletClient, account, market, feed });
   // Follows each stake through settlement to a payout. Without it a window closes and
   // says nothing, which is indistinguishable from the money simply being gone.
@@ -57,7 +70,7 @@ export function MarketTerminal() {
   const auto = useAutoRefresh(feed, market.priceAge, market.acceptMargin, market.refetch);
   const { arm } = auto;
   // Picking a side, an amount or a market means a stake is coming: keep the price warm.
-  useEffect(() => { if (status === "ready") arm(); }, [amount, feed, status, arm]);
+  useEffect(() => { if (status === "ready") arm(); }, [amount, feed, windowS, status, arm]);
 
   // Observed price history: real readings accumulated since this page loaded, not a
   // generated series. Starts empty by design — the proper fix for a longer window is an
@@ -165,7 +178,7 @@ export function MarketTerminal() {
       </header>
       {/* Draining bar under the header: the same countdown, readable without reading. */}
       <div className={`window-bar ${secondsToClose <= URGENT_AT ? "is-urgent" : ""}`} aria-hidden="true">
-        <span style={{ width: `${(secondsToClose / WINDOW_S) * 100}%` }} />
+        <span style={{ width: `${(secondsToClose / windowS) * 100}%` }} />
       </div>
       <main className="terminal-main">
         <section className="terminal-chart-panel" aria-label={`${feed.symbol} market chart`}>
@@ -175,6 +188,11 @@ export function MarketTerminal() {
                 <span className="asset-icon"><Image src={ICONS[feed.symbol]} alt="" width={24} height={24} /></span><span><strong>{feed.symbol}</strong><small>{feed.label}</small></span><CaretDown weight="bold" />
               </button>
               {menuOpen && <div className="asset-menu">{FEEDS.map((item) => <AssetOption key={item.symbol} item={item} active={item.symbol === feed.symbol} pick={() => { setFeed(item); setMenuOpen(false); }} />)}</div>}
+            </div>
+            <div className="term-durations" role="tablist" aria-label="Window length">
+              {DURATIONS.map((d) => (
+                <button key={d.seconds} type="button" role="tab" aria-selected={windowS === d.seconds} className={windowS === d.seconds ? "is-active" : ""} onClick={() => setWindowS(d.seconds)}>{d.label}</button>
+              ))}
             </div>
             <div className="terminal-price"><strong>${shownPrice === null ? "—" : formatPrice(shownPrice)}</strong><span className={history.change >= 0 ? "positive" : "negative"}>{history.change >= 0 ? "+" : ""}{history.change.toFixed(2)}%</span></div>
             {/* One dot instead of a card. The cutoff only matters as open or shut, and

@@ -50,7 +50,12 @@ export interface MarketView {
   refetch: () => void;
 }
 
-export function useMarket(feed: FeedSpec, pollMs = 2500): MarketView {
+/**
+ * @param windowS Window length in seconds. Every listed duration is a multiple of the
+ *   contract's 30s grid, so a longer market is only a further-out close — the chain needs
+ *   no change, just a strike struck at the matching opening instant.
+ */
+export function useMarket(feed: FeedSpec, windowS: number = WINDOW_S, pollMs = 2500): MarketView {
   const [price, setPrice] = useState<bigint | null>(null);
   const [publishTime, setPublishTime] = useState<number | null>(null);
   const [blockTime, setBlockTime] = useState<number | null>(null);
@@ -72,16 +77,16 @@ export function useMarket(feed: FeedSpec, pollMs = 2500): MarketView {
   // looked up by /api/strike. Every client gets the same number, so everyone stakes into
   // the same market. It cannot come from this browser's own price reads: those differ
   // by a poll or two between clients, which split pools at grid boundaries.
-  const windowClose = Math.floor(now / WINDOW_S) * WINDOW_S + WINDOW_S;
+  const windowClose = Math.floor(now / windowS) * windowS + windowS;
   const [strikeFor, setStrikeFor] = useState<{ key: string; strike: bigint } | null>(null);
-  const strikeKey = `${feed.id}:${windowClose}`;
+  const strikeKey = `${feed.id}:${windowClose}:${windowS}`;
 
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
     async function load() {
       try {
-        const res = await fetch(`/api/strike?feedId=${feed.id}&closesAt=${windowClose}`, { cache: "no-store" });
+        const res = await fetch(`/api/strike?feedId=${feed.id}&closesAt=${windowClose}&window=${windowS}`, { cache: "no-store" });
         if (!res.ok) throw new Error(String(res.status));
         const body = (await res.json()) as { strike: string };
         if (!cancelled) setStrikeFor({ key: strikeKey, strike: BigInt(body.strike) });
@@ -95,7 +100,7 @@ export function useMarket(feed: FeedSpec, pollMs = 2500): MarketView {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [feed.id, windowClose, strikeKey]);
+  }, [feed.id, windowClose, windowS, strikeKey]);
 
   // Never show a strike belonging to another window or feed: no terms until it matches.
   const terms = useMemo<Terms | null>(

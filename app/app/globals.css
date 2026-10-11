@@ -1692,3 +1692,7 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
   .board-grid { grid-template-columns: 1fr; }
   .board-main { padding: 20px 14px 60px; }
 }
+.term-durations { display: flex; flex-wrap: wrap; gap: 4px; }
+.term-durations button { padding: 5px 10px; border: 1px solid var(--t-line); border-radius: 99px; background: transparent; color: var(--t-dim); font: 500 11px var(--font-geist-mono), monospace; cursor: pointer; }
+.term-durations button:hover { color: var(--t-ink); }
+.term-durations button.is-active { background: var(--t-ink); color: var(--t-bg); border-color: var(--t-ink); }
