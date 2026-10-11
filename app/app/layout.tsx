@@ -28,8 +28,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // The bootstrap script in <head> sets data-theme on this element before React
+    // hydrates, so the server HTML and the live DOM differ here by design.
+    // suppressHydrationWarning covers this element's own attributes only, not its subtree.
     <html
       lang="en"
+      suppressHydrationWarning
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >

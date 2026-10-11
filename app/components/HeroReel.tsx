@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from "react";
  */
 const CLIPS = [
   { src: "/hero/forest.mp4", poster: "/hero/forest.jpg" },
-  { src: "/hero/window.mp4", poster: "/hero/window.jpg" },
+  { src: "/hero/desert.mp4", poster: "/hero/desert.jpg" },
 ] as const;
 
 /** Start the hand-off this long before a clip ends, so the fade overlaps its last frames. */

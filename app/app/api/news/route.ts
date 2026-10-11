@@ -161,14 +161,21 @@ async function load(topic: Topic): Promise<{ items: NewsItem[]; at: number; stal
     })
   );
   // The same story often appears in two feeds (ESPN top news and its league feed).
-  const seen = new Set<string>();
+  // The same story reaches us twice (ESPN's top feed and its league feed), sometimes
+  // under different headlines, so both the link and the headline have to be unique. The
+  // link is also the React key in the panel, so a duplicate is a visible bug, not just
+  // a repeated row.
+  const seenUrl = new Set<string>();
+  const seenTitle = new Set<string>();
   const items = batches
     .flat()
     .sort((a, b) => b.publishedAt - a.publishedAt)
     .filter((i) => {
-      const k = i.title.toLowerCase();
-      if (seen.has(k)) return false;
-      seen.add(k);
+      const u = i.url.split("?")[0].replace(/\/$/, "").toLowerCase();
+      const t = i.title.toLowerCase();
+      if (seenUrl.has(u) || seenTitle.has(t)) return false;
+      seenUrl.add(u);
+      seenTitle.add(t);
       return true;
     })
     // A feed occasionally dates an item in the future; never show "in 3h".
