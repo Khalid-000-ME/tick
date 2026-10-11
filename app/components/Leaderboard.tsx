@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Trophy } from "@phosphor-icons/react";
 import { explorerAddress } from "@/lib/chain/config";
+import { Avatar } from "@/components/Avatar";
+import { useProfiles } from "@/lib/profiles";
 
 /**
  * Who is actually ahead, from the event index.
@@ -42,6 +44,8 @@ export function Leaderboard({ you }: { you?: string | null }) {
     return () => { off = true; clearInterval(t); };
   }, []);
 
+  const profiles = useProfiles(data?.traders.map((t) => t.address) ?? []);
+
   if (error) return <div className="page-empty">The leaderboard index is unreachable right now.</div>;
   if (!data) return <div className="page-empty">Loading the leaderboard…</div>;
   if (data.traders.length === 0) return <div className="page-empty">No settled trades yet. The first winner tops the board.</div>;
@@ -62,10 +66,14 @@ export function Leaderboard({ you }: { you?: string | null }) {
           <div key={t.address} className={`stake-row ${i < 3 ? MEDAL[i] : ""} ${you && t.address === you.toLowerCase() ? "is-you" : ""}`} role="row">
             <span className="lb-rank">{i + 1}</span>
             <span className="stake-market">
-              <a href={explorerAddress(t.address)} target="_blank" rel="noreferrer">
-                <strong className="mono">{t.address.slice(0, 6)}…{t.address.slice(-4)}</strong>
+              <a href={explorerAddress(t.address)} target="_blank" rel="noreferrer" className="lb-who">
+                <Avatar avatar={profiles.get(t.address)?.avatar} seed={t.address} name={profiles.get(t.address)?.displayName || profiles.get(t.address)?.username} size={28} />
+                <span>
+                  <strong>{profiles.get(t.address)?.displayName || (profiles.get(t.address)?.username ? `@${profiles.get(t.address)!.username}` : `${t.address.slice(0, 6)}...${t.address.slice(-4)}`)}</strong>
+                  {profiles.get(t.address)?.username && <small className="mono">@{profiles.get(t.address)!.username}</small>}
+                </span>
               </a>
-              {you && t.address === you.toLowerCase() && <small>you</small>}
+              {you && t.address === you.toLowerCase() && <small className="lb-you">you</small>}
             </span>
             <span className="mono">{t.bets}</span>
             <span className="mono">${t.staked.toFixed(2)}</span>

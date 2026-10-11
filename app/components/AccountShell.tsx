@@ -14,7 +14,7 @@ export function AccountShell({
   wallet,
   children,
 }: {
-  active: "markets" | "portfolio" | "fund" | "settlers" | "leaderboard";
+  active: "markets" | "portfolio" | "fund" | "settlers" | "leaderboard" | "profile";
   wallet: Wallet;
   children: React.ReactNode;
 }) {

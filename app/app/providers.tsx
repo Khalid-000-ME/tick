@@ -53,7 +53,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
             createOnLogin: "users-without-wallets",
           },
         },
-        loginMethods: ["email", "wallet"],
+        // Each social method must also be switched on under Login methods in the Privy
+        // dashboard, or Privy rejects it. Any of these can be linked to one account later
+        // from the profile page, so a trader is one person across all of them.
+        loginMethods: ["google", "passkey", "email", "twitter", "wallet"],
       }}
     >
       {children}
