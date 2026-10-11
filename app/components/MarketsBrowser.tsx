@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Moon, Sun } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { OddsChart, type OddsPoint } from "@/components/OddsChart";
+import { SportsCard, type SportsEvent } from "@/components/SportsCard";
 import { WalletMenu } from "@/components/WalletMenu";
 import { DURATIONS } from "@/lib/chain/config";
 import { useTheme } from "@/lib/useTheme";
@@ -64,7 +65,9 @@ export function MarketsBrowser() {
   const { theme, toggle } = useTheme();
   const [markets, setMarkets] = useState<LiveMarket[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [kind, setKind] = useState<"all" | "crypto" | "equity">("all");
+  const [kind, setKind] = useState<"all" | "crypto" | "equity" | "sports">("all");
+  const [sports, setSports] = useState<SportsEvent[] | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [windowS, setWindowS] = useState<number | "all">("all");
   // Odds history is rendered, so it lives in state; a ref read during render can paint a
   // stale series.
@@ -99,11 +102,36 @@ export function MarketsBrowser() {
         if (!off) setError((e as Error).message);
       }
     }
+    async function loadSports() {
+      try {
+        const res = await fetch("/api/sports/events");
+        const body = (await res.json()) as { events?: SportsEvent[] };
+        if (!off && body.events) {
+          setSports(body.events);
+          const t = Math.floor(Date.now() / 1000);
+          setHistory((prev) => {
+            const next = new Map(prev);
+            for (const e of body.events!) {
+              const series = next.get(e.id) ?? [];
+              const last = series[series.length - 1];
+              if (!last || last.above !== e.impliedHome) next.set(e.id, [...series, { t, above: e.impliedHome }].slice(-120));
+            }
+            return next;
+          });
+        }
+      } catch {
+        if (!off) setSports([]);
+      }
+    }
+
     void load();
+    void loadSports();
     const timer = setInterval(load, 2500);
+    const sportsTimer = setInterval(loadSports, 20_000);
     return () => {
       off = true;
       clearInterval(timer);
+      clearInterval(sportsTimer);
     };
   }, []);
 
@@ -142,19 +170,38 @@ export function MarketsBrowser() {
 
         <div className="board-filters">
           <div className="filter-row board-cats" role="tablist" aria-label="Category">
-            {([["all", "All"], ["crypto", "Crypto"], ["equity", "Equities"]] as const).map(([k, l]) => (
+            {([["all", "All"], ["crypto", "Crypto"], ["equity", "Equities"], ["sports", "Sports"]] as const).map(([k, l]) => (
               <button key={k} type="button" role="tab" aria-selected={kind === k} className={kind === k ? "is-active" : ""} onClick={() => setKind(k)}>{l}</button>
             ))}
           </div>
-          <div className="board-durations" role="tablist" aria-label="Window length">
+          {kind !== "sports" && <div className="board-durations" role="tablist" aria-label="Window length">
             <button type="button" role="tab" aria-selected={windowS === "all"} className={windowS === "all" ? "is-active" : ""} onClick={() => setWindowS("all")}>All</button>
             {DURATIONS.map((d) => (
               <button key={d.seconds} type="button" role="tab" aria-selected={windowS === d.seconds} className={windowS === d.seconds ? "is-active" : ""} onClick={() => setWindowS(d.seconds)}>{d.label}</button>
             ))}
-          </div>
+          </div>}
         </div>
 
-        {error ? (
+        {kind === "sports" ? (
+          sports === null ? (
+            <div className="page-empty">Loading fixtures…</div>
+          ) : sports.length === 0 ? (
+            <div className="page-empty">No fixtures from the scoreboard right now.</div>
+          ) : (
+            <div className="board-grid">
+              {sports.map((e) => (
+                <SportsCard
+                  key={e.id}
+                  event={e}
+                  series={history.get(e.id) ?? []}
+                  walletClient={wallet.walletClient}
+                  account={wallet.account}
+                  onNotice={setNotice}
+                />
+              ))}
+            </div>
+          )
+        ) : error ? (
           <div className="page-empty">Markets are unavailable right now: {error}</div>
         ) : !markets ? (
           <div className="page-empty">Loading the board…</div>
@@ -169,6 +216,12 @@ export function MarketsBrowser() {
               ))}
             </div>
           </>
+        )}
+        {notice && (
+          <div className="page-note board-note" role="status">
+            <p>{notice}</p>
+            <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss">×</button>
+          </div>
         )}
       </main>
     </div>
