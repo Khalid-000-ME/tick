@@ -43,12 +43,13 @@ export interface FeedSpec {
  * The listed feeds. Ids and exponents were each verified against the live Pyth contract
  * on Monad testnet before being written here.
  *
- * ONLY FEEDS THIS API KEY CAN ACTUALLY READ. Hermes enforces per-feed entitlements and
- * answers 403 "Not entitled: feed <id>" for anything outside the plan. AAPL and MSFT were
- * listed here and removed after testing: both their Equity.US and Equity.Index ids are
- * refused, as are NVDA, AMZN, GOOGL, META, SPY and COIN. TSLA is the one entitled equity,
- * so it stays. Listing a feed we cannot refresh is worse than not listing it — the price
- * would sit frozen and every stake would be refused with no way for a user to fix it.
+ * ONLY FEEDS THIS API KEY CAN ACTUALLY READ, and that is the binding constraint on how many
+ * markets exist. Hermes enforces per-feed entitlements and answers 403 for anything outside
+ * the plan. Of 423 crypto and 1,252 equity feeds in Pyth's catalogue, 107 likely candidates
+ * were probed and exactly these ten came back: 97 were refused, including AAPL, MSFT, NVDA,
+ * AMZN, GOOGL, META, SPY, COIN, ADA, LINK, AVAX and DOT. Every one below was then confirmed
+ * to exist on Monad's Pyth contract and listed on Tick. Listing a feed we cannot refresh
+ * would be worse than omitting it: the price would sit frozen and every stake refused.
  *
  * Crypto trades continuously, so a demo works at any hour. TSLA only moves while the US
  * market is open (14:30-21:00 UTC on weekdays); outside those hours its price goes stale
@@ -56,38 +57,16 @@ export interface FeedSpec {
  * fault.
  */
 export const FEEDS: readonly FeedSpec[] = [
-  {
-    id: "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
-    symbol: "BTC/USD",
-    label: "Bitcoin",
-    expo: -8,
-    strikeStep: 1n,
-    kind: "crypto",
-  },
-  {
-    id: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-    symbol: "ETH/USD",
-    label: "Ether",
-    expo: -8,
-    strikeStep: 1n,
-    kind: "crypto",
-  },
-  {
-    id: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
-    symbol: "SOL/USD",
-    label: "Solana",
-    expo: -8,
-    strikeStep: 1n,
-    kind: "crypto",
-  },
-  {
-    id: "0x16dad506d7db8da01c87581c87ca897a012a153557d4d578c3b9c9e1bc0632f1",
-    symbol: "TSLA",
-    label: "Tesla",
-    expo: -5,
-    strikeStep: 1n,
-    kind: "equity",
-  },
+  { id: "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43", symbol: "BTC/USD", label: "Bitcoin", expo: -8, strikeStep: 1n, kind: "crypto" },
+  { id: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", symbol: "ETH/USD", label: "Ether", expo: -8, strikeStep: 1n, kind: "crypto" },
+  { id: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d", symbol: "SOL/USD", label: "Solana", expo: -8, strikeStep: 1n, kind: "crypto" },
+  { id: "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f", symbol: "BNB/USD", label: "BNB", expo: -8, strikeStep: 1n, kind: "crypto" },
+  { id: "0xec5d399846a9209f3fe5881d70aae9268c94339ff9817e8d18ff19fa05eea1c8", symbol: "XRP/USD", label: "XRP", expo: -8, strikeStep: 1n, kind: "crypto" },
+  { id: "0xdcef50dd0a4cd2dcc17e45df1676dcb336a11a61c69df7a0299b0150c672d25c", symbol: "DOGE/USD", label: "Dogecoin", expo: -8, strikeStep: 1n, kind: "crypto" },
+  { id: "0x4279e31cc369bbcc2faf022b382b080e32a8e689ff20fbc530d2a603eb6cd98b", symbol: "HYPE/USD", label: "Hyperliquid", expo: -8, strikeStep: 1n, kind: "crypto" },
+  { id: "0x0bbf28e9a841a1cc788f6a361b17ca072d0ea3098a1e5df1c3922d06719579ff", symbol: "PYTH/USD", label: "Pyth Network", expo: -8, strikeStep: 1n, kind: "crypto" },
+  { id: "0x16dad506d7db8da01c87581c87ca897a012a153557d4d578c3b9c9e1bc0632f1", symbol: "TSLA", label: "Tesla", expo: -5, strikeStep: 1n, kind: "equity" },
+  { id: "0x9695e2b96ea7b3859da9ed25b7a46a920a776e2fdae19a7bcfdf2b219230452d", symbol: "QQQ", label: "Nasdaq 100 ETF", expo: -5, strikeStep: 1n, kind: "equity" },
 ] as const;
 
 export const feedBySymbol = (symbol: string): FeedSpec => {

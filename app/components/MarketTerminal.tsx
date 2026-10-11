@@ -162,6 +162,7 @@ export function MarketTerminal() {
         <nav className="terminal-nav" aria-label="Account">
           <Link href="/markets">Markets</Link>
           <Link href="/portfolio">Portfolio</Link>
+          <Link href="/leaderboard">Leaderboard</Link>
           <Link href="/fund">Fund</Link>
         </nav>
         <button

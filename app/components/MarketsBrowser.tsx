@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Moon, Sun } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { OddsChart, type OddsPoint } from "@/components/OddsChart";
+import { CardBanner } from "@/components/CardBanner";
 import { SportsCard, type SportsEvent } from "@/components/SportsCard";
 import { MicroMarkets } from "@/components/MicroMarkets";
 import { WalletMenu } from "@/components/WalletMenu";
@@ -22,12 +22,6 @@ import { useTickWallet } from "@/lib/useTickWallet";
  * odds, what each pays, the pool, and the clock — so choosing a market is browsing rather
  * than configuring one.
  */
-const ICONS: Record<string, string> = {
-  "BTC/USD": "/asset-icons/bitcoin.svg",
-  "ETH/USD": "/asset-icons/ethereum.svg",
-  "SOL/USD": "/asset-icons/solana.svg",
-  TSLA: "/asset-icons/tesla.svg",
-};
 
 export interface LiveMarket {
   id: string;
@@ -70,6 +64,7 @@ export function MarketsBrowser() {
   const [sports, setSports] = useState<SportsEvent[] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [windowS, setWindowS] = useState<number | "all">("all");
+  const [symbol, setSymbol] = useState<string | "all">("all");
   // Odds history is rendered, so it lives in state; a ref read during render can paint a
   // stale series.
   const [history, setHistory] = useState<Map<string, OddsPoint[]>>(new Map());
@@ -141,8 +136,9 @@ export function MarketsBrowser() {
     return markets
       .filter((m) => (kind === "all" ? true : m.kind === kind))
       .filter((m) => (windowS === "all" ? true : m.windowS === windowS))
+      .filter((m) => (symbol === "all" ? true : m.symbol === symbol))
       .sort((a, b) => b.volume - a.volume || a.secondsLeft - b.secondsLeft);
-  }, [markets, kind, windowS]);
+  }, [markets, kind, windowS, symbol]);
 
   const [featured, ...rest] = shown;
 
@@ -155,6 +151,7 @@ export function MarketsBrowser() {
           <Link href="/markets" aria-current="page">Markets</Link>
           <Link href="/trade">Terminal</Link>
           <Link href="/portfolio">Portfolio</Link>
+          <Link href="/leaderboard">Leaderboard</Link>
           <Link href="/fund">Fund</Link>
         </nav>
         <button className="theme-toggle" type="button" onClick={toggle} aria-label="Toggle theme">
@@ -182,6 +179,19 @@ export function MarketsBrowser() {
             ))}
           </div>}
         </div>
+
+        {kind !== "sports" && markets && (
+          <div className="board-assets" role="tablist" aria-label="Asset">
+            <button type="button" role="tab" aria-selected={symbol === "all"} className={symbol === "all" ? "is-active" : ""} onClick={() => setSymbol("all")}>
+              All assets
+            </button>
+            {[...new Set(markets.filter((m) => (kind === "all" ? true : m.kind === kind)).map((m) => m.symbol))].map((sym) => (
+              <button key={sym} type="button" role="tab" aria-selected={symbol === sym} className={symbol === sym ? "is-active" : ""} onClick={() => setSymbol(sym)}>
+                {sym.replace("/USD", "")}
+              </button>
+            ))}
+          </div>
+        )}
 
         {kind === "sports" ? (
           sports === null ? (
@@ -240,11 +250,9 @@ function MarketCard({ market, series, featured = false }: { market: LiveMarket; 
   const href = `/trade?feed=${encodeURIComponent(market.symbol)}&window=${market.windowS}`;
 
   return (
-    <article className={`board-card ${featured ? "is-featured" : ""}`}>
+    <article className={`board-card has-banner ${featured ? "is-featured" : ""}`}>
+      <CardBanner symbol={market.symbol} label={market.label} tall={featured} />
       <header className="board-card-head">
-        <span className="board-card-icon">
-          {ICONS[market.symbol] && <Image src={ICONS[market.symbol]} alt="" width={featured ? 26 : 20} height={featured ? 26 : 20} />}
-        </span>
         <span className="board-card-cat">
           {market.kind === "crypto" ? "Crypto" : "Equity"} · {market.windowLabel} window
           <em>struck {clock(Math.max(0, market.windowS - market.secondsLeft))} ago</em>

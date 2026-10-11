@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Info, SealCheck } from "@phosphor-icons/react";
+import { FixtureBanner } from "@/components/CardBanner";
 import { OddsChart, type OddsPoint } from "@/components/OddsChart";
 import { useSportsStake } from "@/lib/useSportsStake";
 import type { WalletClient } from "viem";
@@ -87,7 +88,8 @@ export function SportsCard({
     event.settledOutcome === 1 ? `${event.home.abbr} won` : event.settledOutcome === 2 ? `${event.away.abbr} won` : "Voided — refunded";
 
   return (
-    <article className="board-card sports-card">
+    <article className="board-card sports-card has-banner">
+      <FixtureBanner league={event.league} home={event.home} away={event.away} />
       <header className="board-card-head">
         <span className="board-card-cat">{event.league}</span>
         <span className={`board-clock ${event.secondsToKickoff <= 900 && event.open ? "is-urgent" : ""}`}>
