@@ -1859,3 +1859,34 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .strike-title > span { font-size: 18px; font-weight: 600; }
 .board-card.is-featured .strike-title > span { font-size: 24px; }
 .terminal-rail .strike-stepper { margin-top: 8px; }
+
+/* ---- TradingView chart ---- */
+.terminal-shell .price-chart.tv-host { position: relative; display: flex; flex-direction: column; background: var(--t-chart); background-image: none; }
+.tv-chart { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.tv-frames { display: flex; align-items: center; gap: 4px; padding: 10px 14px 6px; }
+.tv-frames button { padding: 4px 10px; border: 1px solid var(--t-line); border-radius: 99px; background: transparent; color: var(--t-dim); font: 500 11px var(--font-geist-mono), monospace; cursor: pointer; }
+.tv-frames button.is-active { background: var(--t-ink); color: var(--t-bg); border-color: var(--t-ink); }
+.tv-legend { margin-left: auto; font: 10px var(--font-geist-mono), monospace; color: var(--t-dim); }
+.tv-canvas { flex: 1 1 0; min-height: 0; position: relative; }
+
+/* ---- brand focus ring on cards, and themed scrollbars ----
+   Cards outline in the brand colour (forest in light, green in dark) when hovered or
+   focused, fading in rather than snapping, so it reads as the app's own accent instead
+   of the browser's. */
+.terminal-shell { --t-accent: var(--t-stroke); }
+.board-card, .micro-tile, .match-panel { transition: border-color 220ms ease, box-shadow 260ms ease, transform 220ms ease; }
+.board-card:hover, .board-card:focus-within, .micro-tile:hover, .micro-tile:focus-visible {
+  border-color: var(--t-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-accent) 16%, transparent), 0 10px 28px color-mix(in srgb, var(--t-accent) 10%, transparent);
+}
+.board-card:has(.card-hit):hover { border-color: var(--t-accent); }
+.card-hit:focus-visible, .micro-tile:focus-visible { outline: none; }
+.board-card:focus-within { transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) { .board-card, .micro-tile, .match-panel { transition: none; } .board-card:focus-within { transform: none; } }
+
+.terminal-shell, .terminal-shell * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--t-accent) 55%, transparent) transparent; }
+.terminal-shell ::-webkit-scrollbar { width: 8px; height: 8px; }
+.terminal-shell ::-webkit-scrollbar-track { background: transparent; }
+.terminal-shell ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--t-accent) 45%, transparent); border-radius: 99px; border: 2px solid transparent; background-clip: padding-box; transition: background 200ms; }
+.terminal-shell ::-webkit-scrollbar-thumb:hover { background: var(--t-accent); background-clip: padding-box; }
+.micro-strip { scrollbar-gutter: stable; }
