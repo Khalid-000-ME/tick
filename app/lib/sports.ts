@@ -28,8 +28,8 @@ export interface Fixture {
   league: string;
   leagueKey: string;
   name: string;
-  home: { name: string; abbr: string; score: number | null; logo: string | null };
-  away: { name: string; abbr: string; score: number | null; logo: string | null };
+  home: { name: string; short: string; abbr: string; score: number | null; logo: string | null };
+  away: { name: string; short: string; abbr: string; score: number | null; logo: string | null };
   /** Kickoff, unix seconds. Staking closes here. */
   kickoff: number;
   state: "pre" | "in" | "post";
@@ -56,7 +56,7 @@ interface EspnCompetitor {
   homeAway?: string;
   score?: string;
   winner?: boolean;
-  team?: { displayName?: string; abbreviation?: string; logo?: string };
+  team?: { displayName?: string; shortDisplayName?: string; abbreviation?: string; logo?: string };
 }
 
 export async function fetchFixtures(league: (typeof LEAGUES)[number]): Promise<Fixture[]> {
@@ -107,12 +107,14 @@ export async function fetchFixtures(league: (typeof LEAGUES)[number]): Promise<F
         name: e.name ?? `${away.team?.displayName ?? "Away"} at ${home.team?.displayName ?? "Home"}`,
         home: {
           name: home.team?.displayName ?? "Home",
+          short: home.team?.shortDisplayName ?? home.team?.abbreviation ?? "Home",
           abbr: home.team?.abbreviation ?? "HOME",
           score: hs,
           logo: home.team?.logo ?? null,
         },
         away: {
           name: away.team?.displayName ?? "Away",
+          short: away.team?.shortDisplayName ?? away.team?.abbreviation ?? "Away",
           abbr: away.team?.abbreviation ?? "AWAY",
           score: as,
           logo: away.team?.logo ?? null,
@@ -137,4 +139,64 @@ export async function fetchAllFixtures(): Promise<Fixture[]> {
 export async function findFixture(espnId: string): Promise<Fixture | null> {
   const all = await fetchAllFixtures();
   return all.find((f) => f.espnId === espnId) ?? null;
+}
+
+// ---------------------------------------------------------------- in-play micro markets
+
+/**
+ * Short markets inside a running match: "who scores next in the next N minutes — home,
+ * away, or nobody?"
+ *
+ * This maps onto the contract untouched. HOME and AWAY are the two sides, and VOID — which
+ * already refunds everyone — is "nobody scored", which is the honest outcome when there
+ * was nothing to win. TickSports puts no grid on closesAt either, so any window works.
+ *
+ * The trick that keeps it verifiable with no server state: the OPENING SCORELINE is baked
+ * into the market's id. Settling is then a pure comparison between the score the id
+ * commits to and the score the public scoreboard shows at the close, which anyone can
+ * recompute. Nothing has to be remembered between the open and the settle.
+ */
+export const MICRO_WINDOWS = [
+  { seconds: 30, label: "30s" },
+  { seconds: 60, label: "1m" },
+  { seconds: 90, label: "1.5m" },
+  { seconds: 120, label: "2m" },
+  { seconds: 150, label: "2.5m" },
+  { seconds: 180, label: "3m" },
+  { seconds: 210, label: "3.5m" },
+  { seconds: 270, label: "4.5m" },
+] as const;
+
+export interface MicroKey {
+  espnId: string;
+  closesAt: number;
+  openHome: number;
+  openAway: number;
+}
+
+/** The descriptor a micro market hashes to. Public, so the hash can be rebuilt by anyone. */
+export function microDescriptor(k: MicroKey): string {
+  return `espn:${k.espnId}:w:${k.closesAt}:${k.openHome}-${k.openAway}`;
+}
+
+export function microEventId(k: MicroKey): `0x${string}` {
+  return keccak256(toHex(microDescriptor(k)));
+}
+
+/**
+ * Who scored during the window. Both sides scoring is a draw on the window and refunds,
+ * because a scoreline alone cannot say who scored first and guessing would be inventing
+ * a result.
+ */
+export function microOutcome(k: MicroKey, homeNow: number, awayNow: number): number {
+  const dh = homeNow - k.openHome;
+  const da = awayNow - k.openAway;
+  if (dh > da) return HOME;
+  if (da > dh) return AWAY;
+  return VOID;
+}
+
+/** The window of a given length currently open on a live fixture. */
+export function microCloseFor(seconds: number, now = Math.floor(Date.now() / 1000)): number {
+  return (Math.floor(now / seconds) + 1) * seconds;
 }

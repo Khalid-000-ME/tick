@@ -7,6 +7,7 @@ import { ArrowLeft, Moon, Sun } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { OddsChart, type OddsPoint } from "@/components/OddsChart";
 import { SportsCard, type SportsEvent } from "@/components/SportsCard";
+import { MicroMarkets } from "@/components/MicroMarkets";
 import { WalletMenu } from "@/components/WalletMenu";
 import { DURATIONS } from "@/lib/chain/config";
 import { useTheme } from "@/lib/useTheme";
@@ -188,6 +189,9 @@ export function MarketsBrowser() {
           ) : sports.length === 0 ? (
             <div className="page-empty">No fixtures from the scoreboard right now.</div>
           ) : (
+            <>
+            <MicroMarkets walletClient={wallet.walletClient} account={wallet.account} onNotice={setNotice} />
+            <h2 className="section-title">Match result</h2>
             <div className="board-grid">
               {sports.map((e) => (
                 <SportsCard
@@ -200,6 +204,7 @@ export function MarketsBrowser() {
                 />
               ))}
             </div>
+            </>
           )
         ) : error ? (
           <div className="page-empty">Markets are unavailable right now: {error}</div>

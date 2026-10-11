@@ -4,7 +4,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { TickSportsAbi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
 import { pub } from "@/lib/server/oracle";
-import { findFixture, sportsMarketId } from "@/lib/sports";
+import { findFixture, microEventId, sportsMarketId, type MicroKey } from "@/lib/sports";
 
 /**
  * Settles a finished fixture, paid for by the operator.
@@ -27,8 +27,11 @@ function operator() {
 
 export async function POST(request: Request) {
   let espnId: string | undefined;
+  let micro: Partial<MicroKey> | undefined;
   try {
-    espnId = ((await request.json()) as { espnId?: string }).espnId;
+    const body = (await request.json()) as { espnId?: string; micro?: Partial<MicroKey> };
+    espnId = body.espnId;
+    micro = body.micro;
   } catch {
     /* handled below */
   }
@@ -38,11 +41,22 @@ export async function POST(request: Request) {
 
   const fixture = await findFixture(espnId);
   if (!fixture) return NextResponse.json({ error: "Unknown fixture." }, { status: 404 });
-  if (!fixture.completed || fixture.outcome === null) {
+
+  const isMicro = Boolean(micro && typeof micro.closesAt === "number");
+  const key: MicroKey | null = isMicro
+    ? { espnId, closesAt: micro!.closesAt!, openHome: Number(micro!.openHome ?? 0), openAway: Number(micro!.openAway ?? 0) }
+    : null;
+
+  if (!isMicro && (!fixture.completed || fixture.outcome === null)) {
     return NextResponse.json({ error: "That fixture has not finished yet." }, { status: 409 });
   }
+  if (key && Math.floor(Date.now() / 1000) < key.closesAt) {
+    return NextResponse.json({ error: "That window has not closed yet." }, { status: 409 });
+  }
 
-  const id = sportsMarketId(fixture.eventId, fixture.kickoff);
+  const terms_eventId = key ? microEventId(key) : fixture.eventId;
+  const terms_closesAt = key ? key.closesAt : fixture.kickoff;
+  const id = sportsMarketId(terms_eventId, terms_closesAt);
   for (const [k, at] of attempted) if (Date.now() - at > TTL_MS) attempted.delete(k);
   if (attempted.has(id)) return NextResponse.json({ error: "Already attempted." }, { status: 429 });
 
@@ -62,14 +76,14 @@ export async function POST(request: Request) {
 
     const origin = new URL(request.url).origin;
     const att = await fetch(`${origin}/api/sports/attest`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ espnId }),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(key ? { espnId, micro: key } : { espnId }),
     });
     if (!att.ok) return NextResponse.json({ error: "Could not get an attestation." }, { status: 502 });
     const { signature, outcome } = (await att.json()) as { signature: `0x${string}`; outcome: number };
 
     attempted.set(id, Date.now());
     const account = operator();
-    const terms = { eventId: fixture.eventId, closesAt: BigInt(fixture.kickoff) } as const;
+    const terms = { eventId: terms_eventId, closesAt: BigInt(terms_closesAt) } as const;
     const { request: sim } = await pub.simulateContract({
       address: CONTRACTS.tickSports, abi: TickSportsAbi, functionName: "settleAttested",
       args: [terms, outcome, signature], account,

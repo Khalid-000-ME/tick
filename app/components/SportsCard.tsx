@@ -21,8 +21,8 @@ export interface SportsEvent {
   eventId: `0x${string}`;
   league: string;
   name: string;
-  home: { name: string; abbr: string; score: number | null; logo: string | null };
-  away: { name: string; abbr: string; score: number | null; logo: string | null };
+  home: { name: string; short: string; abbr: string; score: number | null; logo: string | null };
+  away: { name: string; short: string; abbr: string; score: number | null; logo: string | null };
   kickoff: number;
   state: "pre" | "in" | "post";
   completed: boolean;
@@ -117,7 +117,7 @@ export function SportsCard({
               >
                 <span className="board-outcome-name">
                   {team.logo && <Image src={team.logo} alt="" width={16} height={16} />}
-                  {team.name}
+                  <span>{team.short}</span>
                   <i style={{ width: `${odds}%` }} />
                 </span>
                 <span className="board-pays">{payout(mine, theirs).toFixed(2)}x</span>

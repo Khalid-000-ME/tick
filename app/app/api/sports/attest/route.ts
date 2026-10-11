@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
-import { findFixture, sportsMarketId } from "@/lib/sports";
+import { findFixture, microDescriptor, microEventId, microOutcome, sportsMarketId, type MicroKey } from "@/lib/sports";
 
 /**
  * Signs the result of a finished fixture so anyone can settle its market.
@@ -28,8 +28,11 @@ function attestor() {
 
 export async function POST(request: Request) {
   let espnId: string | undefined;
+  let micro: Partial<MicroKey> | undefined;
   try {
-    espnId = ((await request.json()) as { espnId?: string }).espnId;
+    const body = (await request.json()) as { espnId?: string; micro?: Partial<MicroKey> };
+    espnId = body.espnId;
+    micro = body.micro;
   } catch {
     /* handled below */
   }
@@ -40,6 +43,42 @@ export async function POST(request: Request) {
   try {
     const fixture = await findFixture(espnId);
     if (!fixture) return NextResponse.json({ error: "Unknown fixture." }, { status: 404 });
+
+    // An in-play micro market: the window's opening scoreline is committed to by the
+    // market id, so settling is a comparison anyone can redo against the scoreboard.
+    if (micro && typeof micro.closesAt === "number") {
+      const key: MicroKey = {
+        espnId,
+        closesAt: micro.closesAt,
+        openHome: Number(micro.openHome ?? 0),
+        openAway: Number(micro.openAway ?? 0),
+      };
+      if (!Number.isInteger(key.openHome) || !Number.isInteger(key.openAway) || key.openHome < 0 || key.openAway < 0) {
+        return NextResponse.json({ error: "Bad opening scoreline." }, { status: 400 });
+      }
+      if (Math.floor(Date.now() / 1000) < key.closesAt) {
+        return NextResponse.json({ error: "That window has not closed yet." }, { status: 409 });
+      }
+      const outcome = microOutcome(key, fixture.home.score ?? 0, fixture.away.score ?? 0);
+      const eventId = microEventId(key);
+      const id = sportsMarketId(eventId, key.closesAt);
+      const digest = keccak256(
+        encodeAbiParameters(parseAbiParameters("uint256, address, bytes32, uint8"), [
+          BigInt(monadTestnet.id), CONTRACTS.tickSports, id, outcome,
+        ])
+      );
+      const signature = await attestor().signMessage({ message: { raw: digest } });
+      return NextResponse.json({
+        marketId: id, eventId, closesAt: key.closesAt, outcome, signature, attestor: attestor().address,
+        evidence: {
+          descriptor: microDescriptor(key),
+          fixture: fixture.name,
+          openedAt: `${key.openHome}-${key.openAway}`,
+          closedAt: `${fixture.home.score}-${fixture.away.score}`,
+        },
+      });
+    }
+
     if (!fixture.completed || fixture.outcome === null) {
       return NextResponse.json({ error: "That fixture has not finished yet.", state: fixture.state }, { status: 409 });
     }
