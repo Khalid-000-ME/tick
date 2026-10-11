@@ -70,7 +70,7 @@ export async function GET() {
     })) as { status: string; result?: readonly [bigint, bigint] }[];
 
     const now = Math.floor(Date.now() / 1000);
-    const markets = usable.map((m, i) => {
+    const all = usable.map((m, i) => {
       const r = pools[i];
       const [above, below] = r?.status === "success" && r.result ? r.result : [0n, 0n];
       const total = above + below;
@@ -94,8 +94,29 @@ export async function GET() {
         // With nothing staked the two sides are genuinely unknown, so the cards show an
         // even split rather than implying a crowd that is not there.
         impliedAbove: total === 0n ? 50 : Number((above * 10_000n) / total) / 100,
+        // Equities only publish while their exchange is open. A price that has not moved
+        // in minutes cannot pass the contract's freshness cutoff, so the card must not
+        // invite a stake that will be refused.
+        closed: p ? now - p.publishTime > 120 : true,
       };
     });
+
+    // Two windows that close at the same instant with the same strike are the SAME market
+    // on chain — the id is the hash of its terms. That happens whenever a price is frozen
+    // (an equity outside trading hours), and listing it twice gave two cards one React
+    // key, which leaked stale cards and broke the filters. Merge them, keeping every
+    // window label so filtering by either still finds it.
+    const byId = new Map<string, (typeof all)[number] & { windows: number[]; windowLabels: string[] }>();
+    for (const m of all) {
+      const hit = byId.get(m.id);
+      if (hit) {
+        hit.windows.push(m.windowS);
+        hit.windowLabels.push(m.windowLabel);
+      } else {
+        byId.set(m.id, { ...m, windows: [m.windowS], windowLabels: [m.windowLabel] });
+      }
+    }
+    const markets = [...byId.values()];
 
     const body = { markets, at: now };
     cache = { at: Date.now(), body };

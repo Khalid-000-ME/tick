@@ -40,6 +40,9 @@ export interface LiveMarket {
   poolBelow: number;
   volume: number;
   impliedAbove: number;
+  closed: boolean;
+  windows: number[];
+  windowLabels: string[];
 }
 
 const money = (n: number) =>
@@ -135,7 +138,7 @@ export function MarketsBrowser() {
     if (!markets) return [];
     return markets
       .filter((m) => (kind === "all" ? true : m.kind === kind))
-      .filter((m) => (windowS === "all" ? true : m.windowS === windowS))
+      .filter((m) => (windowS === "all" ? true : m.windows.includes(windowS)))
       .filter((m) => (symbol === "all" ? true : m.symbol === symbol))
       .sort((a, b) => b.volume - a.volume || a.secondsLeft - b.secondsLeft);
   }, [markets, kind, windowS, symbol]);
@@ -169,7 +172,7 @@ export function MarketsBrowser() {
         <div className="board-filters">
           <div className="filter-row board-cats" role="tablist" aria-label="Category">
             {([["all", "All"], ["crypto", "Crypto"], ["equity", "Equities"], ["sports", "Sports"]] as const).map(([k, l]) => (
-              <button key={k} type="button" role="tab" aria-selected={kind === k} className={kind === k ? "is-active" : ""} onClick={() => setKind(k)}>{l}</button>
+              <button key={k} type="button" role="tab" aria-selected={kind === k} className={kind === k ? "is-active" : ""} onClick={() => { setKind(k); setSymbol("all"); }}>{l}</button>
             ))}
           </div>
           {kind !== "sports" && <div className="board-durations" role="tablist" aria-label="Window length">
@@ -250,14 +253,17 @@ function MarketCard({ market, series, featured = false }: { market: LiveMarket; 
   const href = `/trade?feed=${encodeURIComponent(market.symbol)}&window=${market.windowS}`;
 
   return (
-    <article className={`board-card has-banner ${featured ? "is-featured" : ""}`}>
+    <article className={`board-card has-banner ${featured ? "is-featured" : ""} ${market.closed ? "is-closed" : ""}`}>
+      <Link href={href} className="card-hit" aria-label={`Open the ${market.symbol} ${market.windowLabel} market`} />
       <CardBanner symbol={market.symbol} label={market.label} tall={featured} />
       <header className="board-card-head">
         <span className="board-card-cat">
-          {market.kind === "crypto" ? "Crypto" : "Equity"} · {market.windowLabel} window
+          {market.kind === "crypto" ? "Crypto" : "Equity"} · {market.windowLabels.join(" / ")} window
           <em>struck {clock(Math.max(0, market.windowS - market.secondsLeft))} ago</em>
         </span>
-        <span className={`board-clock ${market.secondsLeft <= 10 ? "is-urgent" : ""}`}>{clock(market.secondsLeft)}</span>
+        <span className={`board-clock ${market.secondsLeft <= 10 ? "is-urgent" : ""}`}>
+          {market.closed ? "market closed" : clock(market.secondsLeft)}
+        </span>
       </header>
 
       <h2 className="board-card-title">

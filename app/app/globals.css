@@ -1772,3 +1772,11 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .lb-table .stake-market small { padding: 1px 6px; border-radius: 99px; background: var(--t-ink); color: var(--t-bg); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; width: fit-content; }
 .lb-net.is-up { color: var(--t-up); } .lb-net.is-down { color: var(--t-down); }
 .page-foot > svg { vertical-align: -2px; margin-right: 5px; }
+
+/* the whole card opens its market; the outcome rows sit above the hit area */
+.board-card { position: relative; }
+.card-hit { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.board-card:has(.card-hit):hover { border-color: var(--t-ink); }
+.board-card .board-outcome, .board-card .board-card-foot { position: relative; z-index: 2; }
+.board-card.is-closed .card-banner { filter: grayscale(.7) brightness(.8); }
+.board-card.is-closed .board-clock { color: var(--t-dim); }
