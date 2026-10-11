@@ -1,31 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Lightning } from "@phosphor-icons/react";
 import { useSportsStake } from "@/lib/useSportsStake";
+import { payout } from "@/components/SportsCard";
 import type { WalletClient } from "viem";
 
 /**
- * In-play markets: "who scores next in the next N minutes — home, away, or nobody?"
+ * In-play windows: who scores next in the next N minutes, home, away, or nobody.
  *
- * The short-duration idea from the price side, applied to a running match. A match result
- * takes ninety minutes; a goal window takes two, so the same thirty-second-to-five-minute
- * cadence works here as long as a match is actually in play.
- *
- * "Nobody scored" refunds rather than paying a side, which is the honest outcome when
- * there was nothing to win — and it is also what the contract's VOID already does, so this
- * needed no new settlement logic. Each card shows the descriptor its market id commits to,
- * including the opening scoreline, so the result can be checked against the scoreboard.
+ * On the board these are doors to the match page. On the match page (`espnId` given) they
+ * are the order entry itself. "Nobody scores" refunds, which is the contract's VOID, so it
+ * needed no settlement logic of its own.
  */
-interface MicroMarket {
+export interface MicroMarket {
   id: `0x${string}`;
   eventId: `0x${string}`;
   descriptor: string;
   espnId: string;
   league: string;
   name: string;
-  home: { name: string; abbr: string; score: number | null };
-  away: { name: string; abbr: string; score: number | null };
+  home: { name: string; short: string; abbr: string; score: number | null };
+  away: { name: string; short: string; abbr: string; score: number | null };
   windowS: number;
   windowLabel: string;
   closesAt: number;
@@ -40,33 +37,16 @@ interface MicroMarket {
 
 const AMOUNTS = [2, 5, 10];
 
-function payout(win: number, lose: number): number {
-  if (lose <= 0) return 1;
-  if (win <= 0) return 1 + lose;
-  return 1 + (lose / win) * 0.98;
-}
-
-export function MicroMarkets({
-  walletClient,
-  account,
-  onNotice,
-}: {
-  walletClient: WalletClient | null;
-  account: `0x${string}` | null;
-  onNotice: (message: string) => void;
-}) {
+function useMicro(espnId?: string) {
   const [markets, setMarkets] = useState<MicroMarket[] | null>(null);
-  const [window_, setWindow] = useState(120);
-  const [amount, setAmount] = useState(2);
-  const stake = useSportsStake(walletClient, account);
-
   useEffect(() => {
     let off = false;
     async function load() {
       try {
         const res = await fetch("/api/sports/micro");
         const body = (await res.json()) as { markets?: MicroMarket[] };
-        if (!off) setMarkets(body.markets ?? []);
+        const all = body.markets ?? [];
+        if (!off) setMarkets(espnId ? all.filter((m) => m.espnId === espnId) : all);
       } catch {
         if (!off) setMarkets([]);
       }
@@ -77,83 +57,100 @@ export function MicroMarkets({
       off = true;
       clearInterval(t);
     };
-  }, []);
+  }, [espnId]);
+  return markets;
+}
 
-  if (markets === null) return <p className="micro-empty">Checking for matches in play…</p>;
-  if (markets.length === 0) {
-    return (
-      <p className="micro-empty">
-        No match is in play right now. In-play windows open automatically the moment one kicks off.
-      </p>
-    );
-  }
+/** Board: one compact door per live match and window. Renders nothing when no match is live. */
+export function MicroBoard() {
+  const markets = useMicro();
+  if (!markets || markets.length === 0) return null;
+  return (
+    <section className="micro-section">
+      <h2 className="section-title micro-title"><Lightning weight="fill" /> In play</h2>
+      <div className="micro-strip">
+        {markets.map((m) => (
+          <Link key={m.id} href={`/sports/${m.espnId}?window=${m.windowS}`} className="micro-tile">
+            <span className="micro-tile-top">
+              <b>{m.away.abbr} {m.openAway}:{m.openHome} {m.home.abbr}</b>
+              <em className={m.secondsLeft <= 15 ? "is-urgent" : ""}>{Math.max(0, m.secondsLeft)}s</em>
+            </span>
+            <span className="micro-tile-q">Next goal, {m.windowLabel}</span>
+            <span className="micro-tile-odds">
+              <i className="tone-up">{m.home.abbr} {m.impliedHome.toFixed(0)}%</i>
+              <i className="tone-down">{m.away.abbr} {(100 - m.impliedHome).toFixed(0)}%</i>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
 
-  const shown = markets.filter((m) => m.windowS === window_);
-  const windows = [...new Set(markets.map((m) => m.windowS))].sort((a, b) => a - b);
+/** Match page: the windows for one fixture, stakeable. */
+export function MicroOrders({
+  espnId,
+  initialWindow,
+  walletClient,
+  account,
+  onNotice,
+}: {
+  espnId: string;
+  initialWindow?: number;
+  walletClient: WalletClient | null;
+  account: `0x${string}` | null;
+  onNotice: (message: string) => void;
+}) {
+  const markets = useMicro(espnId);
+  const [windowS, setWindowS] = useState(initialWindow ?? 120);
+  const [amount, setAmount] = useState(2);
+  const stake = useSportsStake(walletClient, account);
 
-  async function place(m: MicroMarket, home: boolean) {
-    const team = home ? m.home.name : m.away.name;
+  if (!markets || markets.length === 0) return null;
+  const m = markets.find((x) => x.windowS === windowS) ?? markets[0];
+
+  async function place(home: boolean) {
     const res = await stake.submit(
       { eventId: m.eventId, closesAt: BigInt(m.closesAt) },
       home,
       amount,
-      `${team} to score next`
+      `${home ? m.home.short : m.away.short} to score in the next ${m.windowLabel}`
     );
     onNotice(res.message);
     void res.confirm?.then((d) => onNotice(d.message));
   }
 
   return (
-    <section className="micro-section">
-      <header className="micro-head">
-        <h2><Lightning weight="fill" /> In play</h2>
-        <div className="board-durations">
-          {windows.map((w) => (
-            <button key={w} type="button" className={window_ === w ? "is-active" : ""} onClick={() => setWindow(w)}>
-              {markets.find((m) => m.windowS === w)?.windowLabel}
-            </button>
-          ))}
-        </div>
-        <div className="sports-amounts">
-          {AMOUNTS.map((v) => (
-            <button key={v} type="button" className={amount === v ? "is-active" : ""} onClick={() => setAmount(v)}>{v}</button>
-          ))}
-        </div>
+    <section className="match-panel">
+      <header className="match-panel-head">
+        <h2><Lightning weight="fill" /> Next goal</h2>
+        <span className={`card-chip is-dark ${m.secondsLeft <= 15 ? "is-urgent" : ""}`}>{Math.max(0, m.secondsLeft)}s</span>
       </header>
-
-      <div className="board-grid">
-        {shown.map((m) => (
-          <article key={m.id} className="board-card micro-card">
-            <header className="board-card-head">
-              <span className="board-card-cat">{m.league} · live</span>
-              <span className={`board-clock ${m.secondsLeft <= 15 ? "is-urgent" : ""}`}>{Math.max(0, m.secondsLeft)}s</span>
-            </header>
-            <h3 className="board-card-title">Who scores in the next {m.windowLabel}?</h3>
-            <p className="sports-sub">
-              {m.name} · <strong>{m.openHome}–{m.openAway}</strong> at window open
-            </p>
-
-            <div className="board-outcomes">
-              <button type="button" className="board-outcome sports-pick tone-up" disabled={stake.busy || m.secondsLeft <= 2} onClick={() => void place(m, true)}>
-                <span className="board-outcome-name">{m.home.abbr}<i style={{ width: `${m.impliedHome}%` }} /></span>
-                <span className="board-pays">{payout(m.poolHome, m.poolAway).toFixed(2)}x</span>
-                <span className="board-odds">{m.impliedHome.toFixed(0)}%</span>
-              </button>
-              <button type="button" className="board-outcome sports-pick tone-down" disabled={stake.busy || m.secondsLeft <= 2} onClick={() => void place(m, false)}>
-                <span className="board-outcome-name">{m.away.abbr}<i style={{ width: `${100 - m.impliedHome}%` }} /></span>
-                <span className="board-pays">{payout(m.poolAway, m.poolHome).toFixed(2)}x</span>
-                <span className="board-odds">{(100 - m.impliedHome).toFixed(0)}%</span>
-              </button>
-              <div className="board-card-foot">
-                <span>${m.volume.toFixed(2)} pool</span>
-                <span>nobody scores → refund</span>
-              </div>
-            </div>
-            <code className="micro-descriptor" title="What this market's id commits to">{m.descriptor}</code>
-          </article>
+      <div className="board-durations">
+        {markets.map((x) => (
+          <button key={x.windowS} type="button" className={x.windowS === m.windowS ? "is-active" : ""} onClick={() => setWindowS(x.windowS)}>
+            {x.windowLabel}
+          </button>
         ))}
       </div>
-      {stake.busy && <p className="micro-empty">{stake.step || "Working…"}</p>}
+      <div className="match-sides">
+        {([[true, m.home, m.impliedHome, m.poolHome, m.poolAway, "up"], [false, m.away, 100 - m.impliedHome, m.poolAway, m.poolHome, "down"]] as const).map(
+          ([home, team, odds, mine, theirs, tone]) => (
+            <button key={team.abbr} type="button" className={`match-side tone-${tone}`} disabled={stake.busy || m.secondsLeft <= 2} onClick={() => void place(home)}>
+              <span>{team.short}</span>
+              <strong>{odds.toFixed(0)}%</strong>
+              <small>pays {payout(mine, theirs).toFixed(2)}x</small>
+            </button>
+          )
+        )}
+      </div>
+      <div className="match-amounts">
+        {AMOUNTS.map((v) => (
+          <button key={v} type="button" className={amount === v ? "is-active" : ""} onClick={() => setAmount(v)}>{v} USDC</button>
+        ))}
+      </div>
+      <p className="match-note">No goal in the window refunds both sides. Opened at {m.openAway}:{m.openHome}.</p>
+      {stake.busy && <p className="match-note">{stake.step || "Working..."}</p>}
     </section>
   );
 }

@@ -29,6 +29,8 @@ export const CONTRACTS = {
 
 /** Lists feeds and receives fees. Cannot influence any outcome. */
 export const ADMIN = deployed.admin as `0x${string}`;
+/** Signs sports results for TickSports. Public by design: every attestation names it. */
+export const ATTESTOR = deployed.attestor as `0x${string}`;
 export const SHARDS = deployed.shards;
 
 /**

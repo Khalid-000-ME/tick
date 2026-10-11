@@ -2,19 +2,23 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, Info } from "@phosphor-icons/react";
-import { formatEther } from "viem";
+import { formatEther, parseAbi } from "viem";
 import { AccountShell } from "@/components/AccountShell";
-import { Erc20Abi, TickAbi } from "@/lib/chain/abi";
+import { Erc20Abi, TickAbi, TickSportsAbi } from "@/lib/chain/abi";
 import { CONTRACTS, explorerAddress, monadTestnet, toUsd } from "@/lib/chain/config";
 import { readClient } from "@/lib/useWallet";
 import { gasShortfall } from "@/lib/gasCheck";
 import { requestGas } from "@/lib/requestGas";
 import { useTickWallet } from "@/lib/useTickWallet";
 
+/** Tick and TickSports expose the same balance interface, so one ABI serves both. */
+const BalanceAbi = parseAbi(["function deposits(address) view returns (uint256)", "function withdraw(uint256)"]);
+
 interface Balances {
   mon: number;
   wallet: number;
   tick: number;
+  sports: number;
 }
 
 export function FundView() {
@@ -28,12 +32,14 @@ export function FundView() {
   const load = useCallback(async () => {
     if (!account) return;
     try {
-      const [mon, wal, tick] = await Promise.all([
+      const [mon, wal, tick, sports] = await Promise.all([
         readClient.getBalance({ address: account }),
         readClient.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "balanceOf", args: [account] }),
         readClient.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account] }),
+        // The sports contract holds its own balance, so it is listed and withdrawn separately.
+        readClient.readContract({ address: CONTRACTS.tickSports, abi: TickSportsAbi, functionName: "deposits", args: [account] }),
       ]);
-      setBal({ mon: Number(formatEther(mon)), wallet: toUsd(wal as bigint), tick: toUsd(tick as bigint) });
+      setBal({ mon: Number(formatEther(mon)), wallet: toUsd(wal as bigint), tick: toUsd(tick as bigint), sports: toUsd(sports as bigint) });
     } catch {
       /* a failed poll keeps the last numbers on screen */
     }
@@ -45,7 +51,7 @@ export function FundView() {
     return () => clearInterval(t);
   }, [load]);
 
-  async function withdrawAll() {
+  async function withdrawAll(from: "tick" | "sports" = "tick") {
     setNote(null);
     if (!walletClient || !account) {
       setNote("The wallet is not ready to sign yet. Reconnect it and try again.");
@@ -58,14 +64,15 @@ export function FundView() {
         setNote(short);
         return;
       }
-      const raw = (await readClient.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account] })) as bigint;
+      const address = from === "sports" ? CONTRACTS.tickSports : CONTRACTS.tick;
+      const raw = await readClient.readContract({ address, abi: BalanceAbi, functionName: "deposits", args: [account] });
       if (raw === 0n) {
         setNote("Nothing to withdraw: your Tick balance is empty.");
         return;
       }
       const hash = await walletClient.writeContract({
-        address: CONTRACTS.tick,
-        abi: TickAbi,
+        address,
+        abi: BalanceAbi,
         functionName: "withdraw",
         args: [raw],
         account,
@@ -117,15 +124,24 @@ export function FundView() {
           <section className="stat-row" aria-label="Balances">
             <div className="stat">
               <span>In Tick (stakeable)</span>
-              <strong>{bal ? bal.tick.toFixed(2) : "—"}</strong>
+              <strong>{bal ? bal.tick.toFixed(2) : "-"}</strong>
               {bal && bal.tick > 0 && (
-                <button type="button" className="btn-ghost small" disabled={withdrawing} onClick={() => void withdrawAll()}>
+                <button type="button" className="btn-ghost small" disabled={withdrawing} onClick={() => void withdrawAll("tick")}>
                   {withdrawing ? "Withdrawing…" : "Withdraw to wallet"}
                 </button>
               )}
             </div>
-            <div className="stat"><span>In wallet · USDC</span><strong>{bal ? bal.wallet.toFixed(2) : "—"}</strong></div>
-            <div className="stat"><span>Gas · MON</span><strong>{bal ? bal.mon.toFixed(3) : "—"}</strong></div>
+            <div className="stat">
+              <span>Sports balance</span>
+              <strong>{bal ? bal.sports.toFixed(2) : "0.00"}</strong>
+              {bal && bal.sports > 0 && (
+                <button type="button" className="btn-ghost small" disabled={withdrawing} onClick={() => void withdrawAll("sports")}>
+                  {withdrawing ? "Withdrawing..." : "Withdraw to wallet"}
+                </button>
+              )}
+            </div>
+            <div className="stat"><span>In wallet · USDC</span><strong>{bal ? bal.wallet.toFixed(2) : "-"}</strong></div>
+            <div className="stat"><span>Gas · MON</span><strong>{bal ? bal.mon.toFixed(3) : "-"}</strong></div>
           </section>
 
           <section className="fund-grid">

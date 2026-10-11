@@ -3,13 +3,12 @@
 import Image from "next/image";
 
 /**
- * The image strip across the top of a market card.
+ * The image strip across the top of a market card, and the only place the card says what
+ * it is and how long it has left. Everything below it is the decision: the price to beat,
+ * the two sides, the pool.
  *
- * Boards like Polymarket's and Kalshi's lead each card with a photograph, which is what
- * makes a wall of markets scannable rather than a spreadsheet. We have no photo library
- * and no licence to borrow one, so each asset gets its own generated banner instead: its
- * brand colours as a gradient, its mark, and the ticker set large. It reads as deliberate
- * rather than as a missing image, and it costs nothing to serve.
+ * We have no photo library and no licence to borrow one, so each asset gets a generated
+ * banner: its brand colours, its mark, the ticker set large.
  */
 export const ASSET_ICONS: Record<string, string> = {
   "BTC/USD": "/asset-icons/bitcoin.svg",
@@ -39,24 +38,40 @@ const PALETTE: Record<string, [string, string]> = {
 };
 const FALLBACK: [string, string] = ["#2d3a33", "#121714"];
 
-export function CardBanner({ symbol, label, tall = false }: { symbol: string; label?: string; tall?: boolean }) {
+export const ticker = (symbol: string) => symbol.replace("/USD", "");
+
+export function CardBanner({
+  symbol,
+  label,
+  window: windowLabel,
+  status,
+  urgent = false,
+  tall = false,
+}: {
+  symbol: string;
+  label?: string;
+  window: string;
+  status: string;
+  urgent?: boolean;
+  tall?: boolean;
+}) {
   const [from, to] = PALETTE[symbol] ?? FALLBACK;
   const icon = ASSET_ICONS[symbol];
   return (
-    <div
-      className={`card-banner ${tall ? "is-tall" : ""}`}
-      style={{ backgroundImage: `linear-gradient(118deg, ${from}, ${to})` }}
-      aria-hidden="true"
-    >
+    <div className={`card-banner ${tall ? "is-tall" : ""}`} style={{ backgroundImage: `linear-gradient(118deg, ${from}, ${to})` }}>
       {icon && (
-        <span className="card-banner-ghost">
+        <span className="card-banner-ghost" aria-hidden="true">
           <Image src={icon} alt="" width={160} height={160} />
         </span>
       )}
+      <span className="card-banner-top">
+        <span className="card-chip">{windowLabel}</span>
+        <span className={`card-chip ${urgent ? "is-urgent" : ""}`}>{status}</span>
+      </span>
       <span className="card-banner-mark">
         {icon && <Image src={icon} alt="" width={tall ? 30 : 24} height={tall ? 30 : 24} />}
-        <b>{symbol}</b>
-        {label && <em>{label}</em>}
+        <b>{ticker(symbol)}</b>
+        {tall && label && <em>{label}</em>}
       </span>
     </div>
   );
@@ -65,21 +80,36 @@ export function CardBanner({ symbol, label, tall = false }: { symbol: string; la
 /** A fixture banner: both crests on a neutral field, since neither club owns the card. */
 export function FixtureBanner({
   league,
+  status,
+  live = false,
   home,
   away,
+  showScore = false,
+  tall = false,
 }: {
   league: string;
-  home: { abbr: string; logo: string | null };
-  away: { abbr: string; logo: string | null };
+  status: string;
+  live?: boolean;
+  /** ESPN reports 0-0 before kickoff, so the score is shown only once there is one. */
+  showScore?: boolean;
+  home: { abbr: string; logo: string | null; score: number | null };
+  away: { abbr: string; logo: string | null; score: number | null };
+  tall?: boolean;
 }) {
+  const scored = showScore && home.score !== null && away.score !== null;
   return (
-    <div className="card-banner is-fixture" style={{ backgroundImage: "linear-gradient(118deg, #1b2b22, #0b1310)" }} aria-hidden="true">
-      <span className="card-banner-mark">
-        {away.logo && <Image src={away.logo} alt="" width={26} height={26} />}
-        <b>{away.abbr} @ {home.abbr}</b>
-        {home.logo && <Image src={home.logo} alt="" width={26} height={26} />}
+    <div className={`card-banner is-fixture ${tall ? "is-tall" : ""}`} style={{ backgroundImage: "linear-gradient(118deg, #1b2b22, #0b1310)" }}>
+      <span className="card-banner-top">
+        <span className="card-chip">{league}</span>
+        <span className={`card-chip ${live ? "is-live" : ""}`}>{status}</span>
       </span>
-      <em className="card-banner-league">{league}</em>
+      <span className="card-banner-mark">
+        {away.logo && <Image src={away.logo} alt="" width={tall ? 34 : 26} height={tall ? 34 : 26} />}
+        <b>{away.abbr}</b>
+        <em className="fixture-score">{scored ? `${away.score} : ${home.score}` : "@"}</em>
+        <b>{home.abbr}</b>
+        {home.logo && <Image src={home.logo} alt="" width={tall ? 34 : 26} height={tall ? 34 : 26} />}
+      </span>
     </div>
   );
 }

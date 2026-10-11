@@ -1,20 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import { Info, SealCheck } from "@phosphor-icons/react";
+import Link from "next/link";
 import { FixtureBanner } from "@/components/CardBanner";
-import { OddsChart, type OddsPoint } from "@/components/OddsChart";
-import { useSportsStake } from "@/lib/useSportsStake";
-import type { WalletClient } from "viem";
 
 /**
- * One fixture as a market: both teams, what each side pays, and one tap to take it.
- *
- * The referee notice is not fine print. A price market here settles on a signature Pyth
- * produced, which nobody can forge; a fixture settles on a signature OURS produced over a
- * public scoreboard. That is a weaker promise and the card says so where the money is,
- * rather than in a footer nobody reads.
+ * A fixture on the board: who is playing, the state of the match, and what each side pays.
+ * The card is a door to the match page, where the staking, the odds history, the in-play
+ * windows and the result all live, so nothing here is said twice.
  */
 export interface SportsEvent {
   id: `0x${string}`;
@@ -37,144 +30,58 @@ export interface SportsEvent {
   secondsToKickoff: number;
 }
 
-const AMOUNTS = [2, 5, 10, 25];
-
-function payout(win: number, lose: number): number {
+export function payout(win: number, lose: number): number {
   if (lose <= 0) return 1;
   if (win <= 0) return 1 + lose;
   return 1 + (lose / win) * 0.98;
 }
 
-function until(s: number): string {
-  if (s <= 0) return "started";
+export function until(s: number): string {
+  if (s <= 0) return "now";
   if (s < 3600) return `${Math.ceil(s / 60)}m`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
   return `${Math.floor(s / 86400)}d`;
 }
 
-export function SportsCard({
-  event,
-  series,
-  walletClient,
-  account,
-  onNotice,
-}: {
-  event: SportsEvent;
-  series: OddsPoint[];
-  walletClient: WalletClient | null;
-  account: `0x${string}` | null;
-  onNotice: (message: string) => void;
-}) {
-  const stake = useSportsStake(walletClient, account);
-  const [amount, setAmount] = useState(5);
-  const [pending, setPending] = useState<"HOME" | "AWAY" | null>(null);
-  const homeOdds = event.impliedHome;
+/** One short status, in priority order: settled result, live, finished, countdown. */
+export function fixtureStatus(e: SportsEvent): { text: string; live: boolean } {
+  if (e.settledOutcome === 1) return { text: `${e.home.abbr} won`, live: false };
+  if (e.settledOutcome === 2) return { text: `${e.away.abbr} won`, live: false };
+  if (e.settledOutcome === 3) return { text: "Refunded", live: false };
+  if (e.state === "in") return { text: "Live", live: true };
+  if (e.state === "post") return { text: "Final", live: false };
+  return { text: `in ${until(e.secondsToKickoff)}`, live: false };
+}
 
-  async function place(side: "HOME" | "AWAY") {
-    setPending(null);
-    const team = side === "HOME" ? event.home.name : event.away.name;
-    const result = await stake.submit(
-      { eventId: event.eventId, closesAt: BigInt(event.kickoff) },
-      side === "HOME",
-      amount,
-      team
-    );
-    onNotice(result.message);
-    void result.confirm?.then((done) => onNotice(done.message));
-  }
-
-  const settled = event.settledOutcome !== 0;
-  const resultLabel =
-    event.settledOutcome === 1 ? `${event.home.abbr} won` : event.settledOutcome === 2 ? `${event.away.abbr} won` : "Voided — refunded";
+export function SportsCard({ event }: { event: SportsEvent }) {
+  const href = `/sports/${event.espnId}`;
+  const status = fixtureStatus(event);
+  const sides = [
+    { team: event.home, odds: event.impliedHome, mine: event.poolHome, theirs: event.poolAway, tone: "up" },
+    { team: event.away, odds: 100 - event.impliedHome, mine: event.poolAway, theirs: event.poolHome, tone: "down" },
+  ] as const;
 
   return (
-    <article className="board-card sports-card has-banner">
-      <FixtureBanner league={event.league} home={event.home} away={event.away} />
-      <header className="board-card-head">
-        <span className="board-card-cat">{event.league}</span>
-        <span className={`board-clock ${event.secondsToKickoff <= 900 && event.open ? "is-urgent" : ""}`}>
-          {settled ? resultLabel : event.open ? `in ${until(event.secondsToKickoff)}` : event.state === "in" ? "live" : "awaiting result"}
-        </span>
-      </header>
+    <article className={`board-card sports-card has-banner ${event.open ? "" : "is-closed"}`}>
+      <Link href={href} className="card-hit" aria-label={`Open ${event.name}`} />
+      <FixtureBanner league={event.league} status={status.text} live={status.live} home={event.home} away={event.away} showScore={event.state !== "pre"} />
 
-      <h2 className="board-card-title">{event.away.abbr} at {event.home.abbr}</h2>
-      <p className="sports-sub">
-        {event.name}
-        {event.home.score !== null && event.state !== "pre" && (
-          <strong> · {event.home.abbr} {event.home.score}–{event.away.score} {event.away.abbr}</strong>
-        )}
-      </p>
-
-      <div className="board-card-body">
-        <div className="board-outcomes">
-          <div className="board-outcome-head"><span>Team</span><span>Pays</span><span>Odds</span></div>
-          {([["HOME", event.home, homeOdds, event.poolHome, event.poolAway], ["AWAY", event.away, 100 - homeOdds, event.poolAway, event.poolHome]] as const).map(
-            ([side, team, odds, mine, theirs]) => (
-              <button
-                key={side}
-                type="button"
-                className={`board-outcome sports-pick tone-${side === "HOME" ? "up" : "down"}`}
-                disabled={!event.open || stake.busy}
-                onClick={() => setPending(side as "HOME" | "AWAY")}
-              >
-                <span className="board-outcome-name">
-                  {team.logo && <Image src={team.logo} alt="" width={16} height={16} />}
-                  <span>{team.short}</span>
-                  <i style={{ width: `${odds}%` }} />
-                </span>
-                <span className="board-pays">{payout(mine, theirs).toFixed(2)}x</span>
-                <span className="board-odds">{odds.toFixed(0)}%</span>
-              </button>
-            )
-          )}
-          <div className="board-card-foot">
-            <span>${event.volume.toFixed(2)} pool</span>
-            {event.open && (
-              <span className="sports-amounts">
-                {AMOUNTS.map((v) => (
-                  <button key={v} type="button" className={amount === v ? "is-active" : ""} onClick={() => setAmount(v)}>{v}</button>
-                ))}
-              </span>
-            )}
-          </div>
-          {stake.busy && <p className="sports-step">{stake.step || "Working…"}</p>}
-        </div>
-
-        <div className="board-chart">
-          <div className="board-legend">
-            <span className="tone-up"><i />{event.home.abbr} {homeOdds.toFixed(0)}%</span>
-            <span className="tone-down"><i />{event.away.abbr} {(100 - homeOdds).toFixed(0)}%</span>
-          </div>
-          <OddsChart series={series} above={homeOdds} />
-          <p className="sports-referee">
-            <SealCheck weight="bold" />
-Result attested by a named key from the public scoreboard — a weaker promise than
-            the Pyth-settled price markets, in its own contract.
-          </p>
+      <div className="board-outcomes sports-outcomes">
+        {sides.map(({ team, odds, mine, theirs, tone }) => (
+          <Link key={team.abbr} href={href} className={`board-outcome sports-pick tone-${tone}`}>
+            <span className="board-outcome-name">
+              {team.logo && <Image src={team.logo} alt="" width={16} height={16} />}
+              <span>{team.short}</span>
+              <i style={{ width: `${odds}%` }} />
+            </span>
+            <span className="board-pays">{payout(mine, theirs).toFixed(2)}x</span>
+            <span className="board-odds">{odds.toFixed(0)}%</span>
+          </Link>
+        ))}
+        <div className="board-card-foot">
+          <span>${event.volume.toFixed(2)} pool</span>
         </div>
       </div>
-
-      {pending && (
-        <div className="confirm-scrim" role="dialog" aria-modal="true" onClick={() => setPending(null)}>
-          <div className={`confirm-card tone-${pending === "HOME" ? "up" : "down"}`} onClick={(e) => e.stopPropagation()}>
-            <span className="confirm-eyebrow">{event.league} · kicks off in {until(event.secondsToKickoff)}</span>
-            <strong className="confirm-title">
-              {amount} USDC on <em>{pending === "HOME" ? event.home.name : event.away.name}</em>
-            </strong>
-            <p className="confirm-detail">
-              Wins about {(amount * payout(pending === "HOME" ? event.poolHome : event.poolAway, pending === "HOME" ? event.poolAway : event.poolHome)).toFixed(2)} USDC. A draw or a
-              cancelled fixture refunds everyone.
-            </p>
-            <p className="confirm-detail is-warn">
-              <Info weight="bold" /> This result is attested by Tick&apos;s key from the public scoreboard.
-            </p>
-            <div className="confirm-actions">
-              <button type="button" className="confirm-cancel" onClick={() => setPending(null)}>Cancel</button>
-              <button type="button" className="confirm-go" onClick={() => void place(pending)} autoFocus>Stake</button>
-            </div>
-          </div>
-        </div>
-      )}
     </article>
   );
 }

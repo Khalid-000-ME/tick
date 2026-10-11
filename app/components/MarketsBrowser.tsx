@@ -7,7 +7,7 @@ import { Brand } from "@/components/Brand";
 import { OddsChart, type OddsPoint } from "@/components/OddsChart";
 import { CardBanner } from "@/components/CardBanner";
 import { SportsCard, type SportsEvent } from "@/components/SportsCard";
-import { MicroMarkets } from "@/components/MicroMarkets";
+import { MicroBoard } from "@/components/MicroMarkets";
 import { WalletMenu } from "@/components/WalletMenu";
 import { DURATIONS } from "@/lib/chain/config";
 import { useTheme } from "@/lib/useTheme";
@@ -65,7 +65,6 @@ export function MarketsBrowser() {
   const [error, setError] = useState<string | null>(null);
   const [kind, setKind] = useState<"all" | "crypto" | "equity" | "sports">("all");
   const [sports, setSports] = useState<SportsEvent[] | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [windowS, setWindowS] = useState<number | "all">("all");
   const [symbol, setSymbol] = useState<string | "all">("all");
   // Odds history is rendered, so it lives in state; a ref read during render can paint a
@@ -203,18 +202,10 @@ export function MarketsBrowser() {
             <div className="page-empty">No fixtures from the scoreboard right now.</div>
           ) : (
             <>
-            <MicroMarkets walletClient={wallet.walletClient} account={wallet.account} onNotice={setNotice} />
-            <h2 className="section-title">Match result</h2>
+            <MicroBoard />
             <div className="board-grid">
               {sports.map((e) => (
-                <SportsCard
-                  key={e.id}
-                  event={e}
-                  series={history.get(e.id) ?? []}
-                  walletClient={wallet.walletClient}
-                  account={wallet.account}
-                  onNotice={setNotice}
-                />
+                <SportsCard key={e.id} event={e} />
               ))}
             </div>
             </>
@@ -235,44 +226,39 @@ export function MarketsBrowser() {
             </div>
           </>
         )}
-        {notice && (
-          <div className="page-note board-note" role="status">
-            <p>{notice}</p>
-            <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss">×</button>
-          </div>
-        )}
       </main>
     </div>
   );
 }
+
+/** Prices under a dollar need their cents and more; a strike that rounds to $0.09 is useless. */
+const usd = (v: number) =>
+  v.toLocaleString("en-US", { minimumFractionDigits: v < 1 ? 4 : 2, maximumFractionDigits: v < 1 ? 4 : 2 });
 
 function MarketCard({ market, series, featured = false }: { market: LiveMarket; series: OddsPoint[]; featured?: boolean }) {
   const strike = Number(market.strike) * 10 ** market.expo;
   const price = market.price === null ? null : Number(market.price) * 10 ** market.expo;
   const above = market.impliedAbove;
   const href = `/trade?feed=${encodeURIComponent(market.symbol)}&window=${market.windowS}`;
+  // Which side the market is currently on, so the spot figure says something at a glance.
+  const leaning = price === null ? null : price >= strike ? "up" : "down";
 
   return (
     <article className={`board-card has-banner ${featured ? "is-featured" : ""} ${market.closed ? "is-closed" : ""}`}>
-      <Link href={href} className="card-hit" aria-label={`Open the ${market.symbol} ${market.windowLabel} market`} />
-      <CardBanner symbol={market.symbol} label={market.label} tall={featured} />
-      <header className="board-card-head">
-        <span className="board-card-cat">
-          {market.kind === "crypto" ? "Crypto" : "Equity"} · {market.windowLabels.join(" / ")} window
-          <em>struck {clock(Math.max(0, market.windowS - market.secondsLeft))} ago</em>
-        </span>
-        <span className={`board-clock ${market.secondsLeft <= 10 ? "is-urgent" : ""}`}>
-          {market.closed ? "market closed" : clock(market.secondsLeft)}
-        </span>
-      </header>
+      <Link href={href} className="card-hit" aria-label={`Open ${market.symbol}, ${market.windowLabel}`} />
+      <CardBanner
+        symbol={market.symbol}
+        label={market.label}
+        window={market.windowLabels.join(" / ")}
+        status={market.closed ? "Closed" : clock(market.secondsLeft)}
+        urgent={!market.closed && market.secondsLeft <= 10}
+        tall={featured}
+      />
 
-      <h2 className="board-card-title">
-        Will {market.symbol} close above ${strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}?
-      </h2>
+      <h2 className="board-card-title">Above ${usd(strike)}?</h2>
 
-      <div className="board-card-body">
+      <div className={`board-card-body ${featured ? "" : "is-compact"}`}>
         <div className="board-outcomes">
-          <div className="board-outcome-head"><span>Side</span><span>Pays</span><span>Odds</span></div>
           <Link href={href} className="board-outcome tone-up">
             <span className="board-outcome-name">Above<i style={{ width: `${above}%` }} /></span>
             <span className="board-pays">{payout(market.poolAbove, market.poolBelow).toFixed(2)}x</span>
@@ -285,15 +271,10 @@ function MarketCard({ market, series, featured = false }: { market: LiveMarket; 
           </Link>
           <div className="board-card-foot">
             <span>{money(market.volume)} pool</span>
-            {price !== null && <span>spot ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
+            {price !== null && <span className={`spot is-${leaning}`}>now ${usd(price)}</span>}
           </div>
         </div>
-
         <div className="board-chart">
-          <div className="board-legend">
-            <span className="tone-up"><i />Above {above.toFixed(0)}%</span>
-            <span className="tone-down"><i />Below {(100 - above).toFixed(0)}%</span>
-          </div>
           <OddsChart series={series} above={above} tall={featured} />
         </div>
       </div>

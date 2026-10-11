@@ -14,7 +14,7 @@ export function AccountShell({
   wallet,
   children,
 }: {
-  active: "portfolio" | "fund" | "settlers" | "leaderboard";
+  active: "markets" | "portfolio" | "fund" | "settlers" | "leaderboard";
   wallet: Wallet;
   children: React.ReactNode;
 }) {
@@ -26,7 +26,7 @@ export function AccountShell({
         <Link href="/trade" className="terminal-back" aria-label="Back to the market"><ArrowLeft /></Link>
         <Brand />
         <nav className="terminal-nav page-nav" aria-label="Account">
-          <Link href="/markets">Markets</Link>
+          <Link href="/markets" aria-current={active === "markets" ? "page" : undefined}>Markets</Link>
           <Link href="/trade">Terminal</Link>
           <Link href="/portfolio" aria-current={active === "portfolio" ? "page" : undefined}>Portfolio</Link>
           <Link href="/leaderboard" aria-current={active === "leaderboard" ? "page" : undefined}>Leaderboard</Link>
