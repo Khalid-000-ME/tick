@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { ASSET_ICONS as ICONS } from "@/components/CardBanner";
 import { StrikeStepper } from "@/components/StrikeStepper";
+import { TVChart } from "@/components/TVChart";
 import { WalletMenu } from "@/components/WalletMenu";
 import { TickerStrip } from "@/components/TickerStrip";
 import { NewsPanel } from "@/components/NewsPanel";
@@ -24,8 +25,6 @@ import { DURATIONS, WINDOW_S, fmtUsd, toUsd } from "@/lib/chain/config";
 const AMOUNTS = [5, 10, 25, 50];
 /** Seconds left at which the countdown turns red — long enough to still act on. */
 const URGENT_AT = 8;
-/** Where "now" sits across the 1000-wide chart. The line starts at the left edge. */
-const NOW_X = 850;
 
 export function MarketTerminal() {
   const [feed, setFeed] = useState<FeedSpec>(FEEDS[0]);
@@ -81,7 +80,6 @@ export function MarketTerminal() {
   const impliedAbove = market.impliedAboveBps / 100;
   const strikeNumber = market.terms ? Number(market.terms.strike) * 10 ** feed.expo : null;
 
-  const chart = useMemo(() => chartGeometry(history, shownPrice, strikeNumber), [history, shownPrice, strikeNumber]);
 
   // Pool-ratio payout if this stake joined now and its side won. Parimutuel, so this
   // moves with every later stake — labelled as an estimate, never a quote.
@@ -208,21 +206,9 @@ export function MarketTerminal() {
               {market.cutoffOpen ? "Open" : auto.busy ? "Posting…" : "Ready"}
             </button>
           </div>
-          <div className="price-chart">
-            <div className="chart-future" />
-            {chart && strikeNumber !== null && <>
-              <div className="chart-zone chart-zone-up" style={{ height: `${chart.strikeY / 520 * 100}%` }} />
-              <div className="chart-zone chart-zone-down" style={{ top: `${chart.strikeY / 520 * 100}%`, height: `${100 - chart.strikeY / 520 * 100}%` }} />
-            </>}
-            <svg viewBox="0 0 1000 520" role="img" aria-label={`${feed.symbol}: observed prices end at the center; the right half is the unknown future`} preserveAspectRatio="none">
-              <defs><linearGradient id="chartArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#214f3b" stopOpacity="0.12" /><stop offset="1" stopColor="#214f3b" stopOpacity="0" /></linearGradient></defs>
-              {chart && <><path d={`${chart.path} L ${NOW_X} 520 L ${chart.first.x} 520 Z`} fill="url(#chartArea)" /><path d={chart.path} fill="none" stroke="#153f31" strokeWidth="2.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" /></>}
-            </svg>
-            {chart && strikeNumber !== null && <div className="strike-line" style={{ top: `${chart.strikeY / 520 * 100}%` }}><span>STRIKE · ${formatPrice(strikeNumber)}</span></div>}
-            <div className="now-line"><span>NOW</span></div>
-            {chart && <div className="latest-price" style={{ top: `${chart.last.y / 520 * 100}%` }}><i /><strong>${formatPrice(shownPrice!)}</strong></div>}
-            {!chart && <div className="chart-empty">Waiting for the first onchain price…</div>}
-                      </div>
+          <div className="price-chart tv-host">
+            <TVChart feed={feed} livePrice={livePrice} strike={strikeNumber} theme={theme} />
+          </div>
         </section>
         <div className="terminal-rail">
         <NewsPanel feed={feed} />
@@ -393,27 +379,4 @@ function formatPrice(value: number) {
   });
 }
 
-function chartGeometry(history: { values: number[] }, current: number | null, strike: number | null) {
-  const values = history.values.length > 0 ? history.values : current === null ? [] : [current];
-  if (!values.length) return null;
-  const domain = strike === null ? values : [...values, strike];
-  const min = Math.min(...domain);
-  const max = Math.max(...domain);
-  const range = Math.max(max - min, Math.abs(current ?? min) * 0.0002, 0.01);
-  const middle = (min + max) / 2;
-  const y = (value: number) => 260 - ((value - middle) / range) * 300;
-  const coordinates = values.map((value, index) => ({
-    x: values.length === 1 ? NOW_X : (index / (values.length - 1)) * NOW_X,
-    y: y(value),
-  }));
-  return {
-    path: linePath(coordinates),
-    first: coordinates[0],
-    last: coordinates[coordinates.length - 1],
-    strikeY: strike === null ? 260 : y(strike),
-  };
-}
 
-function linePath(points: { x: number; y: number }[]): string {
-  return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
-}
