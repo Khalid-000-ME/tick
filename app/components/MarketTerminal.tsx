@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { WalletMenu } from "@/components/WalletMenu";
@@ -38,7 +38,10 @@ export function MarketTerminal() {
   const [feed, setFeed] = useState<FeedSpec>(FEEDS[0]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [amount, setAmount] = useState(25);
-  const [side, setSide] = useState<"ABOVE" | "BELOW">("ABOVE");
+  // No selected side any more: a side IS the action. `pending` holds the side awaiting
+  // confirmation, and `skipConfirm` lets a returning staker go straight through.
+  const [pending, setPending] = useState<"ABOVE" | "BELOW" | null>(null);
+  const [skipConfirm, setSkipConfirm] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const wallet = useTickWallet();
   const { status, account, connect, switchChain, walletClient } = wallet;
@@ -54,7 +57,7 @@ export function MarketTerminal() {
   const auto = useAutoRefresh(feed, market.priceAge, market.acceptMargin, market.refetch);
   const { arm } = auto;
   // Picking a side, an amount or a market means a stake is coming: keep the price warm.
-  useEffect(() => { if (status === "ready") arm(); }, [side, amount, feed, status, arm]);
+  useEffect(() => { if (status === "ready") arm(); }, [amount, feed, status, arm]);
 
   // Observed price history: real readings accumulated since this page loaded, not a
   // generated series. Starts empty by design — the proper fix for a longer window is an
@@ -72,22 +75,36 @@ export function MarketTerminal() {
 
   // Pool-ratio payout if this stake joined now and its side won. Parimutuel, so this
   // moves with every later stake — labelled as an estimate, never a quote.
-  const estimatedReturn = useMemo(() => {
-    const mine = BigInt(Math.round(amount * 1e6));
-    if (mine === 0n) return 0;
-    const win = side === "ABOVE" ? market.poolAbove : market.poolBelow;
-    const lose = side === "ABOVE" ? market.poolBelow : market.poolAbove;
-    if (lose === 0n) return amount; // no counterparty yet: a void refunds the stake
-    const profit = (lose * mine) / (win + mine);
-    const fee = (profit * 200n) / 10_000n;
-    return toUsd(mine + profit - fee);
-  }, [amount, side, market.poolAbove, market.poolBelow]);
+  // What each side pays, so both buttons can carry their own number. Without a selected
+  // side there is nothing to tie a single figure to.
+  const returnFor = useCallback(
+    (which: "ABOVE" | "BELOW") => {
+      const mine = BigInt(Math.round(amount * 1e6));
+      if (mine === 0n) return 0;
+      const win = which === "ABOVE" ? market.poolAbove : market.poolBelow;
+      const lose = which === "ABOVE" ? market.poolBelow : market.poolAbove;
+      if (lose === 0n) return amount; // no counterparty yet: a void refunds the stake
+      const profit = (lose * mine) / (win + mine);
+      const fee = (profit * 200n) / 10_000n;
+      return toUsd(mine + profit - fee);
+    },
+    [amount, market.poolAbove, market.poolBelow]
+  );
 
-  async function primaryAction() {
+  /** A click on a side is the order. The modal, when shown, only confirms it. */
+  function requestStake(which: "ABOVE" | "BELOW") {
     setNotice(null);
-    if (status === "disconnected" || status === "unsupported") { await connect(); return; }
-    if (status === "wrong-chain") { await switchChain(); return; }
-    const result = await stake.submit(side, amount, async () => {
+    if (status === "disconnected" || status === "unsupported") { void connect(); return; }
+    if (status === "wrong-chain") { void switchChain(); return; }
+    if (amount <= 0) { setNotice("Enter an amount above zero first."); return; }
+    if (skipConfirm) { void placeStake(which); return; }
+    setPending(which);
+  }
+
+  async function placeStake(which: "ABOVE" | "BELOW") {
+    setPending(null);
+    setNotice(null);
+    const result = await stake.submit(which, amount, async () => {
       // The contract refuses a stake against a price older than the margin. Post a fresh
       // one only when the stored price is actually near that — otherwise a stake costs
       // no oracle post at all.
@@ -101,23 +118,18 @@ export function MarketTerminal() {
     // Record the exact terms, not just that something was staked: the chain stores only
     // their hash, so dropping them here would make the position impossible to follow.
     if (result.ok && result.terms && result.id) {
-      positions.record(result.terms, side, amount, feed.symbol, result.id, result.hash);
+      positions.record(result.terms, which, amount, feed.symbol, result.id, result.hash);
       // The position and the notice appear the moment the transaction is accepted; the
       // receipt follows about a second later and takes the entry back out if it reverted.
       const { id } = result;
       void result.confirm?.then((done) => {
         setNotice(done.message);
-        if (!done.ok) positions.forget(id, side);
+        if (!done.ok) positions.forget(id, which);
       });
     }
   }
 
-  const actionLabel =
-    status !== "ready"
-      ? status === "wrong-chain" ? "Switch to Monad" : "Connect to take a side"
-      : stake.busy
-        ? stake.step
-        : `Stake ${amount} USDC ${side}`;
+
 
   const secondsToClose = market.secondsToClose;
   const ageLabel = market.priceAge === null ? "—" : `${market.priceAge}s old`;
@@ -202,11 +214,22 @@ export function MarketTerminal() {
           <div className="ticket-heading"><h1>Will {feed.symbol} close above ${strikeNumber === null ? "—" : formatPrice(strikeNumber)}?</h1></div>
           <div className="pool-split"><div><span>Pool sentiment</span><strong>{impliedAbove.toFixed(0)}% above</strong></div><div className="pool-track"><span style={{ width: `${impliedAbove}%` }} /></div><div className="pool-labels"><span>{fmtUsd(market.poolAbove, 0)} ABOVE</span><span>{fmtUsd(market.poolBelow, 0)} BELOW</span></div></div>
           {!market.twoSided && (market.poolAbove > 0n || market.poolBelow > 0n) && <p className="ticket-disclosure">One side only so far — if nobody takes the other side this market voids and everyone is refunded.</p>}
-          <fieldset className="side-picker"><legend>Take a side</legend><button type="button" className={`side-up ${side === "ABOVE" ? "is-active" : ""}`} aria-pressed={side === "ABOVE"} onClick={() => setSide("ABOVE")}><span>Above</span><strong>{impliedAbove.toFixed(0)}%</strong></button><button type="button" className={`side-down ${side === "BELOW" ? "is-active" : ""}`} aria-pressed={side === "BELOW"} onClick={() => setSide("BELOW")}><span>Below</span><strong>{(100 - impliedAbove).toFixed(0)}%</strong></button></fieldset>
+          <fieldset className="side-picker is-order"><legend>{status !== "ready" ? "Connect to take a side" : stake.busy ? stake.step || "Staking…" : `Tap a side to stake ${amount} USDC`}</legend>
+            <button type="button" className="side-up" disabled={stake.busy} onClick={() => requestStake("ABOVE")}>
+              <span>Above</span><strong>{impliedAbove.toFixed(0)}%</strong><small>wins {returnFor("ABOVE").toFixed(2)}</small>
+            </button>
+            <button type="button" className="side-down" disabled={stake.busy} onClick={() => requestStake("BELOW")}>
+              <span>Below</span><strong>{(100 - impliedAbove).toFixed(0)}%</strong><small>wins {returnFor("BELOW").toFixed(2)}</small>
+            </button>
+          </fieldset>
           <div className="amount-field"><label htmlFor="stake-amount">Stake</label><div><span>USDC</span><input id="stake-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(Math.max(0, Number(event.target.value) || 0))} /></div></div>
           <div className="amount-quick">{AMOUNTS.map((value) => <button key={value} type="button" className={amount === value ? "is-active" : ""} onClick={() => setAmount(value)}>{value}</button>)}</div>
-          <dl className="ticket-summary"><div><dt>Estimated return</dt><dd>{estimatedReturn.toFixed(2)} USDC</dd></div></dl>
-          <button className="ticket-primary" type="button" disabled={stake.busy} onClick={() => void primaryAction()}>{actionLabel}</button><p className="ticket-disclosure">Testnet points, no monetary value.</p>
+          {status !== "ready" && (
+            <button className="ticket-primary" type="button" onClick={() => void (status === "wrong-chain" ? switchChain() : connect())}>
+              {status === "wrong-chain" ? "Switch to Monad" : "Connect to take a side"}
+            </button>
+          )}
+          <p className="ticket-disclosure">Testnet USDC, no monetary value.</p>
         </aside>
         </div>
       </main>
@@ -232,9 +255,69 @@ export function MarketTerminal() {
         claim={positions.claim}
         claiming={positions.claiming}
       />
+      {pending && (
+        <ConfirmStake
+          side={pending}
+          amount={amount}
+          symbol={feed.symbol}
+          strike={strikeNumber}
+          payout={returnFor(pending)}
+          secondsToClose={secondsToClose}
+          skip={skipConfirm}
+          setSkip={setSkipConfirm}
+          cancel={() => setPending(null)}
+          confirm={() => void placeStake(pending)}
+        />
+      )}
       {auto.error && <div className="terminal-notice" role="status"><Info weight="bold" /><p>{auto.error}</p></div>}
       {market.error && <div className="terminal-notice" role="status"><Info weight="bold" /><p>{market.error}</p></div>}
       {notice && <div className="terminal-notice" role="status"><Check weight="bold" /><p>{notice}</p><button type="button" aria-label="Dismiss" onClick={() => setNotice(null)}><X /></button></div>}
+    </div>
+  );
+}
+
+function ConfirmStake({
+  side, amount, symbol, strike, payout, secondsToClose, skip, setSkip, cancel, confirm,
+}: {
+  side: "ABOVE" | "BELOW";
+  amount: number;
+  symbol: string;
+  strike: number | null;
+  payout: number;
+  secondsToClose: number;
+  skip: boolean;
+  setSkip: (v: boolean) => void;
+  cancel: () => void;
+  confirm: () => void;
+}) {
+  // The window is closing while this is open, so Enter confirms and Escape cancels: a
+  // staker should never have to find the mouse again.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancel();
+      if (e.key === "Enter") confirm();
+    };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [cancel, confirm]);
+
+  return (
+    <div className="confirm-scrim" role="dialog" aria-modal="true" aria-labelledby="confirm-title" onClick={cancel}>
+      <div className={`confirm-card tone-${side === "ABOVE" ? "up" : "down"}`} onClick={(e) => e.stopPropagation()}>
+        <span className="confirm-eyebrow">{symbol} · closes in {secondsToClose}s</span>
+        <strong id="confirm-title" className="confirm-title">
+          {amount} USDC <em>{side}</em> {strike === null ? "" : `$${formatPrice(strike)}`}
+        </strong>
+        <p className="confirm-detail">Wins about {payout.toFixed(2)} USDC if it lands. Nothing if it does not.</p>
+        <div className="confirm-actions">
+          <button type="button" className="confirm-cancel" onClick={cancel}>Cancel</button>
+          <button type="button" className="confirm-go" onClick={confirm} autoFocus>Stake {side}</button>
+        </div>
+        <label className="confirm-skip">
+          <input type="checkbox" checked={skip} onChange={(e) => setSkip(e.target.checked)} />
+          Don&apos;t ask again — stake on one tap
+        </label>
+      </div>
     </div>
   );
 }

@@ -1583,3 +1583,31 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
   .terminal-rail .ticket-heading { display: none; }
   .terminal-rail .pool-labels { display: none; }
 }
+
+/* ---- one-tap staking: the side IS the order ---- */
+.side-picker.is-order legend { color: var(--t-dim); }
+.terminal-shell .side-picker.is-order button { opacity: 1; cursor: pointer; }
+.terminal-shell .side-picker.is-order button:disabled { opacity: .45; cursor: default; }
+.terminal-shell .side-picker.is-order button:hover:not(:disabled) { opacity: 1; transform: translateY(-1px); }
+.terminal-shell .side-picker.is-order button:active:not(:disabled) { transform: translateY(1px); }
+.terminal-shell .side-picker.is-order button > small { color: #ffffffd0; font: 10px var(--font-geist-mono), monospace; }
+
+/* ---- confirm modal ---- */
+.confirm-scrim { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: #0b0d0b9c; backdrop-filter: blur(3px); animation: confirm-in 140ms ease-out; }
+.confirm-card { width: min(380px, 100%); display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: 16px; background: var(--t-surface, #fff); color: var(--t-ink, #161a16); box-shadow: 0 24px 70px #00000055; border-top: 4px solid var(--t-up); }
+.confirm-card.tone-down { border-top-color: var(--t-down); }
+.confirm-eyebrow { font: 10px var(--font-geist-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--t-dim); }
+.confirm-title { font-size: 22px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+.confirm-title em { font-style: normal; color: var(--t-up); }
+.confirm-card.tone-down .confirm-title em { color: var(--t-down); }
+.confirm-detail { font-size: 13px; color: var(--t-dim); line-height: 1.5; }
+.confirm-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; margin-top: 4px; }
+.confirm-cancel, .confirm-go { min-height: 46px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.confirm-cancel { border: 1px solid var(--t-line); background: transparent; color: var(--t-ink); }
+.confirm-go { background: var(--t-up); color: #fff; border: 0; }
+.confirm-card.tone-down .confirm-go { background: var(--t-down); }
+.confirm-go:hover { opacity: .9; }
+.confirm-skip { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--t-dim); cursor: pointer; }
+.confirm-skip input { accent-color: var(--t-ink); }
+@keyframes confirm-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .confirm-scrim { animation: none; } }
