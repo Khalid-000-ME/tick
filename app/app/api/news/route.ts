@@ -88,6 +88,30 @@ function decode(s: string): string {
     .trim();
 }
 
+/**
+ * ESPN writes New York wall-clock time and labels it "EST" all year, so in daylight time a
+ * plain parse is an hour off. For ESPN the stamp is read as New York local time, with the
+ * offset that applied on that date.
+ */
+function parseDate(raw: string, source: string): number {
+  if (source !== "ESPN" || !/\bEST$/.test(raw.trim())) return Date.parse(raw);
+  const wall = Date.parse(raw.trim().replace(/EST$/, "UTC"));
+  if (Number.isNaN(wall)) return NaN;
+  return wall - nyOffsetMs(wall);
+}
+
+/** New York's offset from UTC (e.g. -4h in summer) at about the given instant. */
+function nyOffsetMs(ms: number): number {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+    }).formatToParts(new Date(ms)).map((x) => [x.type, x.value])
+  );
+  const asUtc = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour) % 24, Number(p.minute), Number(p.second));
+  return asUtc - ms;
+}
+
 function parse(xml: string, source: string, topic: Topic, sourceTag?: string): NewsItem[] {
   const tags = topic === "markets" ? MARKET_TAGS : SPORTS_TAGS;
   const out: NewsItem[] = [];
@@ -100,10 +124,10 @@ function parse(xml: string, source: string, topic: Topic, sourceTag?: string): N
     const text = decode(title[1]);
     const url = decode(link[1]);
     if (!text || !/^https?:\/\//.test(url)) continue;
-    let when = date ? Date.parse(decode(date[1])) : NaN;
-    // ESPN stamps New York daylight time with an "EST" label, which parses an hour into
-    // the future. A publisher cannot post from the future, so step back to the real time.
-    for (let i = 0; i < 2 && when > Date.now() + 60_000; i++) when -= 3_600_000;
+    // Betting pages are US-only: ESPN sends readers elsewhere to its regional sites, where
+    // they do not exist, and odds tips are not what a market's news panel is for.
+    if (/\/betting\//.test(url)) continue;
+    const when = date ? parseDate(decode(date[1]), source) : NaN;
     const found = tags.filter((t) => t.re.test(text)).map((t) => t.tag);
     if (sourceTag && !found.includes(sourceTag)) found.unshift(sourceTag);
     if (!firstSeen.has(url)) {
