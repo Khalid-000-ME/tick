@@ -8,6 +8,8 @@ import { Brand } from "@/components/Brand";
 import { ASSET_ICONS as ICONS } from "@/components/CardBanner";
 import { StrikeStepper } from "@/components/StrikeStepper";
 import { TVChart } from "@/components/TVChart";
+import { StakeSheet } from "@/components/StakeSheet";
+import { useSettings } from "@/lib/useSettings";
 import { WalletMenu } from "@/components/WalletMenu";
 import { TickerStrip } from "@/components/TickerStrip";
 import { NewsPanel } from "@/components/NewsPanel";
@@ -41,16 +43,23 @@ export function MarketTerminal() {
     const asked = FEEDS.find((f) => f.symbol === q.get("feed"));
     if (asked) setFeed(asked);
     const w = Number(q.get("window"));
-    if (DURATIONS.some((d) => d.seconds === w)) setWindowS(w);
+    if (DURATIONS.some((d) => d.seconds === w)) { windowFromUrl.current = true; setWindowS(w); }
     const k = q.get("strike");
     if (k && /^\d+$/.test(k)) setStrikeOverride(BigInt(k));
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [amount, setAmount] = useState(25);
   // No selected side any more: a side IS the action. `pending` holds the side awaiting
-  // confirmation, and `skipConfirm` lets a returning staker go straight through.
+  // confirmation; whether there is one at all is a setting (one tap, confirm or slide).
   const [pending, setPending] = useState<"ABOVE" | "BELOW" | null>(null);
-  const [skipConfirm, setSkipConfirm] = useState(false);
+  const { settings, update: updateSettings } = useSettings();
+  // Defaults come from settings until the trader changes them on this page.
+  const amountTouched = useRef(false);
+  const windowFromUrl = useRef(false);
+  useEffect(() => {
+    if (!amountTouched.current) setAmount(settings.defaultAmount);
+    if (!windowFromUrl.current && DURATIONS.some((d) => d.seconds === settings.defaultWindow)) setWindowS(settings.defaultWindow);
+  }, [settings.defaultAmount, settings.defaultWindow]);
   const [notice, setNotice] = useState<string | null>(null);
   const wallet = useTickWallet();
   const { status, account, connect, switchChain, walletClient } = wallet;
@@ -105,7 +114,7 @@ export function MarketTerminal() {
     if (status === "disconnected" || status === "unsupported") { void connect(); return; }
     if (status === "wrong-chain") { void switchChain(); return; }
     if (amount <= 0) { setNotice("Enter an amount above zero first."); return; }
-    if (skipConfirm) { void placeStake(which); return; }
+    if (settings.stakeMode === "tap") { void placeStake(which); return; }
     setPending(which);
   }
 
@@ -225,8 +234,8 @@ export function MarketTerminal() {
               <span>Below</span><strong>{(100 - impliedAbove).toFixed(0)}%</strong><small>wins {returnFor("BELOW").toFixed(2)}</small>
             </button>
           </fieldset>
-          <div className="amount-field"><label htmlFor="stake-amount">Stake</label><div><span>USDC</span><input id="stake-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(Math.max(0, Number(event.target.value) || 0))} /></div></div>
-          <div className="amount-quick">{AMOUNTS.map((value) => <button key={value} type="button" className={amount === value ? "is-active" : ""} onClick={() => setAmount(value)}>{value}</button>)}</div>
+          <div className="amount-field"><label htmlFor="stake-amount">Stake</label><div><span>USDC</span><input id="stake-amount" inputMode="decimal" value={amount} onChange={(event) => { amountTouched.current = true; setAmount(Math.max(0, Number(event.target.value) || 0)); }} /></div></div>
+          <div className="amount-quick">{AMOUNTS.map((value) => <button key={value} type="button" className={amount === value ? "is-active" : ""} onClick={() => { amountTouched.current = true; setAmount(value); }}>{value}</button>)}</div>
           {status !== "ready" && (
             <button className="ticket-primary" type="button" onClick={() => void (status === "wrong-chain" ? switchChain() : connect())}>
               {status === "wrong-chain" ? "Switch to Monad" : "Connect to take a side"}
@@ -258,69 +267,22 @@ export function MarketTerminal() {
         claim={positions.claim}
         claiming={positions.claiming}
       />
-      {pending && (
-        <ConfirmStake
-          side={pending}
-          amount={amount}
-          symbol={feed.symbol}
-          strike={strikeNumber}
-          payout={returnFor(pending)}
-          secondsToClose={secondsToClose}
-          skip={skipConfirm}
-          setSkip={setSkipConfirm}
-          cancel={() => setPending(null)}
-          confirm={() => void placeStake(pending)}
+      {pending && settings.stakeMode !== "tap" && (
+        <StakeSheet
+          mode={settings.stakeMode}
+          tone={pending === "ABOVE" ? "up" : "down"}
+          eyebrow={`${feed.symbol} · closes in ${secondsToClose}s`}
+          title={<>{amount} USDC <em>{pending}</em> {strikeNumber === null ? "" : `$${formatPrice(strikeNumber)}`}</>}
+          detail={`Wins about ${returnFor(pending).toFixed(2)} USDC if it lands. Nothing if it does not.`}
+          confirmLabel={`Stake ${pending}`}
+          onCancel={() => setPending(null)}
+          onConfirm={() => void placeStake(pending)}
+          onAlwaysTap={() => { updateSettings({ stakeMode: "tap" }); void placeStake(pending); }}
         />
       )}
       {auto.error && <div className="terminal-notice" role="status"><Info weight="bold" /><p>{auto.error}</p></div>}
       {market.error && <div className="terminal-notice" role="status"><Info weight="bold" /><p>{market.error}</p></div>}
       {notice && <div className="terminal-notice" role="status"><Check weight="bold" /><p>{notice}</p><button type="button" aria-label="Dismiss" onClick={() => setNotice(null)}><X /></button></div>}
-    </div>
-  );
-}
-
-function ConfirmStake({
-  side, amount, symbol, strike, payout, secondsToClose, skip, setSkip, cancel, confirm,
-}: {
-  side: "ABOVE" | "BELOW";
-  amount: number;
-  symbol: string;
-  strike: number | null;
-  payout: number;
-  secondsToClose: number;
-  skip: boolean;
-  setSkip: (v: boolean) => void;
-  cancel: () => void;
-  confirm: () => void;
-}) {
-  // The window is closing while this is open, so Enter confirms and Escape cancels: a
-  // staker should never have to find the mouse again.
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") cancel();
-      if (e.key === "Enter") confirm();
-    };
-    document.addEventListener("keydown", key);
-    return () => document.removeEventListener("keydown", key);
-  }, [cancel, confirm]);
-
-  return (
-    <div className="confirm-scrim" role="dialog" aria-modal="true" aria-labelledby="confirm-title" onClick={cancel}>
-      <div className={`confirm-card tone-${side === "ABOVE" ? "up" : "down"}`} onClick={(e) => e.stopPropagation()}>
-        <span className="confirm-eyebrow">{symbol} · closes in {secondsToClose}s</span>
-        <strong id="confirm-title" className="confirm-title">
-          {amount} USDC <em>{side}</em> {strike === null ? "" : `$${formatPrice(strike)}`}
-        </strong>
-        <p className="confirm-detail">Wins about {payout.toFixed(2)} USDC if it lands. Nothing if it does not.</p>
-        <div className="confirm-actions">
-          <button type="button" className="confirm-cancel" onClick={cancel}>Cancel</button>
-          <button type="button" className="confirm-go" onClick={confirm} autoFocus>Stake {side}</button>
-        </div>
-        <label className="confirm-skip">
-          <input type="checkbox" checked={skip} onChange={(e) => setSkip(e.target.checked)} />
-          Don&apos;t ask again, stake in one tap
-        </label>
-      </div>
     </div>
   );
 }

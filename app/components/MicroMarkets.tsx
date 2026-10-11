@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Lightning } from "@phosphor-icons/react";
 import { useSportsStake } from "@/lib/useSportsStake";
+import { StakeSheet } from "@/components/StakeSheet";
+import { useSettings } from "@/lib/useSettings";
 import { payout } from "@/components/SportsCard";
 import type { WalletClient } from "viem";
 
@@ -108,13 +110,20 @@ export function MicroOrders({
 }) {
   const markets = useMicro(espnId);
   const [windowS, setWindowS] = useState(initialWindow ?? 120);
+  const { settings, update: updateSettings } = useSettings();
   const [amount, setAmount] = useState(2);
+  const amountTouched = useRef(false);
+  useEffect(() => {
+    if (!amountTouched.current) setAmount(settings.defaultAmount);
+  }, [settings.defaultAmount]);
+  const [pending, setPending] = useState<boolean | null>(null);
   const stake = useSportsStake(walletClient, account);
 
   if (!markets || markets.length === 0) return null;
   const m = markets.find((x) => x.windowS === windowS) ?? markets[0];
 
   async function place(home: boolean) {
+    setPending(null);
     const res = await stake.submit(
       { eventId: m.eventId, closesAt: BigInt(m.closesAt) },
       home,
@@ -142,7 +151,7 @@ export function MicroOrders({
       <div className="match-sides">
         {([[true, m.home, m.impliedHome, m.poolHome, m.poolAway, "up"], [false, m.away, 100 - m.impliedHome, m.poolAway, m.poolHome, "down"]] as const).map(
           ([home, team, odds, mine, theirs, tone]) => (
-            <button key={team.abbr} type="button" className={`match-side tone-${tone}`} disabled={stake.busy || m.secondsLeft <= 2} onClick={() => void place(home)}>
+            <button key={team.abbr} type="button" className={`match-side tone-${tone}`} disabled={stake.busy || m.secondsLeft <= 2} onClick={() => (settings.stakeMode === "tap" ? void place(home) : setPending(home))}>
               <span>{team.short}</span>
               <strong>{odds.toFixed(0)}%</strong>
               <small>pays {payout(mine, theirs).toFixed(2)}x</small>
@@ -152,11 +161,24 @@ export function MicroOrders({
       </div>
       <div className="match-amounts">
         {AMOUNTS.map((v) => (
-          <button key={v} type="button" className={amount === v ? "is-active" : ""} onClick={() => setAmount(v)}>{v} USDC</button>
+          <button key={v} type="button" className={amount === v ? "is-active" : ""} onClick={() => { amountTouched.current = true; setAmount(v); }}>{v} USDC</button>
         ))}
       </div>
       <p className="match-note">Most points in the window wins. A tie refunds both sides. Opened at {m.openAway}:{m.openHome}.</p>
       {stake.busy && <p className="match-note">{stake.step || "Working..."}</p>}
+      {pending !== null && settings.stakeMode !== "tap" && (
+        <StakeSheet
+          mode={settings.stakeMode}
+          tone={pending ? "up" : "down"}
+          eyebrow={`${m.league} · ${Math.max(0, m.secondsLeft)}s left`}
+          title={<>{amount} USDC on <em>{pending ? m.home.short : m.away.short}</em></>}
+          detail={`Wins if they outscore the other side over the next ${m.windowLabel}. A tie refunds.`}
+          confirmLabel="Stake"
+          onCancel={() => setPending(null)}
+          onConfirm={() => void place(pending)}
+          onAlwaysTap={() => { updateSettings({ stakeMode: "tap" }); void place(pending); }}
+        />
+      )}
     </section>
   );
 }

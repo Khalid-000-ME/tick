@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, SealCheck } from "@phosphor-icons/react";
 import { AccountShell } from "@/components/AccountShell";
 import { FixtureBanner } from "@/components/CardBanner";
@@ -13,6 +13,8 @@ import { TickSportsAbi } from "@/lib/chain/abi";
 import { ATTESTOR, CONTRACTS, explorerAddress, monadTestnet, toUsd } from "@/lib/chain/config";
 import { useSportsStake } from "@/lib/useSportsStake";
 import { sportsStatus, useSportsPositions } from "@/lib/useSportsPositions";
+import { StakeSheet } from "@/components/StakeSheet";
+import { useSettings } from "@/lib/useSettings";
 import { useTickWallet } from "@/lib/useTickWallet";
 
 /**
@@ -29,7 +31,12 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
   const wallet = useTickWallet();
   const [event, setEvent] = useState<SportsEvent | null | undefined>(undefined);
   const [series, setSeries] = useState<OddsPoint[]>([]);
+  const { settings, update: updateSettings } = useSettings();
   const [amount, setAmount] = useState(5);
+  const amountTouched = useRef(false);
+  useEffect(() => {
+    if (!amountTouched.current) setAmount(settings.defaultAmount);
+  }, [settings.defaultAmount]);
   const [pending, setPending] = useState<"HOME" | "AWAY" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [settling, setSettling] = useState(false);
@@ -212,7 +219,7 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
             <header className="match-panel-head"><h2>Pick the winner</h2></header>
             <div className="match-sides">
               {sides.map((s) => (
-                <button key={s.side} type="button" className={`match-side tone-${s.tone}`} disabled={!event.open || stake.busy} onClick={() => setPending(s.side)}>
+                <button key={s.side} type="button" className={`match-side tone-${s.tone}`} disabled={!event.open || stake.busy} onClick={() => (settings.stakeMode === "tap" ? void place(s.side) : setPending(s.side))}>
                   <span>{s.team.short}</span>
                   <strong>{s.odds.toFixed(0)}%</strong>
                   <small>pays {payout(s.mine, s.theirs).toFixed(2)}x</small>
@@ -221,7 +228,7 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
             </div>
             <div className="match-amounts">
               {AMOUNTS.map((v) => (
-                <button key={v} type="button" className={amount === v ? "is-active" : ""} onClick={() => setAmount(v)}>{v} USDC</button>
+                <button key={v} type="button" className={amount === v ? "is-active" : ""} onClick={() => { amountTouched.current = true; setAmount(v); }}>{v} USDC</button>
               ))}
             </div>
             {!event.open && <p className="match-note">Staking closed at kickoff.</p>}
@@ -260,18 +267,18 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
         </aside>
       </div>
 
-      {pick && (
-        <div className="confirm-scrim" role="dialog" aria-modal="true" onClick={() => setPending(null)}>
-          <div className={`confirm-card tone-${pick.tone}`} onClick={(e) => e.stopPropagation()}>
-            <span className="confirm-eyebrow">{event.league}</span>
-            <strong className="confirm-title">{amount} USDC on <em>{pick.team.short}</em></strong>
-            <p className="confirm-detail">Pays about {(amount * payout(pick.mine, pick.theirs)).toFixed(2)} USDC if they win.</p>
-            <div className="confirm-actions">
-              <button type="button" className="confirm-cancel" onClick={() => setPending(null)}>Cancel</button>
-              <button type="button" className="confirm-go" onClick={() => void place(pick.side)} autoFocus>Stake</button>
-            </div>
-          </div>
-        </div>
+      {pick && settings.stakeMode !== "tap" && (
+        <StakeSheet
+          mode={settings.stakeMode}
+          tone={pick.tone === "up" ? "up" : "down"}
+          eyebrow={event.league}
+          title={<>{amount} USDC on <em>{pick.team.short}</em></>}
+          detail={`Pays about ${(amount * payout(pick.mine, pick.theirs)).toFixed(2)} USDC if they win. A draw refunds.`}
+          confirmLabel="Stake"
+          onCancel={() => setPending(null)}
+          onConfirm={() => void place(pick.side)}
+          onAlwaysTap={() => { updateSettings({ stakeMode: "tap" }); void place(pick.side); }}
+        />
       )}
 
       {notice && (
