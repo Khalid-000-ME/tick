@@ -57,10 +57,11 @@ export function LandingExperience() {
           <div className="landing-hero-scrim" aria-hidden="true" />
           <motion.div className="landing-hero-content" initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>
             <p className="landing-kicker"><span /> Free to play · no deposit, no KYC</p>
-            <h1 id="landing-title">Will Bitcoin be up<br /><em>in thirty seconds?</em></h1>
+            <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
             <p className="landing-lede">
-              Tap green or red. If you are right, you split what the other side staked. There is no house taking
-              the other end of your bet and no one who can decide you lost.
+              Bitcoin, Ether, Solana or Tesla — tap green or red on any of them. If you are right, you split what
+              the other side staked. There is no house taking the other end of your bet and no one who can decide
+              you lost.
             </p>
             <div className="landing-actions">
               <Link href="/trade" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
