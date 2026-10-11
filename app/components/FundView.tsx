@@ -35,9 +35,17 @@ export function FundView() {
   }, [account]);
 
   useEffect(() => {
-    void load();
-    const t = setInterval(() => void load(), 5000);
-    return () => clearInterval(t);
+    let off = false;
+    const poll = async () => {
+      if (off) return;
+      await load();
+    };
+    void poll();
+    const t = setInterval(poll, 5000);
+    return () => {
+      off = true;
+      clearInterval(t);
+    };
   }, [load]);
 
   // The live quote for whatever is typed, read from the contract so it is the rate the

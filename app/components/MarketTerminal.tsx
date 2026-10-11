@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { ASSET_ICONS as ICONS } from "@/components/CardBanner";
 import { AmountPicker } from "@/components/AmountPicker";
+import { useQueryString } from "@/lib/useQueryString";
 import { StrikeStepper } from "@/components/StrikeStepper";
 import { TVChart } from "@/components/TVChart";
 import { StakeSheet } from "@/components/StakeSheet";
@@ -30,37 +31,56 @@ import { DURATIONS, WINDOW_S, fmtUsd, toUsd } from "@/lib/chain/config";
 const URGENT_AT = 8;
 
 export function MarketTerminal() {
-  const [feed, setFeed] = useState<FeedSpec>(FEEDS[0]);
-  const [windowS, setWindowS] = useState<number>(WINDOW_S);
-  // A price the trader picked instead of the window's opening one, in feed units.
-  const [strikeOverride, setStrikeOverride] = useState<bigint | null>(null);
+  const { settings, update: updateSettings } = useSettings();
 
   // The board links here carrying the market it was showing, so a card and the terminal
-  // are the same market rather than two that merely look alike. Read after mount rather
-  // than with useSearchParams, which would opt the whole route out of server rendering
-  // and blank the terminal until hydration.
-  useEffect(() => {
-    const q = new URLSearchParams(window.location.search);
-    const asked = FEEDS.find((f) => f.symbol === q.get("feed"));
-    if (asked) setFeed(asked);
+  // are the same market rather than two that merely look alike. The query string is read
+  // as external state (see useQueryString) instead of being copied into state on mount,
+  // which cost every visitor a second render.
+  const search = useQueryString();
+  const fromUrl = useMemo(() => {
+    const q = new URLSearchParams(search);
     const w = Number(q.get("window"));
-    if (DURATIONS.some((d) => d.seconds === w)) { windowFromUrl.current = true; setWindowS(w); }
     const k = q.get("strike");
-    if (k && /^\d+$/.test(k)) setStrikeOverride(BigInt(k));
+    return {
+      feed: FEEDS.find((f) => f.symbol === q.get("feed")) ?? null,
+      windowS: DURATIONS.some((d) => d.seconds === w) ? w : null,
+      strike: k && /^\d+$/.test(k) ? BigInt(k) : null,
+    };
+  }, [search]);
+
+  // Each of these is "what the trader picked here", which falls back to the link, which
+  // falls back to the default. Picking on this page therefore always wins, and nothing
+  // has to be copied anywhere when the link changes.
+  const [feedPick, setFeedPick] = useState<FeedSpec | null>(null);
+  const [windowPick, setWindowPick] = useState<number | null>(null);
+  const [strikePick, setStrikePick] = useState<bigint | null>(null);
+  const [strikeCleared, setStrikeCleared] = useState(false);
+
+  const feed = feedPick ?? fromUrl.feed ?? FEEDS[0];
+  const windowS =
+    windowPick ??
+    fromUrl.windowS ??
+    (DURATIONS.some((d) => d.seconds === settings.defaultWindow) ? settings.defaultWindow : WINDOW_S);
+  // A price the trader picked instead of the window's opening one, in feed units.
+  const strikeOverride = strikePick ?? (strikeCleared ? null : fromUrl.strike);
+
+  const setFeed = useCallback((next: FeedSpec) => setFeedPick(next), []);
+  const setWindowS = useCallback((next: number) => setWindowPick(next), []);
+  const setStrikeOverride = useCallback((next: bigint | null) => {
+    setStrikePick(next);
+    if (next === null) setStrikeCleared(true);
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [amount, setAmount] = useState(1);
   // No selected side any more: a side IS the action. `pending` holds the side awaiting
   // confirmation; whether there is one at all is a setting (one tap, confirm or slide).
   const [pending, setPending] = useState<"ABOVE" | "BELOW" | null>(null);
-  const { settings, update: updateSettings } = useSettings();
-  // Defaults come from settings until the trader changes them on this page.
+  // The amount default still copies into state, because the field is edited in place.
   const amountTouched = useRef(false);
-  const windowFromUrl = useRef(false);
   useEffect(() => {
     if (!amountTouched.current) setAmount(settings.defaultAmount);
-    if (!windowFromUrl.current && DURATIONS.some((d) => d.seconds === settings.defaultWindow)) setWindowS(settings.defaultWindow);
-  }, [settings.defaultAmount, settings.defaultWindow]);
+  }, [settings.defaultAmount]);
   const [notice, setNotice] = useState<string | null>(null);
   const wallet = useTickWallet();
   const { status, account, connect, switchChain, walletClient } = wallet;
@@ -311,12 +331,16 @@ function AssetOption({ item, active, pick }: { item: FeedSpec; active: boolean; 
 function usePriceHistory(price: number | null, symbol: string) {
   const [values, setValues] = useState<number[]>([]);
   const target = useRef<number | null>(price);
-  target.current = price;
+  useEffect(() => {
+    target.current = price;
+  });
 
   // Different asset, different series — mixing two assets into one line is meaningless.
-  useEffect(() => {
+  const [plotted, setPlotted] = useState(symbol);
+  if (plotted !== symbol) {
+    setPlotted(symbol);
     setValues([]);
-  }, [symbol]);
+  }
 
   /**
    * Plots the on-chain price exactly as read, sampled on a fixed cadence.

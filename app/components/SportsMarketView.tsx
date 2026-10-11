@@ -1,6 +1,7 @@
 "use client";
 
 import { AmountPicker } from "@/components/AmountPicker";
+import { useQueryString } from "@/lib/useQueryString";
 import { NewsPanel } from "@/components/NewsPanel";
 import { TickerStrip } from "@/components/TickerStrip";
 import Link from "next/link";
@@ -42,7 +43,6 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
   const [pending, setPending] = useState<"HOME" | "AWAY" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [settling, setSettling] = useState(false);
-  const [initialWindow, setInitialWindow] = useState<number | undefined>(undefined);
   const [owed, setOwed] = useState(0n);
   const [claiming, setClaiming] = useState(false);
   const stake = useSportsStake(wallet.walletClient, wallet.account);
@@ -52,10 +52,9 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   // The board links here with the in-play window that was clicked.
-  useEffect(() => {
-    const w = Number(new URLSearchParams(window.location.search).get("window"));
-    if (w > 0) setInitialWindow(w);
-  }, []);
+  const search = useQueryString();
+  const asked = Number(new URLSearchParams(search).get("window"));
+  const initialWindow = asked > 0 ? asked : undefined;
 
   useEffect(() => {
     let off = false;

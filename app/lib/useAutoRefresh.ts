@@ -58,9 +58,13 @@ export function useAutoRefresh(
   const ageRef = useRef(priceAge);
   const feedRef = useRef(feed);
   const onRefreshedRef = useRef(onRefreshed);
-  ageRef.current = priceAge;
-  feedRef.current = feed;
-  onRefreshedRef.current = onRefreshed;
+  // Written after commit rather than during render. The interval below only reads them
+  // once it fires, which is always after an effect has run, so it never sees a stale one.
+  useEffect(() => {
+    ageRef.current = priceAge;
+    feedRef.current = feed;
+    onRefreshedRef.current = onRefreshed;
+  });
 
   const post = useCallback(async () => {
     if (inFlight.current) return;

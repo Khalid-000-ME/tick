@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 export type Theme = "light" | "dark";
 
 const KEY = "tick.theme";
+const EVENT = "tick:theme";
 
 /**
  * Light/dark, remembered per browser.
@@ -18,29 +19,36 @@ const KEY = "tick.theme";
  * Light is the default. A viewer's system setting is deliberately ignored; only an
  * explicit choice made with the toggle switches the theme.
  */
-export function useTheme() {
-  const [theme, setTheme] = useState<Theme>("light");
+function subscribe(onChange: () => void) {
+  window.addEventListener(EVENT, onChange);
+  // Another tab switching theme should switch this one too.
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
 
-  useEffect(() => {
-    const current = document.documentElement.dataset.theme;
-    if (current === "dark" || current === "light") {
-      setTheme(current);
-      return;
-    }
-    setTheme("light");
-  }, []);
+const read = (): Theme => (document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+/** Light on the server, which is what the bootstrap script also falls back to. */
+const readOnServer = (): Theme => "light";
+
+export function useTheme() {
+  // Subscribed to the attribute rather than mirrored into state, so every component
+  // using this hook sees the same value the CSS is keyed off, at the same moment.
+  const theme = useSyncExternalStore(subscribe, read, readOnServer);
 
   const apply = useCallback((next: Theme) => {
-    setTheme(next);
     document.documentElement.dataset.theme = next;
     try {
       window.localStorage.setItem(KEY, next);
     } catch {
       /* blocked storage costs the memory of the choice, not the choice itself */
     }
+    window.dispatchEvent(new Event(EVENT));
   }, []);
 
-  const toggle = useCallback(() => apply(theme === "dark" ? "light" : "dark"), [apply, theme]);
+  const toggle = useCallback(() => apply(read() === "dark" ? "light" : "dark"), [apply]);
 
   return { theme, setTheme: apply, toggle };
 }

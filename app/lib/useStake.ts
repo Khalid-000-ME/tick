@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPublicClient, http, type WalletClient } from "viem";
 import { TickAbi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
@@ -64,7 +64,11 @@ export function useStake({
   // stake (approve + deposit + price post), so it must read the CURRENT window at the
   // moment it stakes rather than the one captured when the button was pressed.
   const marketRef = useRef(market);
-  marketRef.current = market;
+  // After commit, not during render: submit() only reads this from an event handler, by
+  // which time the effect has run.
+  useEffect(() => {
+    marketRef.current = market;
+  });
 
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState("");

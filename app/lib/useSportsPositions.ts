@@ -89,9 +89,13 @@ export function useSportsPositions(account: `0x${string}` | null, walletClient: 
     accountRef.current = account;
   }, [account]);
 
-  useEffect(() => {
+  // As in usePositions: derived from the account prop, so it is adjusted during render
+  // rather than after a second commit.
+  const [loadedFor, setLoadedFor] = useState(account);
+  if (loadedFor !== account) {
+    setLoadedFor(account);
     setPositions(load(account));
-  }, [account]);
+  }
 
   const update = useCallback((fn: (prev: SportsPosition[]) => SportsPosition[]) => {
     setPositions((prev) => {

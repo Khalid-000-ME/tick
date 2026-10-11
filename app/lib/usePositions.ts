@@ -105,11 +105,17 @@ export function usePositions(account: `0x${string}` | null, walletClient: Wallet
   const [claiming, setClaiming] = useState<string | null>(null);
 
   const accountRef = useRef(account);
-  accountRef.current = account;
   const settleTried = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
+  // Switching account swaps the whole list. Done during render, the way React documents
+  // for state derived from a prop, so the stale list is never painted first.
+  const [loadedFor, setLoadedFor] = useState(account);
+  if (loadedFor !== account) {
+    setLoadedFor(account);
     setPositions(load(account));
+  }
+  useEffect(() => {
+    accountRef.current = account;
     settleTried.current.clear();
   }, [account]);
 

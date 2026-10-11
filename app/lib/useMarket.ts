@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPublicClient, http } from "viem";
 import { TickAbi } from "@/lib/chain/abi";
 import { PythAbi } from "@/lib/chain/pythAbi";
@@ -76,8 +76,21 @@ export function useMarket(
 
   // Local clock, so the countdown is smooth between polls rather than jumping.
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  // The same tick rolls the window over: the moment this one closes, refetch, so the UI
+  // never offers a stake the contract would reject with NotOpen. Guarded so one close
+  // triggers one refetch rather than one per second until the new terms arrive.
+  const closesAtRef = useRef<number | null>(null);
+  const rolledRef = useRef<number | null>(null);
   useEffect(() => {
-    const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
+    const t = setInterval(() => {
+      const s = Math.floor(Date.now() / 1000);
+      setNow(s);
+      const closes = closesAtRef.current;
+      if (closes !== null && s >= closes && rolledRef.current !== closes) {
+        rolledRef.current = closes;
+        setTick((n) => n + 1);
+      }
+    }, 1000);
     return () => clearInterval(t);
   }, []);
 
@@ -121,12 +134,15 @@ export function useMarket(
   const refetch = useCallback(() => setTick((n) => n + 1), []);
 
   // A different feed must not inherit the previous feed's price, or the new market is
-  // struck from the wrong asset for a moment.
-  useEffect(() => {
+  // struck from the wrong asset for a moment. Cleared during render, so that wrong price
+  // is never committed at all.
+  const [pricedFeed, setPricedFeed] = useState(feed);
+  if (pricedFeed !== feed) {
+    setPricedFeed(feed);
     setPrice(null);
     setPublishTime(null);
     setCutoff(null);
-  }, [feed]);
+  }
   // Chain reads: price + the contract's own cutoff verdict.
   useEffect(() => {
     let cancelled = false;
@@ -217,11 +233,10 @@ export function useMarket(
 
   const secondsToClose = terms ? Math.max(0, Number(terms.closesAt) - now) : 0;
 
-  // Roll to the next window as soon as this one closes, so the UI never offers a stake
-  // the contract would reject with NotOpen.
+  // Feeds the clock above the close it is counting down to.
   useEffect(() => {
-    if (terms && secondsToClose === 0) refetch();
-  }, [terms, secondsToClose, refetch]);
+    closesAtRef.current = terms ? Number(terms.closesAt) : null;
+  });
 
   // Prefer the contract's own verdict. Fall back to local arithmetic only before the
   // first successful read, so the UI never claims "open" without having asked.
