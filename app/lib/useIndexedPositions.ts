@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { TickAbi } from "@/lib/chain/abi";
 import { CONTRACTS, OUTCOME, toUsd } from "@/lib/chain/config";
+import { payoutForSide, toUnits } from "@/lib/chain/payout";
 import { feedById } from "@/lib/pyth";
 import { readClient } from "@/lib/useWallet";
 import type { Position } from "@/lib/usePositions";
@@ -30,7 +31,7 @@ const QUERY = /* GraphQL */ `
       txHash
       market { id feedId strike closesAt outcome settlePrice }
     }
-    Claim(where: { user: { _eq: $user } }, limit: 1000) { market_id payout }
+    Claim(where: { user: { _eq: $user } }, limit: 1000) { market_id }
   }
 `;
 
@@ -58,9 +59,9 @@ export function useIndexedPositions(account: `0x${string}` | null) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: QUERY, variables: { user: account!.toLowerCase() } }),
         });
-        const json = (await res.json()) as { data?: { Stake: Row[]; Claim: { market_id: string; payout: string }[] }; errors?: unknown };
+        const json = (await res.json()) as { data?: { Stake: Row[]; Claim: { market_id: string }[] }; errors?: unknown };
         if (!json.data) throw new Error("indexer returned no data");
-        const claimed = new Map(json.data.Claim.map((c) => [c.market_id, toUsd(BigInt(c.payout))]));
+        const claimed = new Set(json.data.Claim.map((c) => c.market_id));
 
         // One position per market and side, as usePositions keeps them.
         const byKey = new Map<string, Position>();
@@ -94,23 +95,24 @@ export function useIndexedPositions(account: `0x${string}` | null) {
           });
         }
 
-        // Payouts for settled markets, in one multicall round trip.
+        // Settlements for everything resolved, in one multicall round trip. Payout is
+        // then computed per side: previewClaim totals both sides of a market, which
+        // credits a losing side with the winning side's money.
         const settled = [...byKey.values()].filter((p) => p.outcome !== OUTCOME.unresolved);
         const results = await readClient.multicall({
           allowFailure: true,
           contracts: settled.map((p) => ({
             address: CONTRACTS.tick,
             abi: TickAbi,
-            functionName: "previewClaim" as const,
-            args: [p.id, account!] as const,
+            functionName: "settlements" as const,
+            args: [p.id] as const,
           })),
         });
         settled.forEach((p, i) => {
           const r = results[i];
-          // previewClaim reads 0 once claimed (the stake slot is cleared), so a claimed
-          // market uses the payout the Claimed event recorded instead.
-          if (p.claimed) p.payout = claimed.get(p.id) ?? null;
-          else if (r.status === "success") p.payout = toUsd(r.result as bigint);
+          if (r.status !== "success") return;
+          const [, , , feeBps, totalAbove, totalBelow] = r.result as readonly [number, bigint, bigint, number, bigint, bigint];
+          p.payout = toUsd(payoutForSide(p.outcome, feeBps, totalAbove, totalBelow, p.side, toUnits(p.amount)));
         });
 
         if (!cancelled) {

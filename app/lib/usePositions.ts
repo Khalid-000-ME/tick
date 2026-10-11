@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPublicClient, http, type WalletClient } from "viem";
 import { TickAbi } from "@/lib/chain/abi";
 import { CONTRACTS, OUTCOME, toUsd, monadTestnet } from "@/lib/chain/config";
+import { payoutForSide, toUnits } from "@/lib/chain/payout";
 import type { Terms } from "@/lib/chain/market";
 
 const pub = createPublicClient({ chain: monadTestnet, transport: http(), pollingInterval: 250 });
@@ -192,9 +193,9 @@ export function usePositions(account: `0x${string}` | null, walletClient: Wallet
           continue;
         }
 
-        const payout = (await pub
-          .readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "previewClaim", args: [p.id, account!] })
-          .catch(() => 0n)) as bigint;
+        // Computed per side from the settlement, not read from previewClaim, which sums
+        // both sides of the market and so over-credits anyone holding each of them.
+        const payout = payoutForSide(settled[0], settled[3], settled[4], settled[5], p.side, toUnits(p.amount));
 
         if (cancelled) return;
         const resolved: Position = {

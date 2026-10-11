@@ -85,7 +85,11 @@ export function PositionsDock({
                   <div className="dock-row-meta">
                     <span className="dock-verdict">{VERDICT[status].label}</span>
                     <span className="dock-pnl">
-                      {pnl === null ? `${p.amount.toFixed(2)} staked` : `${pnl >= 0 ? "+" : "−"}${Math.abs(pnl).toFixed(2)}`}
+                      {status === "refunded"
+                        ? `${p.amount.toFixed(2)} back`
+                        : pnl === null
+                          ? `${p.amount.toFixed(2)} staked`
+                          : `${pnl >= 0 ? "+" : "−"}${Math.abs(pnl).toFixed(2)}`}
                     </span>
                   </div>
                   {isRefundPending(p) && (
@@ -145,7 +149,11 @@ function ResultCard({
       </span>
       <strong className="result-headline">{headline}</strong>
       <span className="result-amount">
-        {status === "lost" ? `−${position.amount.toFixed(2)}` : `${pnl >= 0 ? "+" : "−"}${Math.abs(pnl).toFixed(2)}`} USDC
+        {status === "refunded"
+          ? `${position.amount.toFixed(2)} returned`
+          : status === "lost"
+            ? `−${position.amount.toFixed(2)}`
+            : `${pnl >= 0 ? "+" : "−"}${Math.abs(pnl).toFixed(2)}`}{status === "refunded" ? "" : " USDC"}
       </span>
       {position.settlePrice !== null && (
         <span className="result-detail">
