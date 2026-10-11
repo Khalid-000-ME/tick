@@ -21,7 +21,7 @@ import { FEEDS, feedBySymbol, fetchPriceUpdate, fetchUpdateForWindow, snapToGrid
 import { OUTCOME, SETTLE_TOLERANCE_S, SETTLE_WINDOW_S, WINDOW_S, toUsd } from "../lib/chain/config.js";
 import { gasShortfall } from "../lib/gasCheck.js";
 
-const MAX_STAKE = Number(process.env.TICK_MCP_MAX_STAKE ?? 25);
+const MAX_STAKE = Number(process.env.TICK_MCP_MAX_STAKE ?? 3);
 const GAS = { approve: 180_000n, deposit: 280_000n, stake: 300_000n, claim: 200_000n, withdraw: 220_000n, settle: 1_800_000n, post: (n: number) => 170_000n + 35_000n * BigInt(n) };
 
 // ------------------------------------------------------------------ wallet

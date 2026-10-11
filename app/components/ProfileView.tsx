@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { Check, DiceFive, EnvelopeSimple, Fingerprint, GoogleLogo, Wallet, XLogo } from "@phosphor-icons/react";
+import { AmountPicker } from "@/components/AmountPicker";
 import { AccountShell } from "@/components/AccountShell";
 import { AVATAR_STYLES, Avatar, genAvatar, isAllowedAvatarUrl, type AvatarStyle } from "@/components/Avatar";
 import { DURATIONS } from "@/lib/chain/config";
@@ -81,11 +82,7 @@ export function ProfileView() {
             </div>
             <div className="profile-row">
               <span>Default stake</span>
-              <div className="match-amounts">
-                {[2, 5, 10, 25, 50].map((v) => (
-                  <button key={v} type="button" className={settings.defaultAmount === v ? "is-active" : ""} onClick={() => update({ defaultAmount: v })}>{v} USDC</button>
-                ))}
-              </div>
+              <AmountPicker value={settings.defaultAmount} compact label="Default stake" onChange={(n) => n > 0 && update({ defaultAmount: n })} />
             </div>
             <div className="profile-row">
               <span>Default window</span>

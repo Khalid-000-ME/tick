@@ -1,5 +1,6 @@
 "use client";
 
+import { AmountPicker } from "@/components/AmountPicker";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, SealCheck } from "@phosphor-icons/react";
@@ -24,7 +25,6 @@ import { useTickWallet } from "@/lib/useTickWallet";
  * The board cards only point here. Everything that needs a decision or an explanation
  * lives on this page, said once.
  */
-const AMOUNTS = [2, 5, 10, 25];
 const pub = createPublicClient({ chain: monadTestnet, transport: http(), pollingInterval: 250 });
 
 export function SportsMarketView({ espnId }: { espnId: string }) {
@@ -32,7 +32,7 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
   const [event, setEvent] = useState<SportsEvent | null | undefined>(undefined);
   const [series, setSeries] = useState<OddsPoint[]>([]);
   const { settings, update: updateSettings } = useSettings();
-  const [amount, setAmount] = useState(5);
+  const [amount, setAmount] = useState(1);
   const amountTouched = useRef(false);
   useEffect(() => {
     if (!amountTouched.current) setAmount(settings.defaultAmount);
@@ -226,11 +226,7 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
                 </button>
               ))}
             </div>
-            <div className="match-amounts">
-              {AMOUNTS.map((v) => (
-                <button key={v} type="button" className={amount === v ? "is-active" : ""} onClick={() => { amountTouched.current = true; setAmount(v); }}>{v} USDC</button>
-              ))}
-            </div>
+            <AmountPicker value={amount} compact onChange={(n) => { amountTouched.current = true; setAmount(n); }} />
             {!event.open && <p className="match-note">Staking closed at kickoff.</p>}
             {sportsPositions.positions.filter((p) => p.espnId === espnId).length > 0 && (
               <ul className="match-mine">

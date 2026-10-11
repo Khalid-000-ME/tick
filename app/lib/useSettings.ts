@@ -20,7 +20,7 @@ export interface Settings {
   defaultWindow: number;
 }
 
-export const DEFAULT_SETTINGS: Settings = { stakeMode: "confirm", defaultAmount: 5, defaultWindow: 30 };
+export const DEFAULT_SETTINGS: Settings = { stakeMode: "confirm", defaultAmount: 1, defaultWindow: 30 };
 
 const KEY = "tick.settings.v1";
 const EVENT = "tick:settings";
@@ -31,7 +31,8 @@ function read(): Settings {
     const raw = JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Partial<Settings>;
     return {
       stakeMode: raw.stakeMode === "tap" || raw.stakeMode === "slide" || raw.stakeMode === "confirm" ? raw.stakeMode : DEFAULT_SETTINGS.stakeMode,
-      defaultAmount: typeof raw.defaultAmount === "number" && raw.defaultAmount > 0 ? raw.defaultAmount : DEFAULT_SETTINGS.defaultAmount,
+      // Stake sizes moved to $0.10-$3; an older default above that is dropped, not carried over.
+      defaultAmount: typeof raw.defaultAmount === "number" && raw.defaultAmount > 0 && raw.defaultAmount <= 3 ? raw.defaultAmount : DEFAULT_SETTINGS.defaultAmount,
       defaultWindow: typeof raw.defaultWindow === "number" && raw.defaultWindow >= 30 ? raw.defaultWindow : DEFAULT_SETTINGS.defaultWindow,
     };
   } catch {

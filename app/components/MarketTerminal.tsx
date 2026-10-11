@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { ASSET_ICONS as ICONS } from "@/components/CardBanner";
+import { AmountPicker } from "@/components/AmountPicker";
 import { StrikeStepper } from "@/components/StrikeStepper";
 import { TVChart } from "@/components/TVChart";
 import { StakeSheet } from "@/components/StakeSheet";
@@ -24,7 +25,6 @@ import { useTheme } from "@/lib/useTheme";
 import { FEEDS, type FeedSpec } from "@/lib/pyth";
 import { DURATIONS, WINDOW_S, fmtUsd, toUsd } from "@/lib/chain/config";
 
-const AMOUNTS = [5, 10, 25, 50];
 /** Seconds left at which the countdown turns red — long enough to still act on. */
 const URGENT_AT = 8;
 
@@ -48,7 +48,7 @@ export function MarketTerminal() {
     if (k && /^\d+$/.test(k)) setStrikeOverride(BigInt(k));
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [amount, setAmount] = useState(25);
+  const [amount, setAmount] = useState(1);
   // No selected side any more: a side IS the action. `pending` holds the side awaiting
   // confirmation; whether there is one at all is a setting (one tap, confirm or slide).
   const [pending, setPending] = useState<"ABOVE" | "BELOW" | null>(null);
@@ -224,7 +224,7 @@ export function MarketTerminal() {
         <aside className="terminal-ticket" aria-label="Market order">
           <div className="ticket-heading"><h1>Will {feed.symbol} close above</h1></div>
           <StrikeStepper open={market.openStrike} value={strikeOverride} expo={feed.expo} onChange={setStrikeOverride} />
-          <div className="pool-split"><div><span>Pool sentiment</span><strong>{impliedAbove.toFixed(0)}% above</strong></div><div className="pool-track"><span style={{ width: `${impliedAbove}%` }} /></div><div className="pool-labels"><span>{fmtUsd(market.poolAbove, 0)} ABOVE</span><span>{fmtUsd(market.poolBelow, 0)} BELOW</span></div></div>
+          <div className="pool-split"><div><span>Pool sentiment</span><strong>{impliedAbove.toFixed(0)}% above</strong></div><div className="pool-track"><span style={{ width: `${impliedAbove}%` }} /></div><div className="pool-labels"><span>${fmtUsd(market.poolAbove)} ABOVE</span><span>${fmtUsd(market.poolBelow)} BELOW</span></div></div>
           {!market.twoSided && (market.poolAbove > 0n || market.poolBelow > 0n) && <p className="ticket-disclosure">One side only so far. If nobody takes the other side this market voids and everyone is refunded.</p>}
           <fieldset className="side-picker is-order"><legend>{status !== "ready" ? "Connect to take a side" : stake.busy ? stake.step || "Staking…" : `Tap a side to stake ${amount} USDC`}</legend>
             <button type="button" className="side-up" disabled={stake.busy} onClick={() => requestStake("ABOVE")}>
@@ -234,8 +234,7 @@ export function MarketTerminal() {
               <span>Below</span><strong>{(100 - impliedAbove).toFixed(0)}%</strong><small>wins {returnFor("BELOW").toFixed(2)}</small>
             </button>
           </fieldset>
-          <div className="amount-field"><label htmlFor="stake-amount">Stake</label><div><span>USDC</span><input id="stake-amount" inputMode="decimal" value={amount} onChange={(event) => { amountTouched.current = true; setAmount(Math.max(0, Number(event.target.value) || 0)); }} /></div></div>
-          <div className="amount-quick">{AMOUNTS.map((value) => <button key={value} type="button" className={amount === value ? "is-active" : ""} onClick={() => { amountTouched.current = true; setAmount(value); }}>{value}</button>)}</div>
+          <AmountPicker value={amount} onChange={(n) => { amountTouched.current = true; setAmount(n); }} />
           {status !== "ready" && (
             <button className="ticket-primary" type="button" onClick={() => void (status === "wrong-chain" ? switchChain() : connect())}>
               {status === "wrong-chain" ? "Switch to Monad" : "Connect to take a side"}
