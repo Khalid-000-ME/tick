@@ -146,8 +146,8 @@ export function SportsCard({
           <OddsChart series={series} above={homeOdds} />
           <p className="sports-referee">
             <SealCheck weight="bold" />
-            Settled from the public scoreboard by a named key, not by Pyth. Weaker than the price
-            markets, and deliberately a separate contract.
+Result attested by a named key from the public scoreboard — a weaker promise than
+            the Pyth-settled price markets, in its own contract.
           </p>
         </div>
       </div>

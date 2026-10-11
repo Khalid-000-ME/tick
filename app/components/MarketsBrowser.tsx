@@ -240,7 +240,10 @@ function MarketCard({ market, series, featured = false }: { market: LiveMarket; 
         <span className="board-card-icon">
           {ICONS[market.symbol] && <Image src={ICONS[market.symbol]} alt="" width={featured ? 26 : 20} height={featured ? 26 : 20} />}
         </span>
-        <span className="board-card-cat">{market.kind === "crypto" ? "Crypto" : "Equity"} · {market.windowLabel} window</span>
+        <span className="board-card-cat">
+          {market.kind === "crypto" ? "Crypto" : "Equity"} · {market.windowLabel} window
+          <em>struck {clock(Math.max(0, market.windowS - market.secondsLeft))} ago</em>
+        </span>
         <span className={`board-clock ${market.secondsLeft <= 10 ? "is-urgent" : ""}`}>{clock(market.secondsLeft)}</span>
       </header>
 

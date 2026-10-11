@@ -48,6 +48,14 @@ export const WINDOW_S = deployed.windowSeconds;
  * duration snaps to its OWN grid (a 2-minute close is always on a 120-second boundary) so
  * two people choosing the same duration land in the same pool instead of two lonely ones.
  */
+/**
+ * Durations share close instants by construction — a 5-minute boundary is also a 30s, 1m
+ * and 2.5m boundary — so several cards often count down together. Staggering each onto
+ * its own phase was tried and barely helped (4.3 to 4.7 distinct countdowns out of 8),
+ * because the 30s market closes on EVERY grid boundary and so always collides with
+ * whichever duration is next. What distinguishes these markets is not when they close but
+ * when they OPENED, since that is what sets the strike, so the cards show the span.
+ */
 export const DURATIONS = [
   { seconds: 30, label: "30s" },
   { seconds: 60, label: "1m" },

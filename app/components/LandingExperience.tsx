@@ -117,7 +117,7 @@ export function LandingExperience() {
             <h3>How Tick earns, and what that is worth</h3>
             <p className="revenue-intro">
               The deployed contract takes <strong>2% of profit</strong> and pays half of it to whoever settles the
-              market, so the protocol keeps about 1% of profit — roughly <strong>0.5% of everything staked</strong>
+              market, so the protocol keeps about 1% of profit — roughly <strong>0.5% of everything staked</strong>{" "}
               once pools are balanced. At the 5–14x revenue multiples Kalshi and Polymarket are being funded at, that
               compounds quickly.
             </p>
