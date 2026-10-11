@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
-import { findFixture, microDescriptor, microEventId, microOutcome, sportsMarketId, type MicroKey } from "@/lib/sports";
+import { VOID, findFixture, microDescriptor, microEventId, microOutcome, sportsMarketId, type MicroKey } from "@/lib/sports";
 
 /**
  * Signs the result of a finished fixture so anyone can settle its market.
@@ -59,7 +59,16 @@ export async function POST(request: Request) {
       if (Math.floor(Date.now() / 1000) < key.closesAt) {
         return NextResponse.json({ error: "That window has not closed yet." }, { status: 409 });
       }
-      const outcome = microOutcome(key, fixture.home.score ?? 0, fixture.away.score ?? 0);
+      // The score at the CLOSE, caught as it happened. Without it the honest result is a
+      // refund: the scoreboard now shows a later moment, which is not what was traded.
+      let close: { home: number; away: number } | null = null;
+      try {
+        const r = await fetch(`${new URL(request.url).origin}/api/sports/micro?close=${espnId}:${key.closesAt}`, { cache: "no-store" });
+        close = ((await r.json()) as { close: { home: number; away: number } | null }).close;
+      } catch {
+        close = null;
+      }
+      const outcome = close ? microOutcome(key, close.home, close.away) : VOID;
       const eventId = microEventId(key);
       const id = sportsMarketId(eventId, key.closesAt);
       const digest = keccak256(
@@ -74,7 +83,7 @@ export async function POST(request: Request) {
           descriptor: microDescriptor(key),
           fixture: fixture.name,
           openedAt: `${key.openHome}-${key.openAway}`,
-          closedAt: `${fixture.home.score}-${fixture.away.score}`,
+          closedAt: close ? `${close.home}-${close.away}` : "not observed at the close, so refunded",
         },
       });
     }
