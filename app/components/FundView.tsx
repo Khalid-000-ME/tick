@@ -1,45 +1,34 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Info } from "@phosphor-icons/react";
-import { formatEther, parseAbi } from "viem";
+import { Check, Copy, GasPump, Info } from "@phosphor-icons/react";
+import { formatEther } from "viem";
 import { AccountShell } from "@/components/AccountShell";
-import { Erc20Abi, TickAbi, TickSportsAbi } from "@/lib/chain/abi";
-import { CONTRACTS, explorerAddress, monadTestnet, toUsd } from "@/lib/chain/config";
-import { readClient } from "@/lib/useWallet";
-import { gasShortfall } from "@/lib/gasCheck";
-import { requestGas } from "@/lib/requestGas";
+import { CONTRACTS, explorerAddress, monadTestnet } from "@/lib/chain/config";
+import { consolidateToWallet, fillGas, fmt, gasStationInfo, quoteGas, readFunds, stakesFor, type Funds } from "@/lib/funds";
 import { useTickWallet } from "@/lib/useTickWallet";
 
-/** Tick and TickSports expose the same balance interface, so one ABI serves both. */
-const BalanceAbi = parseAbi(["function deposits(address) view returns (uint256)", "function withdraw(uint256)"]);
-
-interface Balances {
-  mon: number;
-  wallet: number;
-  tick: number;
-  sports: number;
-}
+/** USDC amounts offered for a gas fill. */
+const FILLS = [0.1, 0.25, 0.5, 1];
 
 export function FundView() {
   const wallet = useTickWallet();
   const { account, status, walletClient } = wallet;
-  const [bal, setBal] = useState<Balances | null>(null);
+  const [funds, setFunds] = useState<Funds | null>(null);
+  const [station, setStation] = useState<{ reserve: bigint; maxFill: bigint; gasPrice: bigint } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const [withdrawing, setWithdrawing] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+
+  const [fill, setFill] = useState("0.25");
+  const [quote, setQuote] = useState<{ amount: string; mon: bigint } | null>(null);
 
   const load = useCallback(async () => {
     if (!account) return;
     try {
-      const [mon, wal, tick, sports] = await Promise.all([
-        readClient.getBalance({ address: account }),
-        readClient.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "balanceOf", args: [account] }),
-        readClient.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account] }),
-        // The sports contract holds its own balance, so it is listed and withdrawn separately.
-        readClient.readContract({ address: CONTRACTS.tickSports, abi: TickSportsAbi, functionName: "deposits", args: [account] }),
-      ]);
-      setBal({ mon: Number(formatEther(mon)), wallet: toUsd(wal as bigint), tick: toUsd(tick as bigint), sports: toUsd(sports as bigint) });
+      const [f, s] = await Promise.all([readFunds(account), gasStationInfo()]);
+      setFunds(f);
+      setStation(s);
     } catch {
       /* a failed poll keeps the last numbers on screen */
     }
@@ -51,41 +40,40 @@ export function FundView() {
     return () => clearInterval(t);
   }, [load]);
 
-  async function withdrawAll(from: "tick" | "sports" = "tick") {
+  // The live quote for whatever is typed, read from the contract so it is the rate the
+  // fill will actually get.
+  const fillUnits = toUnits(fill);
+  useEffect(() => {
+    let off = false;
+    const t = setTimeout(() => {
+      void quoteGas(fillUnits).then((mon) => { if (!off) setQuote({ amount: fill, mon }); }).catch(() => {});
+    }, 200);
+    return () => { off = true; clearTimeout(t); };
+  }, [fill, fillUnits]);
+  const quoted = quote?.amount === fill ? quote.mon : null;
+
+  async function doFill() {
+    if (!walletClient || !account) return setNote("The wallet is not ready to sign yet. Reconnect it and try again.");
     setNote(null);
-    if (!walletClient || !account) {
-      setNote("The wallet is not ready to sign yet. Reconnect it and try again.");
-      return;
-    }
-    setWithdrawing(true);
+    setBusy("Filling…");
+    const r = await fillGas(walletClient, account, fillUnits, setBusy);
+    setNote(r.message);
+    setBusy(null);
+    await load();
+  }
+
+  async function toWallet() {
+    if (!walletClient || !account || !funds) return;
+    setNote(null);
+    setBusy("Moving…");
     try {
-      const short = await gasShortfall(readClient, account, [220_000n]);
-      if (short) {
-        setNote(short);
-        return;
-      }
-      const address = from === "sports" ? CONTRACTS.tickSports : CONTRACTS.tick;
-      const raw = await readClient.readContract({ address, abi: BalanceAbi, functionName: "deposits", args: [account] });
-      if (raw === 0n) {
-        setNote("Nothing to withdraw: your Tick balance is empty.");
-        return;
-      }
-      const hash = await walletClient.writeContract({
-        address,
-        abi: BalanceAbi,
-        functionName: "withdraw",
-        args: [raw],
-        account,
-        chain: monadTestnet,
-        gas: 220_000n,
-      });
-      const rc = await readClient.waitForTransactionReceipt({ hash });
-      setNote(rc.status === "success" ? `${toUsd(raw).toFixed(2)} USDC moved back to your wallet.` : "The withdrawal reverted on chain. Nothing was moved.");
-      await load();
+      const r = await consolidateToWallet(walletClient, account, funds, setBusy);
+      setNote(r ?? `All ${fmt(funds.total)} USDC is in your wallet now, ready to send anywhere.`);
     } catch (e) {
       setNote(((e as { shortMessage?: string }).shortMessage ?? (e as Error).message).split("\n")[0]);
     } finally {
-      setWithdrawing(false);
+      setBusy(null);
+      await load();
     }
   }
 
@@ -96,19 +84,74 @@ export function FundView() {
     });
   }
 
+  const tankStakes = funds && station ? stakesFor(funds.mon, station.gasPrice) : null;
+  const fillStakes = quoted !== null && station ? stakesFor(quoted, station.gasPrice) : null;
+  const overMax = station ? fillUnits > station.maxFill : false;
+  const parked = funds ? funds.tick + funds.sports : 0n;
+
   return (
     <AccountShell active="fund" wallet={wallet}>
       <section className="page-intro">
         <h1>Fund your account</h1>
-        <p>Stakes are paid in USDC from your Tick balance. Send USDC to your wallet address and the app moves it in when you stake.</p>
+        <p>One balance for every market. Add USDC to your address, and fill your gas tank with USDC.</p>
       </section>
 
       {status !== "ready" || !account ? (
         <div className="page-empty">Connect a wallet to see your deposit address.</div>
       ) : (
         <>
+          <section className="stat-row fund-balances" aria-label="Balances">
+            <div className="stat">
+              <span>Balance · USDC</span>
+              <strong>{funds ? fmt(funds.total) : "-"}</strong>
+              {funds && parked > 0n && (
+                <button type="button" className="btn-ghost small" disabled={!!busy} onClick={() => void toWallet()}>
+                  Move all to wallet
+                </button>
+              )}
+            </div>
+            <div className="stat">
+              <span>Gas tank</span>
+              <strong>{tankStakes === null ? "-" : `${tankStakes} stakes`}</strong>
+              <small>{funds ? `${Number(formatEther(funds.mon)).toFixed(3)} MON` : ""}</small>
+            </div>
+          </section>
+
+          <section className="fund-card fund-gas">
+            <div className="fund-gas-head">
+              <GasPump weight="bold" />
+              <div>
+                <h2>Fill gas with USDC</h2>
+                <p>Every transaction needs a little MON. Pay in USDC and the platform fills your tank in one transaction.</p>
+              </div>
+            </div>
+            <div className="fund-gas-row">
+              <div className="match-amounts">
+                {FILLS.map((v) => (
+                  <button key={v} type="button" className={fill === String(v) ? "is-active" : ""} onClick={() => setFill(String(v))}>${v}</button>
+                ))}
+              </div>
+              <label className="amount-custom">
+                <span>$</span>
+                <input inputMode="decimal" value={fill} onChange={(e) => setFill(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="USDC to spend on gas" />
+              </label>
+            </div>
+            <p className="fund-quote">
+              {fillUnits <= 0n
+                ? "Enter an amount."
+                : overMax
+                  ? `Up to ${fmt(station!.maxFill)} USDC per fill.`
+                  : quoted === null
+                    ? "Quoting…"
+                    : <>Fills <strong>{Number(formatEther(quoted)).toFixed(3)} MON</strong>, about {fillStakes} stakes.</>}
+            </p>
+            <button type="button" className="btn-solid" disabled={!!busy || fillUnits <= 0n || overMax || quoted === null || (funds ? funds.total < fillUnits : true)} onClick={() => void doFill()}>
+              {busy ?? `Fill for $${fill || "0"}`}
+            </button>
+          </section>
+
           <section className="fund-card">
-            <span className="fund-label">Your wallet address · Monad Testnet</span>
+            <span className="fund-label">Your address · Monad Testnet</span>
             <div className="fund-address">
               <code>{account}</code>
               <button type="button" className="btn-solid small" onClick={() => copy("addr", account)}>
@@ -116,38 +159,21 @@ export function FundView() {
               </button>
             </div>
             <p className="fund-hint">
-              Only send on <strong>Monad Testnet</strong> (chain {monadTestnet.id}). Tokens sent on any other network will not arrive.{" "}
-              <a href={explorerAddress(account)} target="_blank" rel="noreferrer">View on the explorer</a>
+              Send USDC on <strong>Monad Testnet</strong> (chain {monadTestnet.id}) only.{" "}
+              <a href={explorerAddress(account)} target="_blank" rel="noreferrer">Explorer</a>
             </p>
-          </section>
-
-          <section className="stat-row" aria-label="Balances">
-            <div className="stat">
-              <span>In Tick (stakeable)</span>
-              <strong>{bal ? bal.tick.toFixed(2) : "-"}</strong>
-              {bal && bal.tick > 0 && (
-                <button type="button" className="btn-ghost small" disabled={withdrawing} onClick={() => void withdrawAll("tick")}>
-                  {withdrawing ? "Withdrawing…" : "Withdraw to wallet"}
-                </button>
-              )}
-            </div>
-            <div className="stat">
-              <span>Sports balance</span>
-              <strong>{bal ? bal.sports.toFixed(2) : "0.00"}</strong>
-              {bal && bal.sports > 0 && (
-                <button type="button" className="btn-ghost small" disabled={withdrawing} onClick={() => void withdrawAll("sports")}>
-                  {withdrawing ? "Withdrawing..." : "Withdraw to wallet"}
-                </button>
-              )}
-            </div>
-            <div className="stat"><span>In wallet · USDC</span><strong>{bal ? bal.wallet.toFixed(2) : "-"}</strong></div>
-            <div className="stat"><span>Gas · MON</span><strong>{bal ? bal.mon.toFixed(3) : "-"}</strong></div>
           </section>
 
           <section className="fund-grid">
             <article className="fund-option">
-              <h2>Send USDC from another wallet</h2>
-              <p>Transfer USDC on Monad Testnet to the address above. It shows up in your wallet balance within a block or two.</p>
+              <h2>Get test USDC</h2>
+              <p>Circle&apos;s faucet sends free testnet USDC. Choose Monad Testnet and paste your address.</p>
+              <a className="btn-solid" href="https://faucet.circle.com" target="_blank" rel="noreferrer">Open Circle&apos;s faucet</a>
+            </article>
+
+            <article className="fund-option">
+              <h2>Send from another wallet</h2>
+              <p>Transfer USDC on Monad Testnet to your address. It lands within a block or two.</p>
               <div className="fund-token">
                 <span>USDC contract</span>
                 <code>{CONTRACTS.usdc}</code>
@@ -157,36 +183,9 @@ export function FundView() {
               </div>
             </article>
 
-            <article className="fund-option">
-              <h2>Get test USDC</h2>
-              <p>Circle&apos;s faucet sends free testnet USDC. Choose Monad Testnet and paste your address.</p>
-              <a className="btn-solid" href="https://faucet.circle.com" target="_blank" rel="noreferrer">Open Circle&apos;s faucet</a>
-            </article>
-
-            <article className="fund-option">
-              <h2>Get MON for gas</h2>
-              <p>Every transaction is paid in MON. {bal && bal.mon < 0.05 ? "Your balance is low." : "Top up from the testnet faucet when it runs low."}</p>
-              {bal && bal.mon < 0.05 && (
-                <button
-                  type="button"
-                  className="btn-solid"
-                  onClick={async () => {
-                    setNote((await requestGas(account)) ? "Sent 0.2 MON to your wallet." : "Could not send gas right now; use the Monad faucet instead.");
-                    await load();
-                  }}
-                >
-                  Get 0.2 MON now
-                </button>
-              )}
-              <a className="btn-ghost" href="https://faucet.monad.xyz" target="_blank" rel="noreferrer">Open the Monad faucet</a>
-            </article>
-
             <article className="fund-option is-muted">
-              <h2>Buy stablecoins with a card <span className="soon-pill">Coming soon</span></h2>
-              <p>
-                A Stripe-powered checkout is planned, so you can buy USDC with a card or bank transfer without leaving Tick
-                and have it land straight in your wallet. It is not live on testnet, where USDC is free from the faucet above.
-              </p>
+              <h2>Buy with a card <span className="soon-pill">Coming soon</span></h2>
+              <p>A Stripe-powered checkout to buy USDC with a card or bank transfer, landing straight in your balance.</p>
             </article>
           </section>
 
@@ -201,4 +200,9 @@ export function FundView() {
       )}
     </AccountShell>
   );
+}
+
+function toUnits(v: string): bigint {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? BigInt(Math.round(n * 1e6)) : 0n;
 }

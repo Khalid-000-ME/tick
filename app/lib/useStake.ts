@@ -2,8 +2,9 @@
 
 import { useCallback, useRef, useState } from "react";
 import { createPublicClient, http, type WalletClient } from "viem";
-import { TickAbi, Erc20Abi } from "@/lib/chain/abi";
+import { TickAbi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
+import { allowanceFor, ensureStakeable, plannedMoves, readFunds } from "@/lib/funds";
 import type { MarketView } from "@/lib/useMarket";
 import type { Terms } from "@/lib/chain/market";
 import type { FeedSpec } from "@/lib/pyth";
@@ -18,7 +19,7 @@ const pub = createPublicClient({ chain: monadTestnet, transport: http(), polling
 // still pays. Estimated on chain against Circle USDC: stakeOn 158k, approve 88k (first
 // time), deposit 137k. Each limit is roughly 2x its estimate: enough headroom to never
 // revert, still well under a wallet's own padded estimate.
-const GAS = { approve: 180_000n, deposit: 280_000n, stake: 300_000n } as const;
+const GAS = { stake: 300_000n } as const;
 
 /**
  * Sends the real stake: approve -> deposit -> stakeOn, skipping whichever
@@ -85,15 +86,10 @@ export function useStake({
       try {
         // The reads are independent, so they go out together instead of one by one.
         setStep("Checking balance…");
-        const [bal, deposited, allowance] = await Promise.all([
-          pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "balanceOf", args: [account] }) as Promise<bigint>,
-          pub.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "deposits", args: [account] }) as Promise<bigint>,
-          pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "allowance", args: [account, CONTRACTS.tick] }) as Promise<bigint>,
-        ]);
+        const [funds, allowance] = await Promise.all([readFunds(account), allowanceFor(account, "tick")]);
 
         // The setup transactions are only sent when needed, so only count those.
-        const planned: bigint[] = [GAS.stake];
-        if (deposited < units) planned.push(GAS.deposit, ...(allowance < bal ? [GAS.approve] : []));
+        const planned: bigint[] = [GAS.stake, ...plannedMoves(funds, "tick", units, allowance)];
         let short = await gasShortfall(pub, account, planned);
         if (short) {
           // A new wallet starts with no MON. Ask the app for starter gas rather than sending
@@ -103,45 +99,11 @@ export function useStake({
         }
         if (short) return { ok: false, message: short };
 
-        if (deposited < units) {
-          const shortfall = units - deposited;
-
-          if (bal < shortfall) {
-            return {
-              ok: false,
-              message: `Not enough USDC: you have ${Number(bal) / 1e6} in your wallet and ${Number(deposited) / 1e6} deposited, and this stake needs ${amount}. Add USDC on the Fund page, or try a smaller stake.`,
-            };
-          }
-
-          // One-time setup. Approve once for good, and move the WHOLE wallet balance into
-          // Tick rather than just this stake, so every later stake is a single transaction
-          // with nothing to approve or deposit. It stays withdrawable from the Fund page.
-          if (allowance < bal) {
-            setStep("Approving USDC (one time)…");
-            const approveHash = await walletClient.writeContract({
-              address: CONTRACTS.usdc,
-              abi: Erc20Abi,
-              functionName: "approve",
-              args: [CONTRACTS.tick, 2n ** 255n],
-              account,
-              chain: monadTestnet,
-              gas: GAS.approve,
-            });
-            await pub.waitForTransactionReceipt({ hash: approveHash });
-          }
-
-          setStep("Moving USDC into Tick…");
-          const depositHash = await walletClient.writeContract({
-            address: CONTRACTS.tick,
-            abi: TickAbi,
-            functionName: "deposit",
-            args: [bal],
-            account,
-            chain: monadTestnet,
-            gas: GAS.deposit,
-          });
-          await pub.waitForTransactionReceipt({ hash: depositHash });
-        }
+        // One balance: if this contract is short, the rest of the trader's USDC (wallet,
+        // or parked in the sports contract) is moved in first, all of it, so every later
+        // stake is a single transaction again.
+        const moved = await ensureStakeable(walletClient, account, "tick", units, funds, allowance, setStep);
+        if (moved) return { ok: false, message: moved };
 
         // --- the stake. Simulated first, so a refusal is explained rather than raw.
         // Post a fresh price only now, right before the stake. Keeping the oracle warm

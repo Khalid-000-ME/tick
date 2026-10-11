@@ -1957,3 +1957,25 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .lb-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .lb-who span { display: flex; flex-direction: column; min-width: 0; }
 .lb-who small { font-size: 11px; color: var(--t-dim); }
+
+/* Amount picker: small presets plus a custom field, shared by every stake form. */
+.amount-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.amount-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.amount-presets button { padding: 6px 10px; border: 1px solid var(--t-line); border-radius: 99px; background: transparent; color: var(--t-dim); font: 12px var(--font-geist-mono), monospace; cursor: pointer; transition: border-color .15s, color .15s; }
+.amount-presets button:hover { color: var(--t-ink); border-color: var(--t-stroke); }
+.amount-presets button.is-active { background: var(--t-ink); color: var(--t-bg); border-color: var(--t-ink); }
+.amount-custom { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border: 1px solid var(--t-line); border-radius: 99px; background: var(--t-bg); font: 12px var(--font-geist-mono), monospace; color: var(--t-dim); transition: border-color .2s; }
+.amount-custom:focus-within { border-color: var(--t-stroke); }
+.amount-custom input { width: 56px; border: 0; outline: 0; background: transparent; color: var(--t-ink); font: inherit; }
+.amount-picker.is-compact { margin-top: 8px; }
+
+/* Fund page: one balance and the gas tank. */
+.fund-balances .stat small { font: 12px var(--font-geist-mono), monospace; color: var(--t-dim); }
+.fund-gas-head { display: flex; gap: 12px; align-items: flex-start; }
+.fund-gas-head > svg { font-size: 22px; flex: none; margin-top: 2px; }
+.fund-gas-head h2 { margin: 0 0 4px; font-size: 16px; }
+.fund-gas-head p { margin: 0; color: var(--t-dim); font-size: 13px; }
+.fund-gas-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 8px; }
+.fund-gas-row .match-amounts { margin-top: 0; }
+.fund-quote { margin: 0 0 12px; font-size: 13px; color: var(--t-dim); }
+.fund-quote strong { color: var(--t-ink); font-family: var(--font-geist-mono), monospace; }

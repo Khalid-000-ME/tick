@@ -2,8 +2,9 @@
 
 import { useCallback, useState } from "react";
 import { createPublicClient, http, type WalletClient } from "viem";
-import { Erc20Abi, TickSportsAbi } from "@/lib/chain/abi";
+import { TickSportsAbi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
+import { allowanceFor, ensureStakeable, plannedMoves, readFunds } from "@/lib/funds";
 import { gasShortfall } from "@/lib/gasCheck";
 import { requestGas } from "@/lib/requestGas";
 
@@ -12,14 +13,13 @@ import { requestGas } from "@/lib/requestGas";
  *
  * Simpler than the price path: there is no oracle to keep warm, no strike and no
  * freshness cutoff, because the market closes at kickoff rather than against a moving
- * price. Setup is the same one-time approve and deposit, against the sports contract's
- * own balance — TickSports holds deposits separately from Tick, so funding one does not
- * fund the other.
+ * price. Funding goes through the shared balance in lib/funds, so the trader has one
+ * balance for sports and price markets alike.
  */
 const pub = createPublicClient({ chain: monadTestnet, transport: http(), pollingInterval: 250 });
 
 /** Measured against Circle USDC; Monad charges the limit, so each is ~2x its estimate. */
-const GAS = { approve: 180_000n, deposit: 280_000n, stake: 300_000n } as const;
+const GAS = { stake: 300_000n } as const;
 
 export interface SportsTerms {
   eventId: `0x${string}`;
@@ -49,14 +49,9 @@ export function useSportsStake(walletClient: WalletClient | null, account: `0x${
       setBusy(true);
       try {
         setStep("Checking balance…");
-        const [bal, deposited, allowance] = await Promise.all([
-          pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "balanceOf", args: [account] }) as Promise<bigint>,
-          pub.readContract({ address: CONTRACTS.tickSports, abi: TickSportsAbi, functionName: "deposits", args: [account] }) as Promise<bigint>,
-          pub.readContract({ address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "allowance", args: [account, CONTRACTS.tickSports] }) as Promise<bigint>,
-        ]);
+        const [funds, allowance] = await Promise.all([readFunds(account), allowanceFor(account, "sports")]);
 
-        const planned: bigint[] = [GAS.stake];
-        if (deposited < units) planned.push(GAS.deposit, ...(allowance < bal ? [GAS.approve] : []));
+        const planned: bigint[] = [GAS.stake, ...plannedMoves(funds, "sports", units, allowance)];
         let short = await gasShortfall(pub, account, planned);
         if (short) {
           setStep("Getting starter gas…");
@@ -64,28 +59,10 @@ export function useSportsStake(walletClient: WalletClient | null, account: `0x${
         }
         if (short) return { ok: false, message: short };
 
-        if (deposited < units) {
-          if (bal < units - deposited) {
-            return {
-              ok: false,
-              message: `Not enough USDC: ${Number(bal) / 1e6} in your wallet and ${Number(deposited) / 1e6} in the sports balance, and this needs ${amount}. Add USDC on the Fund page.`,
-            };
-          }
-          if (allowance < bal) {
-            setStep("Approving USDC (one time)…");
-            const h = await walletClient.writeContract({
-              address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "approve",
-              args: [CONTRACTS.tickSports, 2n ** 255n], account, chain: monadTestnet, gas: GAS.approve,
-            });
-            await pub.waitForTransactionReceipt({ hash: h });
-          }
-          setStep("Moving USDC in…");
-          const h = await walletClient.writeContract({
-            address: CONTRACTS.tickSports, abi: TickSportsAbi, functionName: "deposit",
-            args: [bal], account, chain: monadTestnet, gas: GAS.deposit,
-          });
-          await pub.waitForTransactionReceipt({ hash: h });
-        }
+        // Same single balance as price markets: whatever is in the wallet or parked in the
+        // price contract is moved across when this contract is short.
+        const moved = await ensureStakeable(walletClient, account, "sports", units, funds, allowance, setStep);
+        if (moved) return { ok: false, message: moved };
 
         setStep("Staking…");
         const hash = await walletClient.writeContract({
