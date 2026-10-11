@@ -6,6 +6,11 @@ import { ArrowLeft, Moon, Sun } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { OddsChart, type OddsPoint } from "@/components/OddsChart";
 import { CardBanner } from "@/components/CardBanner";
+import { StrikeStepper } from "@/components/StrikeStepper";
+import { TickAbi } from "@/lib/chain/abi";
+import { CONTRACTS, toUsd as toUsdc } from "@/lib/chain/config";
+import { marketId } from "@/lib/chain/market";
+import { readClient } from "@/lib/useWallet";
 import { SportsCard, type SportsEvent } from "@/components/SportsCard";
 import { MicroBoard } from "@/components/MicroMarkets";
 import { WalletMenu } from "@/components/WalletMenu";
@@ -236,10 +241,29 @@ const usd = (v: number) =>
   v.toLocaleString("en-US", { minimumFractionDigits: v < 1 ? 4 : 2, maximumFractionDigits: v < 1 ? 4 : 2 });
 
 function MarketCard({ market, series, featured = false }: { market: LiveMarket; series: OddsPoint[]; featured?: boolean }) {
-  const strike = Number(market.strike) * 10 ** market.expo;
+  // A price the trader picked on this card. Each strike is its own pool, so its odds are
+  // read from the chain rather than borrowed from the opening strike's.
+  const [chosen, setChosen] = useState<bigint | null>(null);
+  const [chosenPools, setChosenPools] = useState<{ above: number; below: number } | null>(null);
+  const openStrike = BigInt(market.strike);
+
+  useEffect(() => {
+    if (chosen === null) return;
+    let off = false;
+    const id = marketId({ feedId: market.feedId as `0x${string}`, strike: chosen, expo: market.expo, closesAt: BigInt(market.closesAt) });
+    void (readClient.readContract({ address: CONTRACTS.tick, abi: TickAbi, functionName: "pools", args: [id] }) as Promise<readonly [bigint, bigint]>)
+      .then(([a, b]) => { if (!off) setChosenPools({ above: toUsdc(a), below: toUsdc(b) }); })
+      .catch(() => {});
+    return () => { off = true; };
+  }, [chosen, market.feedId, market.expo, market.closesAt]);
+
+  const strikeUnits = chosen ?? openStrike;
+  const strike = Number(strikeUnits) * 10 ** market.expo;
   const price = market.price === null ? null : Number(market.price) * 10 ** market.expo;
-  const above = market.impliedAbove;
-  const href = `/trade?feed=${encodeURIComponent(market.symbol)}&window=${market.windowS}`;
+  const pools = chosen === null ? { above: market.poolAbove, below: market.poolBelow } : chosenPools ?? { above: 0, below: 0 };
+  const total = pools.above + pools.below;
+  const above = chosen === null ? market.impliedAbove : total === 0 ? 50 : (pools.above / total) * 100;
+  const href = `/trade?feed=${encodeURIComponent(market.symbol)}&window=${market.windowS}${chosen === null ? "" : `&strike=${chosen}`}`;
   // Which side the market is currently on, so the spot figure says something at a glance.
   const leaning = price === null ? null : price >= strike ? "up" : "down";
 
@@ -255,22 +279,25 @@ function MarketCard({ market, series, featured = false }: { market: LiveMarket; 
         tall={featured}
       />
 
-      <h2 className="board-card-title">Above ${usd(strike)}?</h2>
+      <div className="board-card-title strike-title">
+        <span>Above</span>
+        <StrikeStepper open={openStrike} value={chosen} expo={market.expo} onChange={setChosen} compact />
+      </div>
 
       <div className={`board-card-body ${featured ? "" : "is-compact"}`}>
         <div className="board-outcomes">
           <Link href={href} className="board-outcome tone-up">
             <span className="board-outcome-name">Above<i style={{ width: `${above}%` }} /></span>
-            <span className="board-pays">{payout(market.poolAbove, market.poolBelow).toFixed(2)}x</span>
+            <span className="board-pays">{payout(pools.above, pools.below).toFixed(2)}x</span>
             <span className="board-odds">{above.toFixed(0)}%</span>
           </Link>
           <Link href={href} className="board-outcome tone-down">
             <span className="board-outcome-name">Below<i style={{ width: `${100 - above}%` }} /></span>
-            <span className="board-pays">{payout(market.poolBelow, market.poolAbove).toFixed(2)}x</span>
+            <span className="board-pays">{payout(pools.below, pools.above).toFixed(2)}x</span>
             <span className="board-odds">{(100 - above).toFixed(0)}%</span>
           </Link>
           <div className="board-card-foot">
-            <span>{money(market.volume)} pool</span>
+            <span>{money(total)} pool</span>
             {price !== null && <span className={`spot is-${leaning}`}>now ${usd(price)}</span>}
           </div>
         </div>

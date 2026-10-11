@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { ASSET_ICONS as ICONS } from "@/components/CardBanner";
+import { StrikeStepper } from "@/components/StrikeStepper";
 import { WalletMenu } from "@/components/WalletMenu";
 import { TickerStrip } from "@/components/TickerStrip";
 import { NewsPanel } from "@/components/NewsPanel";
@@ -29,6 +30,8 @@ const NOW_X = 850;
 export function MarketTerminal() {
   const [feed, setFeed] = useState<FeedSpec>(FEEDS[0]);
   const [windowS, setWindowS] = useState<number>(WINDOW_S);
+  // A price the trader picked instead of the window's opening one, in feed units.
+  const [strikeOverride, setStrikeOverride] = useState<bigint | null>(null);
 
   // The board links here carrying the market it was showing, so a card and the terminal
   // are the same market rather than two that merely look alike. Read after mount rather
@@ -40,6 +43,8 @@ export function MarketTerminal() {
     if (asked) setFeed(asked);
     const w = Number(q.get("window"));
     if (DURATIONS.some((d) => d.seconds === w)) setWindowS(w);
+    const k = q.get("strike");
+    if (k && /^\d+$/.test(k)) setStrikeOverride(BigInt(k));
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [amount, setAmount] = useState(25);
@@ -52,7 +57,7 @@ export function MarketTerminal() {
   const { status, account, connect, switchChain, walletClient } = wallet;
   const { theme, toggle: toggleTheme } = useTheme();
 
-  const market = useMarket(feed, windowS);
+  const market = useMarket(feed, windowS, strikeOverride);
   const stake = useStake({ walletClient, account, market, feed });
   // Follows each stake through settlement to a payout. Without it a window closes and
   // says nothing, which is indistinguishable from the money simply being gone.
@@ -180,7 +185,7 @@ export function MarketTerminal() {
               <button className="asset-select" type="button" onClick={() => setMenuOpen((value) => !value)} aria-expanded={menuOpen}>
                 <span className="asset-icon"><Image src={ICONS[feed.symbol]} alt="" width={24} height={24} /></span><span><strong>{feed.symbol}</strong><small>{feed.label}</small></span><CaretDown weight="bold" />
               </button>
-              {menuOpen && <div className="asset-menu">{FEEDS.map((item) => <AssetOption key={item.symbol} item={item} active={item.symbol === feed.symbol} pick={() => { setFeed(item); setMenuOpen(false); }} />)}</div>}
+              {menuOpen && <div className="asset-menu">{FEEDS.map((item) => <AssetOption key={item.symbol} item={item} active={item.symbol === feed.symbol} pick={() => { setFeed(item); setStrikeOverride(null); setMenuOpen(false); }} />)}</div>}
             </div>
             <div className="term-durations" role="tablist" aria-label="Window length">
               {DURATIONS.map((d) => (
@@ -222,7 +227,8 @@ export function MarketTerminal() {
         <div className="terminal-rail">
         <NewsPanel feed={feed} />
         <aside className="terminal-ticket" aria-label="Market order">
-          <div className="ticket-heading"><h1>Will {feed.symbol} close above ${strikeNumber === null ? "-" : formatPrice(strikeNumber)}?</h1></div>
+          <div className="ticket-heading"><h1>Will {feed.symbol} close above</h1></div>
+          <StrikeStepper open={market.openStrike} value={strikeOverride} expo={feed.expo} onChange={setStrikeOverride} />
           <div className="pool-split"><div><span>Pool sentiment</span><strong>{impliedAbove.toFixed(0)}% above</strong></div><div className="pool-track"><span style={{ width: `${impliedAbove}%` }} /></div><div className="pool-labels"><span>{fmtUsd(market.poolAbove, 0)} ABOVE</span><span>{fmtUsd(market.poolBelow, 0)} BELOW</span></div></div>
           {!market.twoSided && (market.poolAbove > 0n || market.poolBelow > 0n) && <p className="ticket-disclosure">One side only so far. If nobody takes the other side this market voids and everyone is refunded.</p>}
           <fieldset className="side-picker is-order"><legend>{status !== "ready" ? "Connect to take a side" : stake.busy ? stake.step || "Staking…" : `Tap a side to stake ${amount} USDC`}</legend>

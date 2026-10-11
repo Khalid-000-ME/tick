@@ -35,6 +35,8 @@ export interface MarketView {
   acceptMargin: number;
   /** The market currently open for staking on this feed. */
   terms: Terms | null;
+  /** The window's opening strike, before any override: where the strike ladder centres. */
+  openStrike: bigint | null;
   id: `0x${string}` | null;
   /** Seconds until this window closes. */
   secondsToClose: number;
@@ -55,7 +57,13 @@ export interface MarketView {
  *   contract's 30s grid, so a longer market is only a further-out close — the chain needs
  *   no change, just a strike struck at the matching opening instant.
  */
-export function useMarket(feed: FeedSpec, windowS: number = WINDOW_S, pollMs = 2500): MarketView {
+export function useMarket(
+  feed: FeedSpec,
+  windowS: number = WINDOW_S,
+  /** A price the trader chose instead of the opening one. Any strike is valid on chain. */
+  strikeOverride: bigint | null = null,
+  pollMs = 2500
+): MarketView {
   const [price, setPrice] = useState<bigint | null>(null);
   const [publishTime, setPublishTime] = useState<number | null>(null);
   const [blockTime, setBlockTime] = useState<number | null>(null);
@@ -103,13 +111,11 @@ export function useMarket(feed: FeedSpec, windowS: number = WINDOW_S, pollMs = 2
   }, [feed.id, windowClose, windowS, strikeKey]);
 
   // Never show a strike belonging to another window or feed: no terms until it matches.
-  const terms = useMemo<Terms | null>(
-    () =>
-      strikeFor && strikeFor.key === strikeKey
-        ? { feedId: feed.id, strike: strikeFor.strike, expo: feed.expo, closesAt: BigInt(windowClose) }
-        : null,
-    [strikeFor, strikeKey, feed, windowClose]
-  );
+  const openStrike = strikeFor && strikeFor.key === strikeKey ? strikeFor.strike : null;
+  const terms = useMemo<Terms | null>(() => {
+    const strike = strikeOverride ?? openStrike;
+    return strike === null ? null : { feedId: feed.id, strike, expo: feed.expo, closesAt: BigInt(windowClose) };
+  }, [strikeOverride, openStrike, feed, windowClose]);
   const id = useMemo(() => (terms ? marketId(terms) : null), [terms]);
 
   const refetch = useCallback(() => setTick((n) => n + 1), []);
@@ -229,6 +235,7 @@ export function useMarket(feed: FeedSpec, windowS: number = WINDOW_S, pollMs = 2
     cutoffOpen: cutoff?.ok ?? false,
     acceptMargin: ACCEPT_MARGIN_S,
     terms,
+    openStrike,
     id,
     secondsToClose,
     poolAbove: pools.above,
