@@ -10,17 +10,21 @@ import Image from "next/image";
  * We have no photo library and no licence to borrow one, so each asset gets a generated
  * banner: its brand colours, its mark, the ticker set large.
  */
+/** Official marks, stored locally rather than hotlinked. Crypto from Trust Wallet's open
+ *  asset repository (Hyperliquid from CoinGecko, which that repo lacks); equities from
+ *  Financial Modeling Prep. QQQ is Invesco's fund, so its mark is Invesco's, set on a disc
+ *  because the source is white on transparent and vanished on light backgrounds. */
 export const ASSET_ICONS: Record<string, string> = {
-  "BTC/USD": "/asset-icons/bitcoin.svg",
-  "ETH/USD": "/asset-icons/ethereum.svg",
-  "SOL/USD": "/asset-icons/solana.svg",
-  "BNB/USD": "/asset-icons/bnb.svg",
-  "XRP/USD": "/asset-icons/xrp.svg",
-  "DOGE/USD": "/asset-icons/doge.svg",
-  "HYPE/USD": "/asset-icons/hype.svg",
-  "PYTH/USD": "/asset-icons/pyth.svg",
-  TSLA: "/asset-icons/tesla.svg",
-  QQQ: "/asset-icons/qqq.svg",
+  "BTC/USD": "/asset-icons/btc.png",
+  "ETH/USD": "/asset-icons/eth.png",
+  "SOL/USD": "/asset-icons/sol.png",
+  "BNB/USD": "/asset-icons/bnb.png",
+  "XRP/USD": "/asset-icons/xrp.png",
+  "DOGE/USD": "/asset-icons/doge.png",
+  "HYPE/USD": "/asset-icons/hype.jpg",
+  "PYTH/USD": "/asset-icons/pyth.png",
+  TSLA: "/asset-icons/tsla.png",
+  QQQ: "/asset-icons/qqq.png",
 };
 
 /** Brand-ish pairs, dark enough that white type stays legible on them. */

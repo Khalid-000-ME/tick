@@ -36,7 +36,9 @@ const CELL_PX = 150;
 
 const fmt = (raw: string, expo: number) => {
   const v = Number(raw) * 10 ** expo;
-  return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Sub-dollar assets need more than cents, or DOGE at 0.0852 reads as a flat 0.09.
+  const d = v < 1 ? 4 : 2;
+  return v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 };
 
 export function TickerStrip() {

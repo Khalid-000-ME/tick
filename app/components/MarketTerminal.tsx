@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
+import { ASSET_ICONS as ICONS } from "@/components/CardBanner";
 import { WalletMenu } from "@/components/WalletMenu";
 import { TickerStrip } from "@/components/TickerStrip";
 import { NewsPanel } from "@/components/NewsPanel";
@@ -19,15 +20,6 @@ import { useTheme } from "@/lib/useTheme";
 import { FEEDS, type FeedSpec } from "@/lib/pyth";
 import { DURATIONS, WINDOW_S, fmtUsd, toUsd } from "@/lib/chain/config";
 
-/** Display metadata only. Every number comes from the chain — see useMarket(). */
-const ICONS: Record<string, string> = {
-  "BTC/USD": "/asset-icons/bitcoin.svg",
-  "ETH/USD": "/asset-icons/ethereum.svg",
-  "SOL/USD": "/asset-icons/solana.svg",
-  AAPL: "/asset-icons/apple.svg",
-  TSLA: "/asset-icons/tesla.svg",
-  MSFT: "/asset-icons/microsoft.svg",
-};
 const AMOUNTS = [5, 10, 25, 50];
 /** Seconds left at which the countdown turns red — long enough to still act on. */
 const URGENT_AT = 8;
