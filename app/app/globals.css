@@ -1550,3 +1550,36 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
   .news-panel { max-height: 220px; }
 }
 .ticker-strip.is-waiting { height: 34px; }
+
+/* ---- compact ticket: the whole stake form has to fit the rail without scrolling ----
+   The news panel takes a share of the right rail, so every block below is tightened to
+   keep Take a side, the amount, the return and the Stake button on screen together. A
+   staker should never scroll to reach the button in a 30-second window. */
+.terminal-rail .news-panel { max-height: 30%; }
+.terminal-shell .terminal-rail .terminal-ticket { padding: 16px 20px 14px; }
+.terminal-shell .terminal-rail .ticket-heading h1 { font-size: 16px; line-height: 1.25; }
+.terminal-rail .pool-split { margin-top: 12px; padding: 10px 0; }
+.terminal-rail .pool-track { margin-top: 8px; }
+.terminal-rail .pool-labels { margin-top: 5px; }
+.terminal-rail .side-picker { margin-top: 13px; }
+.terminal-rail .side-picker legend, .terminal-rail .amount-field label { margin-bottom: 6px; font-size: 11px; }
+.terminal-shell .terminal-rail .side-picker button { min-height: 56px; gap: 2px; padding: 9px 11px; }
+.terminal-shell .terminal-rail .side-picker button > span { font-size: 13px; }
+.terminal-shell .terminal-rail .side-picker button > strong { font-size: 15px; }
+.terminal-rail .amount-field { margin-top: 13px; }
+.terminal-rail .amount-field > div { height: 46px; }
+.terminal-rail .amount-field input { font-size: 21px; }
+.terminal-rail .amount-quick { margin-top: 6px; }
+.terminal-rail .amount-quick button { min-height: 30px; font-size: 11px; }
+.terminal-rail .ticket-summary { margin-top: 12px; }
+.terminal-rail .ticket-summary div, .terminal-rail .ticket-summary div:first-child { padding: 4px 0; }
+.terminal-rail .ticket-summary div:first-child dd { font-size: 17px; }
+.terminal-rail .ticket-primary { min-height: 46px; margin-top: 12px; }
+.terminal-rail .ticket-disclosure { margin-top: 7px; font-size: 9px; }
+
+/* Short viewports: drop the question and the one-sided note before the controls. */
+@media (max-height: 760px) {
+  .terminal-rail .news-panel { max-height: 150px; }
+  .terminal-rail .ticket-heading { display: none; }
+  .terminal-rail .pool-labels { display: none; }
+}
