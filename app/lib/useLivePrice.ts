@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { FeedSpec } from "@/lib/pyth";
+import { isFrozen } from "@/lib/marketHours";
 
 /**
  * Pyth's latest published price for the chart and headline, polled from /api/price/live.
@@ -11,8 +12,16 @@ import type { FeedSpec } from "@/lib/pyth";
  * free and updates several times a second. The cutoff and settlement still use the
  * on-chain price — that is what the contract checks — so this is for display only.
  */
-export function useLivePrice(feed: FeedSpec, intervalMs = 500) {
-  const [state, setState] = useState<{ feedId: string; price: number } | null>(null);
+export interface LiveQuote {
+  price: number;
+  /** Unix seconds Pyth published this price. */
+  publishTime: number;
+  /** No fresh publish for a while: for an equity, the exchange is shut. Measured at read time. */
+  frozen: boolean;
+}
+
+export function useLiveQuote(feed: FeedSpec, intervalMs = 500): LiveQuote | null {
+  const [state, setState] = useState<({ feedId: string } & LiveQuote) | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -21,8 +30,8 @@ export function useLivePrice(feed: FeedSpec, intervalMs = 500) {
       try {
         const res = await fetch(`/api/price/live?feedId=${feed.id}`, { cache: "no-store" });
         if (!res.ok) return;
-        const body = (await res.json()) as { price: string; expo: number };
-        if (!cancelled) setState({ feedId: feed.id, price: Number(body.price) * 10 ** body.expo });
+        const body = (await res.json()) as { price: string; expo: number; publishTime: number };
+        if (!cancelled) setState({ feedId: feed.id, price: Number(body.price) * 10 ** body.expo, publishTime: body.publishTime, frozen: isFrozen(body.publishTime) });
       } catch {
         /* a missed poll just leaves the last reading on screen */
       }
@@ -36,5 +45,9 @@ export function useLivePrice(feed: FeedSpec, intervalMs = 500) {
   }, [feed.id, intervalMs]);
 
   // Never show another asset's price while the new feed loads.
-  return state && state.feedId === feed.id ? state.price : null;
+  return state && state.feedId === feed.id ? { price: state.price, publishTime: state.publishTime, frozen: state.frozen } : null;
+}
+
+export function useLivePrice(feed: FeedSpec, intervalMs = 500): number | null {
+  return useLiveQuote(feed, intervalMs)?.price ?? null;
 }

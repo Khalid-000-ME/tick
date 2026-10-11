@@ -13,6 +13,7 @@ import { marketId } from "@/lib/chain/market";
 import { readClient } from "@/lib/useWallet";
 import { SportsCard, type SportsEvent } from "@/components/SportsCard";
 import { NewsPanel } from "@/components/NewsPanel";
+import { nextOpenLabel } from "@/lib/marketHours";
 import { MicroBoard } from "@/components/MicroMarkets";
 import { WalletMenu } from "@/components/WalletMenu";
 import { DURATIONS } from "@/lib/chain/config";
@@ -208,14 +209,16 @@ export function MarketsBrowser() {
             <div className="page-empty">No fixtures from the scoreboard right now.</div>
           ) : (
             <>
-            <MicroBoard />
             <div className="board-sports">
-              <div className="board-grid">
-                {sports.map((e) => (
-                  <SportsCard key={e.id} event={e} />
-                ))}
+              <div className="board-sports-main">
+                <MicroBoard />
+                <div className="board-grid">
+                  {sports.map((e) => (
+                    <SportsCard key={e.id} event={e} />
+                  ))}
+                </div>
               </div>
-              <NewsPanel topic="sports" variant="panel" title="Sports news" limit={10} />
+              <NewsPanel topic="sports" variant="panel" title="Sports news" limit={12} />
             </div>
             </>
           )
@@ -278,7 +281,7 @@ function MarketCard({ market, series, featured = false }: { market: LiveMarket; 
         symbol={market.symbol}
         label={market.label}
         window={market.windowLabels.join(" / ")}
-        status={market.closed ? "Closed" : clock(market.secondsLeft)}
+        status={market.closed ? (market.kind === "equity" ? `Opens ${nextOpenLabel().replace(" ET", "")}` : "Closed") : clock(market.secondsLeft)}
         urgent={!market.closed && market.secondsLeft <= 10}
         tall={featured}
       />

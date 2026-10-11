@@ -214,17 +214,17 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
             </p>
           </section>
 
+        </div>
+
+        <aside className="match-side-col">
           <NewsPanel
             topic="sports"
             variant="panel"
             title={`${event.league} news`}
             league={event.league}
             teams={[event.home.name, event.home.short, event.away.name, event.away.short]}
-            limit={8}
+            limit={10}
           />
-        </div>
-
-        <aside className="match-side-col">
           <section className="match-panel">
             <header className="match-panel-head"><h2>Pick the winner</h2></header>
             <div className="match-sides">

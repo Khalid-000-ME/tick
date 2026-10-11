@@ -19,7 +19,8 @@ import { useTickWallet } from "@/lib/useTickWallet";
 import { useMarket } from "@/lib/useMarket";
 import { useStake } from "@/lib/useStake";
 import { useAutoRefresh } from "@/lib/useAutoRefresh";
-import { useLivePrice } from "@/lib/useLivePrice";
+import { useLiveQuote } from "@/lib/useLivePrice";
+import { nextOpenLabel } from "@/lib/marketHours";
 import { usePositions } from "@/lib/usePositions";
 import { useTheme } from "@/lib/useTheme";
 import { FEEDS, type FeedSpec } from "@/lib/pyth";
@@ -82,7 +83,11 @@ export function MarketTerminal() {
   // indexer over Staked/Settled events rather than anything invented here.
   // Chart and headline read Pyth directly (free, several updates a second); the cutoff
   // and settlement still use the on-chain price, which is what the contract checks.
-  const livePrice = useLivePrice(feed);
+  const quote = useLiveQuote(feed);
+  const livePrice = quote?.price ?? null;
+  // An equity whose price has stopped publishing is a closed exchange: every stake would be
+  // refused by the freshness cutoff, so the ticket says so instead of inviting one.
+  const closed = feed.kind === "equity" && quote?.frozen === true;
   const shownPrice = livePrice ?? market.priceNumber;
   const history = usePriceHistory(shownPrice, feed.symbol);
 
@@ -113,6 +118,7 @@ export function MarketTerminal() {
     setNotice(null);
     if (status === "disconnected" || status === "unsupported") { void connect(); return; }
     if (status === "wrong-chain") { void switchChain(); return; }
+    if (closed) { setNotice(`${feed.symbol} trades on US market hours. It reopens ${nextOpenLabel()}.`); return; }
     if (amount <= 0) { setNotice("Enter an amount above zero first."); return; }
     if (settings.stakeMode === "tap") { void placeStake(which); return; }
     setPending(which);
@@ -226,11 +232,11 @@ export function MarketTerminal() {
           <StrikeStepper open={market.openStrike} value={strikeOverride} expo={feed.expo} onChange={setStrikeOverride} />
           <div className="pool-split"><div><span>Pool sentiment</span><strong>{impliedAbove.toFixed(0)}% above</strong></div><div className="pool-track"><span style={{ width: `${impliedAbove}%` }} /></div><div className="pool-labels"><span>${fmtUsd(market.poolAbove)} ABOVE</span><span>${fmtUsd(market.poolBelow)} BELOW</span></div></div>
           {!market.twoSided && (market.poolAbove > 0n || market.poolBelow > 0n) && <p className="ticket-disclosure">One side only so far. If nobody takes the other side this market voids and everyone is refunded.</p>}
-          <fieldset className="side-picker is-order"><legend>{status !== "ready" ? "Connect to take a side" : stake.busy ? stake.step || "Staking…" : `Tap a side to stake ${amount} USDC`}</legend>
-            <button type="button" className="side-up" disabled={stake.busy} onClick={() => requestStake("ABOVE")}>
+          <fieldset className="side-picker is-order"><legend>{closed ? `Market closed · reopens ${nextOpenLabel()}` : status !== "ready" ? "Connect to take a side" : stake.busy ? stake.step || "Staking…" : `Tap a side to stake ${amount} USDC`}</legend>
+            <button type="button" className="side-up" disabled={stake.busy || closed} onClick={() => requestStake("ABOVE")}>
               <span>Above</span><strong>{impliedAbove.toFixed(0)}%</strong><small>wins {returnFor("ABOVE").toFixed(2)}</small>
             </button>
-            <button type="button" className="side-down" disabled={stake.busy} onClick={() => requestStake("BELOW")}>
+            <button type="button" className="side-down" disabled={stake.busy || closed} onClick={() => requestStake("BELOW")}>
               <span>Below</span><strong>{(100 - impliedAbove).toFixed(0)}%</strong><small>wins {returnFor("BELOW").toFixed(2)}</small>
             </button>
           </fieldset>

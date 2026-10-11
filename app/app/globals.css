@@ -1994,3 +1994,10 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .board-sports { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
 .board-sports .news-panel { position: sticky; top: 16px; }
 @media (max-width: 1000px) { .board-sports { grid-template-columns: minmax(0, 1fr); } .board-sports .news-panel { position: static; } }
+
+/* Sports news sits top right, as it does in the price terminal. */
+.board-sports-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.board-sports-main .board-grid { margin-top: 0; }
+.match-side-col > .news-panel.is-panel { margin-bottom: 16px; }
+.match-side-col > .news-panel.is-panel .news-list { max-height: 260px; }
+.side-picker button:disabled { opacity: .45; cursor: not-allowed; }
