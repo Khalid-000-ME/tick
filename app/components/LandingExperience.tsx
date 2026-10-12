@@ -165,7 +165,12 @@ export function LandingExperience() {
           <Cta signedIn={signedIn} className="landing-primary">Start a room</Cta>
         </section>
       </main>
-      <footer className="landing-footer"><Brand /></footer>
+      <footer className="landing-footer">
+        <Brand />
+        <nav className="landing-legal" aria-label="Legal">
+          <Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link>
+        </nav>
+      </footer>
     </div>
   );
 }
