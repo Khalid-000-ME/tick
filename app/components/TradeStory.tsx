@@ -114,7 +114,7 @@ export function TradeStory() {
   const cardScale = useTransform([zoom, cardIn], ([z, c]: number[]) => z * c);
   // One steady shadow, pulled in tight while the card is pressed down.
   const cardShadow = useTransform(lift, (v) =>
-    `0px ${(46 + v * 0.9).toFixed(1)}px ${(90 + v * 1.2).toFixed(1)}px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset`
+    `0px ${(30 + v * 0.7).toFixed(1)}px ${(70 + v * 1.0).toFixed(1)}px rgba(16,18,15,0.22)`
   );
   // A lime glow behind the card: faint as it rises, warmer through the window, a bloom on the win.
   const glowOpacity = useTransform(p, [0, 0.12, 0.33, 0.35, 0.4, 0.62, 0.68, 1], [0, 0.25, 0.35, 0.8, 0.3, 0.5, 0.9, 0.9]);
@@ -130,17 +130,17 @@ export function TradeStory() {
   // The button: lifts and glows on hover, sinks on press, pops on release, settles.
   const aboveScale = useSpring(useTransform(p, [0.27, 0.29, 0.31, 0.325, 0.345, 0.37], [1, 1.05, 1.05, 0.93, 1.06, 1]), bouncy);
   const aboveGlow = useTransform(p, [0.27, 0.29, 0.31, 0.335, 0.37, 0.4], [
-    "0 0 0 0 rgba(216,243,95,0)",
-    "0 0 0 3px rgba(216,243,95,0.35)",
-    "0 0 0 3px rgba(216,243,95,0.35)",
-    "0 0 0 1px rgba(216,243,95,0.2)",
+    "0 0 0 0 rgba(22,163,74,0)",
+    "0 0 0 3px rgba(22,163,74,0.3)",
+    "0 0 0 3px rgba(22,163,74,0.3)",
+    "0 0 0 1px rgba(22,163,74,0.18)",
     "0 0 40px 6px rgba(74,222,128,0.55)",
     "0 0 0 0 rgba(74,222,128,0)",
   ]);
   const ripple = useTransform(p, [0.335, 0.38], [0, 3.2]);
   const rippleOpacity = useTransform(p, [0.335, 0.38], [0.8, 0]);
-  const aboveFill = useTransform(p, [0.333, 0.345], ["rgba(34,197,94,0.08)", "rgba(34,197,94,1)"]);
-  const aboveText = useTransform(p, [0.333, 0.345], ["#4ade80", "#06120a"]);
+  const aboveFill = useTransform(p, [0.333, 0.345], ["rgba(22,163,74,0.06)", "rgba(34,197,94,1)"]);
+  const aboveText = useTransform(p, [0.333, 0.345], ["#15803d", "#06120a"]);
   const belowDim = useTransform(p, [0.335, 0.36], [1, 0.35]);
   const tapHint = useTransform(p, [0.3, 0.33], [1, 0]);
   const stakedNote = useTransform(p, [0.36, 0.39], [0, 1]);
@@ -152,7 +152,7 @@ export function TradeStory() {
   const priceText = useTransform(price, usd);
   const tagText = useTransform(price, plain);
   const tagY = useTransform(price, (v) => yOf(v) - 11);
-  const tagFill = useTransform(p, [0.39, 0.41], ["#8b927f", "#22c55e"]);
+  const tagFill = useTransform(p, [0.39, 0.41], ["#b8baae", "#22c55e"]);
   const tagOpacity = useTransform(p, [0.08, 0.11], [0, 1]);
   const countdown = useTransform(p, WINDOW, [30, 0]);
   const countdownText = useTransform(countdown, (v) => `${Math.ceil(v)}s`);
@@ -219,12 +219,12 @@ export function TradeStory() {
             {/* Grid and price axis, as on the terminal */}
             {TICKS.map((t) => (
               <g key={t}>
-                <line x1="0" x2={PLOT_W} y1={yOf(t)} y2={yOf(t)} stroke="#1c2318" strokeWidth="1" />
-                <text x={PLOT_W + 10} y={yOf(t) + 4} fontSize="12" fontFamily="ui-monospace, monospace" fill="#6b7363">{t.toLocaleString("en-US")}</text>
+                <line x1="0" x2={PLOT_W} y1={yOf(t)} y2={yOf(t)} stroke="#e8e7df" strokeWidth="1" />
+                <text x={PLOT_W + 10} y={yOf(t) + 4} fontSize="12" fontFamily="ui-monospace, monospace" fill="#8b8e86">{t.toLocaleString("en-US")}</text>
               </g>
             ))}
-            <line x1={PLOT_W} x2={PLOT_W} y1="0" y2={VOL_BOTTOM} stroke="#232b1e" strokeWidth="1" />
-            <line x1="0" x2={PLOT_W} y1={PANE_BOTTOM + 8} y2={PANE_BOTTOM + 8} stroke="#232b1e" strokeWidth="1" />
+            <line x1={PLOT_W} x2={PLOT_W} y1="0" y2={VOL_BOTTOM} stroke="#d9dad2" strokeWidth="1" />
+            <line x1="0" x2={PLOT_W} y1={PANE_BOTTOM + 8} y2={PANE_BOTTOM + 8} stroke="#d9dad2" strokeWidth="1" />
 
             <motion.rect x="0" y={PANE_TOP} width={PLOT_W} height={STRIKE_Y - PANE_TOP} fill="url(#story-up)" style={{ opacity: aboveZone }} />
 
@@ -233,12 +233,12 @@ export function TradeStory() {
             ))}
 
             {/* Strike: dashed line, a "Strike" tag and its value on the axis */}
-            <motion.line x1="0" y1={STRIKE_Y} x2={PLOT_W} y2={STRIKE_Y} stroke="#e8ecd9" strokeWidth="1.2" strokeDasharray="5 5" style={{ scaleX: strikeLen, originX: 0, transformBox: "fill-box" }} />
+            <motion.line x1="0" y1={STRIKE_Y} x2={PLOT_W} y2={STRIKE_Y} stroke="#10120f" strokeWidth="1.4" strokeDasharray="5 5" style={{ scaleX: strikeLen, originX: 0, transformBox: "fill-box" }} />
             <motion.g style={{ opacity: strikeTags }}>
-              <rect x={PLOT_W - 62} y={STRIKE_Y + 4} width="56" height="20" rx="3" fill="#e8ecd9" />
-              <text x={PLOT_W - 34} y={STRIKE_Y + 18} textAnchor="middle" fontSize="11" fontWeight="600" letterSpacing="1" fontFamily="ui-monospace, monospace" fill="#0b0f09">STRIKE</text>
-              <rect x={PLOT_W + 2} y={STRIKE_Y - 10} width="76" height="20" rx="3" fill="#0b0f09" stroke="#e8ecd9" strokeWidth="1" />
-              <text x={PLOT_W + 40} y={STRIKE_Y + 4} textAnchor="middle" fontSize="11" fontFamily="ui-monospace, monospace" fill="#e8ecd9">{plain(STRIKE)}</text>
+              <rect x={PLOT_W - 62} y={STRIKE_Y + 4} width="56" height="20" rx="3" fill="#10120f" />
+              <text x={PLOT_W - 34} y={STRIKE_Y + 18} textAnchor="middle" fontSize="11" fontWeight="600" letterSpacing="1" fontFamily="ui-monospace, monospace" fill="#f4f3ed">STRIKE</text>
+              <rect x={PLOT_W + 2} y={STRIKE_Y - 10} width="76" height="20" rx="3" fill="#f4f3ed" stroke="#10120f" strokeWidth="1" />
+              <text x={PLOT_W + 40} y={STRIKE_Y + 4} textAnchor="middle" fontSize="11" fontFamily="ui-monospace, monospace" fill="#10120f">{plain(STRIKE)}</text>
             </motion.g>
 
             {/* Live price tag on the axis, following the last close */}
@@ -255,7 +255,7 @@ export function TradeStory() {
               <motion.i className="story-ripple" style={{ scale: ripple, opacity: rippleOpacity }} />
               <motion.div className="story-cursor" style={{ x: cursorX, y: cursorY, opacity: cursorOpacity, scale: cursorPress }}>
                 <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
-                  <path d="M4 2 L4 19 L8.5 14.6 L11.6 21.4 L14.4 20.2 L11.3 13.5 L17.6 13.5 Z" fill="#f4f6ec" stroke="#0b0f09" strokeWidth="1.4" strokeLinejoin="round" />
+                  <path d="M4 2 L4 19 L8.5 14.6 L11.6 21.4 L14.4 20.2 L11.3 13.5 L17.6 13.5 Z" fill="#10120f" stroke="#ffffff" strokeWidth="1.4" strokeLinejoin="round" />
                 </svg>
               </motion.div>
             </motion.div>

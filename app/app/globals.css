@@ -2044,49 +2044,61 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 
 /* ---- Trade story: one trade, played by scrolling ----
    The section is tall and its inner panel sticks, so scrolling through it drives the
-   animation (TradeStory.tsx) while the panel stays on screen. Dark, so it continues the
-   hero rather than cutting to the light page. */
-.story { position: relative; height: 420vh; background: radial-gradient(90% 60% at 70% 50%, #121a0d 0%, #070907 70%); color: #eef1e6; }
+   animation (TradeStory.tsx) while the panel stays on screen. Light, on the page's paper,
+   so the window's thick black frame is what defines it. */
+.story { position: relative; height: 420vh; background: radial-gradient(90% 60% at 70% 50%, #fbfaf4 0%, #f1efe6 72%); color: #10120f; }
 .story-sticky { position: sticky; top: 0; height: 100vh; min-height: 640px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); align-items: center; gap: 72px; padding: 0 max(32px, calc((100vw - 1240px) / 2)); }
-.story-eyebrow { font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--acid); }
+.story-eyebrow { font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .16em; text-transform: uppercase; color: #173f31; }
 .story-captions { position: relative; height: 230px; margin-top: 22px; }
 .story-caption { position: absolute; inset: 0; }
 .story-caption h2 { font-size: clamp(34px, 4vw, 58px); line-height: 1.02; letter-spacing: -.05em; font-weight: 600; }
-.story-caption p { margin-top: 18px; max-width: 460px; font-size: 17px; line-height: 1.6; color: #b9bfae; }
+.story-caption p { margin-top: 18px; max-width: 460px; font-size: 17px; line-height: 1.6; color: #686b64; }
 .story-steps { display: flex; gap: 8px; margin-top: 8px; max-width: 320px; }
-.story-steps span { flex: 1; height: 3px; border-radius: 3px; background: #232b1e; overflow: hidden; }
-.story-steps i { display: block; height: 100%; background: var(--acid); }
+.story-steps span { flex: 1; height: 3px; border-radius: 3px; background: #d9dad2; overflow: hidden; }
+.story-steps i { display: block; height: 100%; background: #173f31; }
 
-.story-card { position: relative; width: 100%; padding: 22px; border-radius: 22px; background: linear-gradient(180deg, #121810, #0c110a); border: 1px solid #263022; box-shadow: 0 40px 120px #0009, 0 0 0 1px #ffffff06 inset; overflow: hidden; }
+/* The window: paper white, a solid black frame, and the same uppercase mono throughout. */
+.story-card { position: relative; width: 100%; padding: 22px; border-radius: 22px; background: #fffefa; border: 8px solid #10120f; color: #10120f; overflow: hidden; font-family: var(--font-geist-mono), monospace; text-transform: uppercase; letter-spacing: .05em; will-change: transform; }
 .story-card-head { display: flex; align-items: center; gap: 12px; }
 .story-card-head img { border-radius: 50%; }
-.story-card-head strong { display: block; font-size: 16px; }
-.story-card-head span { font: 11px var(--font-geist-mono), monospace; color: #8d9582; }
-.story-count { margin-left: auto; font: 600 34px var(--font-geist-mono), monospace; font-style: normal; letter-spacing: -.04em; color: #f4f6ec; font-variant-numeric: tabular-nums; }
-.story-bar { height: 3px; margin: 16px -22px 0; background: #1c2318; }
-.story-bar span { display: block; height: 100%; background: var(--acid); }
+.story-card-head strong { display: block; font-size: 16px; font-weight: 600; letter-spacing: .08em; }
+.story-card-head span { font: 11px var(--font-geist-mono), monospace; letter-spacing: .08em; color: #686b64; }
+.story-count { margin-left: auto; font: 600 34px var(--font-geist-mono), monospace; font-style: normal; letter-spacing: -.04em; color: #10120f; font-variant-numeric: tabular-nums; }
+.story-bar { height: 3px; margin: 16px -22px 0; background: #e4e3da; }
+.story-bar span { display: block; height: 100%; background: #173f31; }
 .story-price-row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 18px; }
 .story-price-row strong { font: 600 30px var(--font-geist-mono), monospace; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
-.story-price-row span { font: 12px var(--font-geist-mono), monospace; color: #8d9582; }
+.story-price-row span { font: 12px var(--font-geist-mono), monospace; letter-spacing: .08em; color: #686b64; }
 .story-chart { display: block; width: 100%; height: auto; margin: 14px 0 18px; overflow: visible; }
+.story-chart text { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 .story-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .story-side { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 14px 16px; border-radius: 12px; border: 1.5px solid; }
-.story-side span { font-size: 16px; font-weight: 650; }
-.story-side small { font: 11px var(--font-geist-mono), monospace; opacity: .8; }
-.story-side.is-up { border-color: #22c55e; }
-.story-side.is-down { border-color: #ef4444; color: #f87171; background: rgba(239, 68, 68, .08); }
-.story-ripple { position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; background: #d8f35f; pointer-events: none; }
-.story-cursor { position: absolute; left: 50%; top: 50%; pointer-events: none; filter: drop-shadow(0 6px 10px #000a); z-index: 2; }
-.story-status { position: relative; height: 18px; margin-top: 14px; font: 12px var(--font-geist-mono), monospace; color: #8d9582; }
+.story-side span { font-size: 15px; font-weight: 600; letter-spacing: .08em; }
+.story-side small { font: 11px var(--font-geist-mono), monospace; letter-spacing: .08em; opacity: .8; }
+.story-side.is-up { border-color: #16a34a; transform-origin: center; }
+.story-side.is-down { border-color: #dc2626; color: #b91c1c; background: rgba(220, 38, 38, .06); }
+.story-ripple { position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; background: rgba(255, 255, 255, .8); pointer-events: none; }
+.story-cursor { position: absolute; left: 50%; top: 50%; pointer-events: none; filter: drop-shadow(0 6px 8px rgba(16, 18, 15, .35)); z-index: 2; }
+.story-status { position: relative; height: 18px; margin-top: 14px; font: 12px var(--font-geist-mono), monospace; letter-spacing: .08em; color: #686b64; }
 .story-status span { position: absolute; inset: 0; }
-.story-won { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(circle at 50% 50%, #1d2a0ee6, #0a0e08f2 70%); backdrop-filter: blur(3px); pointer-events: none; }
+
+/* The win: the window washes to paper, with the payout in Geist Pixel. */
+.story-won { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(circle at 50% 50%, rgba(255, 254, 250, .97), rgba(243, 241, 232, .97) 75%); backdrop-filter: blur(3px); pointer-events: none; }
 .story-won-inner { position: relative; text-align: center; }
-.story-won-inner p { font: 600 13px var(--font-geist-mono), monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--acid); }
-.story-won-inner strong { display: block; margin-top: 8px; font-size: 84px; line-height: 1; letter-spacing: -.06em; color: #f4f6ec; text-shadow: 0 0 40px #d8f35f55; }
-.story-won-inner span { display: block; margin-top: 12px; font-size: 14px; color: #b9bfae; }
-.story-spark { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 2px; background: var(--acid); }
-.story-spark:nth-child(3n) { background: #4ade80; }
-.story-spark:nth-child(4n) { background: #f4f6ec; width: 5px; height: 5px; }
+.story-won-inner p { font: 600 13px var(--font-geist-mono), monospace; letter-spacing: .2em; text-transform: uppercase; color: #173f31; }
+.story-won-inner strong { display: block; margin-top: 8px; font-family: "Geist Pixel", var(--font-geist-mono), monospace; font-weight: 400; font-style: normal; font-size: 104px; line-height: 1; letter-spacing: .01em; color: #10120f; }
+.story-won-inner span { display: block; margin-top: 12px; font: 12px var(--font-geist-mono), monospace; letter-spacing: .1em; color: #686b64; }
+.story-spark { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 2px; background: #16a34a; }
+.story-spark:nth-child(3n) { background: #22c55e; }
+.story-spark:nth-child(4n) { background: #10120f; width: 5px; height: 5px; }
+
+/* The stage holds the card and the glow behind it. */
+.story-stage { position: relative; display: grid; place-items: center; }
+.story-glow { position: absolute; inset: 8% 4%; border-radius: 50%; background: radial-gradient(closest-side, rgba(34, 197, 94, .26), rgba(34, 197, 94, .09) 55%, transparent 75%); filter: blur(40px); pointer-events: none; }
+
+/* The confirmation that pops on release, centred above the buttons. */
+.story-toast { position: absolute; left: 50%; bottom: 150px; display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 999px; background: #10120f; color: #d8f35f; font: 600 14px var(--font-geist-mono), monospace; letter-spacing: .1em; white-space: nowrap; box-shadow: 0 12px 30px rgba(16, 18, 15, .28); pointer-events: none; }
+.story-toast i { font-style: normal; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #d8f35f; color: #10120f; font-size: 11px; }
 
 @media (max-width: 900px) {
   .story { height: 380vh; }
@@ -2094,51 +2106,11 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   .story-captions { height: 150px; margin-top: 12px; }
   .story-caption h2 { font-size: 30px; }
   .story-caption p { margin-top: 10px; font-size: 14px; }
-  .story-card { padding: 16px; }
+  .story-stage .story-card { width: 90%; padding: 16px; }
   .story-bar { margin: 12px -16px 0; }
-  .story-won-inner strong { font-size: 60px; }
+  .story-won-inner strong { font-size: 68px; }
+  .story-toast { bottom: 128px; font-size: 12px; padding: 10px 16px; }
 }
-
-/* The trade window speaks in one voice: the same uppercase mono as the story's eyebrow. */
-.story-card { font-family: var(--font-geist-mono), monospace; text-transform: uppercase; letter-spacing: .05em; will-change: transform; }
-.story-card-head strong { font-weight: 600; letter-spacing: .08em; }
-.story-side span { font-size: 15px; font-weight: 600; letter-spacing: .08em; }
-.story-side small, .story-status, .story-card-head span, .story-price-row span { letter-spacing: .08em; }
-.story-won-inner strong { font-family: var(--font-geist-mono), monospace; font-weight: 600; letter-spacing: -.04em; }
-.story-won-inner span { font-family: var(--font-geist-mono), monospace; font-size: 12px; letter-spacing: .1em; }
-.story-chart text { font-family: var(--font-geist-mono), ui-monospace, monospace; }
-/* On phones the swing needs side room, or the card edge meets the screen edge. */
-@media (max-width: 900px) { .story-card { width: 90%; justify-self: center; } }
-
-/* The stage holds the card and the glow behind it. Perspective lives on the card alone
-   (transformPerspective), never on a parent too: stacking two is what warped it. */
-.story-stage { position: relative; display: grid; place-items: center; }
-.story-glow { position: absolute; inset: 8% 4%; border-radius: 50%; background: radial-gradient(closest-side, #d8f35f44, #4ade8018 55%, transparent 75%); filter: blur(40px); pointer-events: none; }
-@media (max-width: 900px) { .story-stage .story-card { width: 90%; } }
-
-/* The confirmation that pops on release, over the buttons. */
-.story-toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 999px; background: #d8f35f; color: #0b0f09; font: 600 12px var(--font-geist-mono), monospace; letter-spacing: .1em; white-space: nowrap; box-shadow: 0 12px 40px rgba(216, 243, 95, .35); pointer-events: none; }
-.story-toast i { font-style: normal; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #0b0f09; color: #d8f35f; font-size: 11px; }
-.story-side.is-up { transform-origin: center; }
-/* A defined, solid white frame around the whole trade window. */
-.story-card { border: 4px solid #f4f6ec; }
-.story-bar { margin-left: -22px; margin-right: -22px; }
-/* The confirmation sits above the buttons, centred on the card, not over Below. */
-.story-toast { bottom: 150px; padding: 12px 20px; font-size: 14px; }
-@media (max-width: 900px) { .story-toast { bottom: 128px; font-size: 12px; padding: 10px 16px; } }
-/* A thicker white frame, and the payout in Instrument Serif (set by class in TradeStory):
-   large, italic, lime-lit, in place of the mono used for the rest of the card. */
-.story-card { border-width: 8px; }
-.story-won-inner strong { font-weight: 400; font-style: italic; font-size: 132px; line-height: .9; letter-spacing: -.02em; color: #f4f6ec; text-shadow: 0 0 48px rgba(216, 243, 95, .45); }
-@media (max-width: 900px) { .story-won-inner strong { font-size: 96px; } }
-.story-won-inner strong { font-family: var(--font-payout), Georgia, serif; }
-/* Bold payout: Fraunces 800 italic. */
-.story-won-inner strong { font-weight: 800; font-size: 124px; letter-spacing: -.03em; }
-@media (max-width: 900px) { .story-won-inner strong { font-size: 88px; } }
-
-/* The payout in Geist Pixel: one weight, no italic, so it is sized and spaced instead. */
-.story-won-inner strong { font-family: "Geist Pixel", var(--font-geist-mono), monospace; font-weight: 400; font-style: normal; font-size: 104px; letter-spacing: .01em; line-height: 1; }
-@media (max-width: 900px) { .story-won-inner strong { font-size: 68px; } }
 
 /* ---- The journey: five steps, on one rail, written to the reader. */
 .landing-why { padding: 120px max(32px, calc((100vw - 1120px) / 2)) 130px; background: #070907; color: #eef1e6; }
