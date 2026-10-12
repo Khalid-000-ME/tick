@@ -58,15 +58,21 @@ export function LandingExperience() {
                 motion is handled inside: no swell, no stretch, no shock, no intro. */}
             <DotGrid
               className="landing-dots"
-              dotSize={4}
-              gap={22}
               baseColor="#28301f"
               activeColor="#d8f35f"
-              proximity={150}
-              shockRadius={300}
-              shockStrength={4}
-              glow={0.7}
-              fade={0.55}
+              // No spreading circle while the page loads: the grid is simply there.
+              intro={false}
+              // Spacing from React Bits' "Dense" preset, for a tighter field.
+              dotSize={3}
+              gap={10}
+              // React Bits' "Calm" preset, verbatim. Everything else stays at its default.
+              strength={0.5}
+              bounce={0.3}
+              returnDuration={1.4}
+              swell={0.4}
+              stretch={0.2}
+              glow={0.25}
+              fade={0.5}
             />
           </motion.div>
           <div className="landing-hero-scrim" aria-hidden="true" />
