@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUpRight, CurrencyDollar, Lightning, ShieldCheck } from "@phosphor-icons/react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { Brand } from "@/components/Brand";
-import { HeroReel } from "@/components/HeroReel";
+import DotGrid from "@/components/DotGrid";
 
 /* A plotted line for the proof panel, crossing the strike mid-way so the ABOVE/BELOW
    split the panel illustrates is actually visible. Illustrative, not live data — the
@@ -53,7 +53,21 @@ export function LandingExperience() {
       <main>
         <section className="landing-hero" aria-labelledby="landing-title">
           <motion.div className="landing-hero-media" style={{ y: heroY, scale: heroScale, opacity: heroOpacity }} aria-hidden="true">
-            <HeroReel still={!!reduceMotion} />
+            {/* Interactive dot field. It listens on the window, so the pointer moves it even
+                over the headline and buttons; the canvas itself never takes clicks. Reduced
+                motion is handled inside: no swell, no stretch, no shock, no intro. */}
+            <DotGrid
+              className="landing-dots"
+              dotSize={4}
+              gap={22}
+              baseColor="#28301f"
+              activeColor="#d8f35f"
+              proximity={150}
+              shockRadius={300}
+              shockStrength={4}
+              glow={0.7}
+              fade={0.55}
+            />
           </motion.div>
           <div className="landing-hero-scrim" aria-hidden="true" />
           <motion.div className="landing-hero-content" initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>

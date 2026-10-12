@@ -2010,35 +2010,13 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .tick-cell .tick-live { padding: 1px 5px; border-radius: 4px; background: var(--t-down); color: #fff; font-size: 9px; }
 .tick-cell.is-fixture.is-post em { opacity: .6; }
 
-/* ---- Hero reel: two clips cross-fading behind the headline ----
-   Layers, bottom to top: the clips (slow push-in, graded), a cool-to-warm grade, a brand
-   glow, the vignette, faint scanlines. The existing scrim and grain sit above all of it,
-   so the headline keeps its contrast whatever frame is showing. */
-.hero-reel { position: absolute; inset: 0; overflow: hidden; background: #060807; }
-.hero-reel-clip { position: absolute; inset: -2%; width: 104%; height: 104%; object-fit: cover; object-position: 62% center; opacity: 0; transform: scale(1.12); filter: saturate(.92) contrast(1.08) brightness(.82) blur(6px);
-  transition: opacity 1.4s cubic-bezier(.4, 0, .2, 1), filter 1.6s cubic-bezier(.4, 0, .2, 1), transform 9.5s linear; }
-.hero-reel-clip.is-active { opacity: 1; transform: scale(1.02); filter: saturate(.92) contrast(1.08) brightness(.82) blur(0); }
-/* Colour grade: teal shadows, a touch of warmth up top, so the forest and the canyon read
-   as one film rather than two stock clips. */
-.hero-reel-grade { position: absolute; inset: 0; mix-blend-mode: soft-light; background: linear-gradient(180deg, #f3c27a33 0%, transparent 38%, #0d3b3a66 100%); }
-/* A slow brand-green bloom behind the copy, breathing on a long cycle. */
-.hero-reel-glow { position: absolute; left: -10%; top: 20%; width: 70%; height: 80%; background: radial-gradient(closest-side, #c9f26b26, transparent 70%); filter: blur(40px); mix-blend-mode: screen; animation: hero-breathe 9s ease-in-out infinite alternate; }
-@keyframes hero-breathe { from { opacity: .45; transform: translate3d(0, 0, 0); } to { opacity: .9; transform: translate3d(4%, -3%, 0); } }
-/* Vignette: heavy at the corners, open in the middle, darker at the bottom where the page
-   continues. */
-.hero-reel-vignette { position: absolute; inset: 0; background:
-    radial-gradient(120% 95% at 58% 42%, transparent 38%, #050706b3 78%, #050706f2 100%),
-    linear-gradient(0deg, #060807 0%, transparent 22%); }
-/* Scanlines, barely there: texture on a big screen, invisible on a small one. */
-.hero-reel-scan { position: absolute; inset: 0; opacity: .07; background: repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
-/* The grain already on the hero moves slightly, so it reads as film rather than a texture. */
-.landing-hero::after { animation: hero-grain .9s steps(4) infinite; }
-@keyframes hero-grain { 0% { transform: translate(0, 0); } 25% { transform: translate(-2%, 1%); } 50% { transform: translate(1%, -2%); } 75% { transform: translate(-1%, 2%); } 100% { transform: translate(0, 0); } }
-.landing-hero::after { inset: -4%; }
-@media (prefers-reduced-motion: reduce) {
-  .hero-reel-clip { transition: none; transform: none; }
-  .hero-reel-glow, .landing-hero::after { animation: none; }
-}
+/* ---- Hero backdrop: React Bits DotGrid ----
+   The grid fills the media layer; the starfield and the old orb styling under it are
+   switched off so the dots are the only texture. The existing scrim still darkens the
+   left side so the headline keeps its contrast over the brightest dots. */
+.landing-hero-media { background: radial-gradient(120% 90% at 70% 40%, #0e130c 0%, #070907 60%, #050605 100%); }
+.landing-hero-media::before { display: none; }
+.landing-dots { position: absolute; inset: 0; }
 @media (max-width: 640px) { .landing-hero-index { display: none; } }
 
 /* ---- Phone layout ----
