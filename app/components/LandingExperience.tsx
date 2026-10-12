@@ -158,7 +158,7 @@ export function LandingExperience() {
           <Link href="/markets" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
         </section>
       </main>
-      <footer className="landing-footer"><Brand /><span>Built on Monad</span><span>Testnet USDC. No real-money wagering.</span></footer>
+      <footer className="landing-footer"><Brand /></footer>
     </div>
   );
 }
