@@ -104,7 +104,7 @@ export function LandingExperience() {
           </motion.div>
           <div className="landing-hero-scrim" aria-hidden="true" />
           <motion.div className="landing-hero-content" initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>
-            <p className="landing-badge">The world's first 30-second prediction market</p>
+            <p className="landing-badge">The world&apos;s first 30-second prediction market</p>
             <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
             <p className="landing-lede">
               A record time, ten times faster than Polymarket. Paid in stablecoins.
@@ -154,7 +154,7 @@ export function LandingExperience() {
         </section>
 
         <section className="landing-close">
-          <p>The world's first 30-second markets. Crypto. Equities. Sport.</p>
+          <p>The world&apos;s first 30-second markets. Crypto. Equities. Sport.</p>
           <h2>One line.<br />Two sides.<br /><em>Thirty seconds.</em></h2>
           <Link href="/markets" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
         </section>

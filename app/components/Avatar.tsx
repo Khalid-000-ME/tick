@@ -30,7 +30,11 @@ function hash(s: string): number {
   return h >>> 0;
 }
 
+/** A photo uploaded through Tick: stored by content hash, served from this app. */
+export const isUploadedAvatar = (v: string) => /^\/api\/avatar\/[a-f0-9]{32}$/.test(v);
+
 export function isAllowedAvatarUrl(url: string): boolean {
+  if (isUploadedAvatar(url)) return true;
   try {
     const u = new URL(url);
     return u.protocol === "https:" && AVATAR_HOSTS.includes(u.hostname);
@@ -86,6 +90,9 @@ export function Avatar({ avatar, seed, name, size = 32 }: { avatar?: string | nu
   if (avatar && avatar.startsWith("gen:")) {
     const [, style, s] = avatar.split(":");
     body = <Generated style={style} seed={s || seed} size={size} initials={initials} />;
+  } else if (avatar && isUploadedAvatar(avatar)) {
+    // eslint-disable-next-line @next/next/no-img-element -- already a small square WebP
+    body = <img src={avatar} alt="" width={size} height={size} />;
   } else if (avatar && isAllowedAvatarUrl(avatar)) {
     body = <Image src={avatar} alt="" width={size} height={size} unoptimized={false} />;
   } else {

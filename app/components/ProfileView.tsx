@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, DiceFive } from "@phosphor-icons/react";
+import { Check, DiceFive, UploadSimple } from "@phosphor-icons/react";
+import { usePrivy } from "@privy-io/react-auth";
 import { AmountPicker } from "@/components/AmountPicker";
 import { AccountShell } from "@/components/AccountShell";
 import { AVATAR_STYLES, Avatar, genAvatar, isAllowedAvatarUrl, type AvatarStyle } from "@/components/Avatar";
@@ -126,6 +127,35 @@ function IdentityForm({
   const [displayName, setDisplayName] = useState(saved.displayName);
   const [avatar, setAvatar] = useState(saved.avatar || genAvatar("beam", account));
   const [url, setUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadNote, setUploadNote] = useState<string | null>(null);
+  const { getAccessToken } = usePrivy();
+
+  async function upload(file: File) {
+    setUploadNote(null);
+    if (!file.type.startsWith("image/")) return setUploadNote("Choose an image file.");
+    setUploading(true);
+    try {
+      // Centre-crop to a square and shrink in the browser first, so a phone photo is a few
+      // dozen kilobytes on the wire. The server re-draws it again and does not trust this.
+      const bmp = await createImageBitmap(file);
+      const side = Math.min(bmp.width, bmp.height);
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = Math.min(512, side);
+      canvas.getContext("2d")!.drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.85));
+      if (!blob) throw new Error("encode");
+      const token = await getAccessToken();
+      const res = await fetch("/api/avatar", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: blob });
+      const body = (await res.json()) as { ok: boolean; avatar?: string; error?: string };
+      if (!body.ok || !body.avatar) return setUploadNote(body.error ?? "Upload failed.");
+      setAvatar(body.avatar);
+    } catch {
+      setUploadNote("Could not read that image. Try a JPG, PNG or WebP.");
+    } finally {
+      setUploading(false);
+    }
+  }
   const [check, setCheck] = useState<{ name: string; free: boolean } | null>(null);
 
   const validFormat = /^[a-z0-9_]{3,20}$/.test(username);
@@ -165,6 +195,13 @@ function IdentityForm({
             <button type="button" className="profile-shuffle" title="New pattern" onClick={() => setAvatar(genAvatar(style ?? "beam", Math.random().toString(36).slice(2, 10)))}>
               <DiceFive weight="bold" />
             </button>
+          </div>
+          <div className="profile-upload">
+            <label className="btn-ghost small">
+              <UploadSimple weight="bold" /> {uploading ? "Uploading..." : "Upload photo"}
+              <input type="file" accept="image/*" hidden disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f); }} />
+            </label>
+            {uploadNote && <small className="is-bad">{uploadNote}</small>}
           </div>
           <div className="profile-url">
             <input placeholder="or an image URL (X, GitHub, Google, Imgur)" value={url} onChange={(e) => setUrl(e.target.value)} />

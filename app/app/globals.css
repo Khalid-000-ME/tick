@@ -2381,3 +2381,7 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 
 .landing-badge { display: inline-block; margin: 0 auto 18px; padding: 7px 14px; border: 1px solid #d8f35f66; border-radius: 999px; background: #d8f35f1a; color: #d8f35f; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 @media (max-width: 560px) { .landing-badge { font-size: 10.5px; padding: 6px 11px; } }
+
+.profile-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.profile-upload label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.profile-upload small.is-bad { color: #b3392b; }
