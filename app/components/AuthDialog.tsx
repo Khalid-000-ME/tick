@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLoginWithEmail, useLoginWithOAuth, useLoginWithPasskey, usePrivy, useSignupWithPasskey } from "@privy-io/react-auth";
+import { useLoginWithEmail, useLoginWithOAuth, useLoginWithPasskey, usePrivy, useSignupWithPasskey, useWallets } from "@privy-io/react-auth";
 import { ArrowLeft, EnvelopeSimple, Fingerprint, GoogleLogo, Wallet, X, XLogo } from "@phosphor-icons/react";
-import { markOnboarding, markSignIn, onAuthOpen, type AuthMode } from "@/lib/authSession";
+import { pickWallet } from "@/lib/pickWallet";
+import { clearMarks, markOnboarding, markSignIn, onAuthOpen, type AuthMode } from "@/lib/authSession";
 
 /**
  * The one place anyone signs in or signs up. Every "Log in", "Sign up" and "Connect" in the
@@ -25,7 +26,13 @@ function explain(e: unknown): string {
 }
 
 export function AuthDialog() {
-  const { ready, authenticated, login } = usePrivy();
+  const { ready, authenticated, login, logout } = usePrivy();
+  const { wallets } = useWallets();
+  const stuck = authenticated && !pickWallet(wallets);
+  const stuckRef = useRef(false);
+  useEffect(() => {
+    stuckRef.current = stuck;
+  }, [stuck]);
   const { initOAuth } = useLoginWithOAuth();
   const { sendCode, loginWithCode } = useLoginWithEmail();
   const { loginWithPasskey } = useLoginWithPasskey();
@@ -45,6 +52,13 @@ export function AuthDialog() {
   useEffect(
     () =>
       onAuthOpen((m) => {
+        // Signed in without a wallet (a sign-in that did not finish): this dialog would never
+        // show for an authenticated user and the button would do nothing. Clear that sign-in
+        // so the dialog can open on a clean slate.
+        if (stuckRef.current) {
+          clearMarks();
+          void logout().catch(() => {});
+        }
         setMode(m);
         setStep("choose");
         setEmail("");
@@ -53,7 +67,7 @@ export function AuthDialog() {
         setBusy(null);
         setOpen(true);
       }),
-    []
+    [logout]
   );
 
   // Signing in closes the dialog. Adjusted during render so a later sign-out cannot find it

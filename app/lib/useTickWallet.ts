@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useCreateWallet, usePrivy, useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, type WalletClient } from "viem";
 import { monadTestnet } from "@/lib/chain/config";
 import { clearMarks, openAuth } from "@/lib/authSession";
@@ -27,6 +27,7 @@ export function useTickWallet() {
 function usePrivyBackedWallet() {
   const { ready, authenticated, logout } = usePrivy();
   const { wallets } = useWallets();
+  const { createWallet } = useCreateWallet();
 
   // Prefer an embedded wallet; fall back to whatever the user connected (their own
   // MetaMask, etc.) so "sign in with an existing wallet" still works through Privy.
@@ -49,8 +50,20 @@ function usePrivyBackedWallet() {
   // Every sign-in entry point (header buttons, a stake button when signed out) opens the one
   // dialog in components/AuthDialog, which then drives Privy.
   const connect = useCallback(async () => {
+    // Signed in but with no usable wallet (an earlier sign-in that did not finish creating
+    // one): the dialog would not open for an authenticated user, so "Log in" did nothing.
+    // Make the wallet; if that cannot be done, start over from a clean sign-out.
+    if (authenticated && !active) {
+      try {
+        await createWallet();
+        return;
+      } catch {
+        clearMarks();
+        await logout().catch(() => {});
+      }
+    }
     openAuth("login");
-  }, []);
+  }, [authenticated, active, createWallet, logout]);
 
   // Logging out also forgets "Remember me", so the next visit starts signed out.
   const disconnect = useCallback(async () => {
