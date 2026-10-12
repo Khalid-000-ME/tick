@@ -36,3 +36,83 @@ type Claim {
   claimedAt: Int!
   txHash: String!
 }
+
+# ---- Profiles, groups, chat and the feed ----
+
+# A trader's name and picture, as set on TickProfiles. One row per wallet, replaced on each save.
+type Profile {
+  id: ID!
+  username: String!
+  displayName: String!
+  avatar: String!
+}
+
+# Numbering: `n` repeats the on-chain id as an integer so a page can be ordered and cut by it.
+# The entity id is a string, and "10" sorts before "9".
+type Group {
+  id: ID!
+  n: Int! @index
+  name: String!
+  avatar: String!
+  creator: String!
+  createdAt: Int!
+  memberCount: Int!
+  roomCount: Int!
+  messageCount: Int!
+}
+
+type GroupMember {
+  id: ID!
+  group_id: String! @index
+  member: String! @index
+}
+
+type Room {
+  id: ID!
+  n: Int! @index
+  name: String!
+  creator: String!
+  # 0 for a room that belongs to no group.
+  groupId: Int! @index
+  createdAt: Int!
+  memberCount: Int!
+  messageCount: Int!
+}
+
+type RoomMember {
+  id: ID!
+  room_id: String! @index
+  member: String! @index
+}
+
+# One chat message, of a group or of a room. `kind` says which, `refId` is that group or room's number.
+type Message {
+  id: ID!
+  kind: String! @index
+  refId: Int! @index
+  sender: String!
+  text: String!
+  at: Int! @index
+}
+
+# A feed post. `image` is the photo's bytes as hex, kept so a photo can be served without a
+# log query against the node; it is large, so a feed query should not select it.
+type Post {
+  id: ID!
+  n: Int! @index
+  author: String! @index
+  at: Int! @index
+  caption: String!
+  card: Boolean!
+  imageBytes: Int!
+  likes: Int!
+  blockNumber: Int!
+  image: String
+}
+
+# One like. A row exists while the like is on and is removed when it is taken back.
+type Like {
+  id: ID!
+  postId: Int! @index
+  user: String! @index
+}

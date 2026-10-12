@@ -3,6 +3,7 @@
 import { bytesToHex, createPublicClient, http, type WalletClient } from "viem";
 import { TickFeedAbi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
+import { gql } from "@/lib/indexer";
 import { requestGas } from "@/lib/requestGas";
 
 /**
@@ -41,16 +42,39 @@ const toPost = (id: bigint, p: Raw): FeedPost => ({
   blockNumber: Number(p.blockNumber), imageBytes: Number(p.imageBytes), card: p.card, caption: p.caption,
 });
 
-/** A page of the feed, newest first. `before` is the lowest id already shown. */
-export async function fetchFeed(before = 0, count = PAGE): Promise<FeedPost[]> {
+const TOP = 2_147_483_647;
+
+/**
+ * A page of the feed, newest first. `before` is the lowest id already shown.
+ *
+ * From the indexer unless `fresh`, which reads the contract: right after posting, the chain
+ * has the post and the indexer is still a few seconds behind.
+ */
+export async function fetchFeed(before = 0, count = PAGE, fresh = false): Promise<FeedPost[]> {
+  if (!fresh) {
+    const data = await gql<{ Post: { n: number; author: string; at: number; likes: number; blockNumber: number; imageBytes: number; card: boolean; caption: string }[] }>(
+      `query Feed($before: Int!, $count: Int!) {
+        Post(where: { n: { _lt: $before } }, order_by: { n: desc }, limit: $count) { n author at likes blockNumber imageBytes card caption }
+      }`,
+      { before: before || TOP, count }
+    );
+    if (data) return data.Post.map((p) => ({ id: p.n, author: p.author, at: p.at, likes: p.likes, blockNumber: p.blockNumber, imageBytes: p.imageBytes, card: p.card, caption: p.caption }));
+  }
   const [ids, page] = (await pub.readContract({
     address: CONTRACTS.tickFeed, abi: TickFeedAbi, functionName: "latest", args: [BigInt(count), BigInt(before)],
   })) as readonly [readonly bigint[], readonly Raw[]];
   return ids.map((id, i) => toPost(id, page[i]));
 }
 
-export async function fetchLikedBy(account: string, ids: readonly number[]): Promise<Set<number>> {
+export async function fetchLikedBy(account: string, ids: readonly number[], fresh = false): Promise<Set<number>> {
   if (ids.length === 0) return new Set();
+  if (!fresh) {
+    const data = await gql<{ Like: { postId: number }[] }>(
+      "query L($u: String!, $ids: [Int!]!) { Like(where: { user: { _eq: $u }, postId: { _in: $ids } }) { postId } }",
+      { u: account.toLowerCase(), ids }
+    );
+    if (data) return new Set(data.Like.map((l) => l.postId));
+  }
   const res = await pub.multicall({
     allowFailure: true,
     contracts: ids.map((id) => ({ address: CONTRACTS.tickFeed, abi: TickFeedAbi, functionName: "liked" as const, args: [BigInt(id), account as `0x${string}`] as const })),

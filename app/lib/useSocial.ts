@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPublicClient, http, type WalletClient } from "viem";
 import { TickSocialAbi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
+import { gql } from "@/lib/indexer";
 import { requestGas } from "@/lib/requestGas";
 
 /**
@@ -39,7 +40,19 @@ export interface Standing { address: string; bets: number; staked: number; retur
 const read = <T,>(functionName: string, args: readonly unknown[]) =>
   pub.readContract({ address: CONTRACTS.tickSocial, abi: TickSocialAbi, functionName, args } as never) as Promise<T>;
 
-export async function fetchGroups(): Promise<Group[]> {
+/** Every group. From the indexer in one request, unless `fresh`, which reads the contract. */
+export async function fetchGroups(fresh = false): Promise<Group[]> {
+  if (!fresh) {
+    const data = await gql<{ Group: { n: number; name: string; avatar: string; creator: string; createdAt: number; memberCount: number; roomCount: number; messageCount: number }[] }>(
+      "{ Group(order_by: { n: asc }, limit: 500) { n name avatar creator createdAt memberCount roomCount messageCount } }"
+    );
+    if (data) {
+      return data.Group.map((g) => ({
+        id: g.n, name: g.name, avatar: g.avatar, creator: g.creator, createdAt: g.createdAt,
+        members: g.memberCount, rooms: g.roomCount, messages: g.messageCount,
+      }));
+    }
+  }
   const count = Number(await read<bigint>("groupCount", []));
   if (count === 0) return [];
   const ids = Array.from({ length: count }, (_, i) => BigInt(i + 1));
@@ -107,10 +120,10 @@ export function useSocial(account: `0x${string}` | null, walletClient: WalletCli
   const [myGroups, setMyGroups] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (fresh = false) => {
     try {
       const [all, roomIds, groupIds] = await Promise.all([
-        fetchGroups(),
+        fetchGroups(fresh),
         account ? read<readonly bigint[]>("roomsOf", [account]) : Promise.resolve([] as readonly bigint[]),
         account ? read<readonly bigint[]>("groupsOf", [account]) : Promise.resolve([] as readonly bigint[]),
       ]);
@@ -151,7 +164,8 @@ export function useSocial(account: `0x${string}` | null, walletClient: WalletCli
         } as never);
         const rc = await pub.waitForTransactionReceipt({ hash });
         if (rc.status !== "success") return { ok: false, message: "That reverted on chain. Nothing changed." };
-        await reload();
+        // What you just made is read from the chain, which has it already.
+        await reload(true);
         return { ok: true, message: "Done." };
       } catch (e) {
         const name = (e as { cause?: { data?: { errorName?: string } } }).cause?.data?.errorName;

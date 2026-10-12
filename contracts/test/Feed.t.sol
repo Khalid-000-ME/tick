@@ -10,7 +10,7 @@ contract FeedTest is Test {
     address alice = address(0xA11CE);
     address bob = address(0xB0B);
 
-    event Posted(uint64 indexed id, address indexed author, bytes image);
+    event Posted(uint64 indexed id, address indexed author, string caption, bool card, bytes image);
 
     function setUp() public {
         feed = new TickFeed();
@@ -21,7 +21,7 @@ contract FeedTest is Test {
         vm.roll(1234);
         vm.prank(alice);
         vm.expectEmit(true, true, false, true);
-        emit Posted(1, alice, img);
+        emit Posted(1, alice, "up 4 dollars in a minute", true, img);
         uint64 id = feed.post("up 4 dollars in a minute", img, true);
         assertEq(id, 1);
         TickFeed.Post memory p = feed.postInfo(1);

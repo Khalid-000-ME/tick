@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPublicClient, http, type WalletClient } from "viem";
 import { TickProfilesAbi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
+import { gql } from "@/lib/indexer";
 import { requestGas } from "@/lib/requestGas";
 
 /**
@@ -20,9 +21,27 @@ export interface Profile {
 const EMPTY: Profile = { username: "", displayName: "", avatar: "" };
 const cache = new Map<string, Profile>();
 
-/** Many addresses in one multicall, cached, for lists like the leaderboard. */
-export async function fetchProfiles(addresses: string[]): Promise<Map<string, Profile>> {
-  const want = [...new Set(addresses.map((a) => a.toLowerCase()))].filter((a) => !cache.has(a));
+/**
+ * Many addresses at once, cached, for lists like the leaderboard and the feed.
+ *
+ * The indexer answers first, in one request that does not touch the node. Anyone it does not
+ * know, or all of them if it is down, are read from the contract. `onChain` skips the indexer,
+ * which is what reading your own profile after saving it needs: the chain has the change at
+ * once and the indexer a few seconds later.
+ */
+export async function fetchProfiles(addresses: string[], opts: { onChain?: boolean } = {}): Promise<Map<string, Profile>> {
+  let want = [...new Set(addresses.map((a) => a.toLowerCase()))].filter((a) => !cache.has(a));
+  if (want.length && !opts.onChain) {
+    const data = await gql<{ Profile: { id: string; username: string; displayName: string; avatar: string }[] }>(
+      "query P($ids: [String!]!) { Profile(where: { id: { _in: $ids } }) { id username displayName avatar } }",
+      { ids: want }
+    );
+    if (data) {
+      for (const row of data.Profile) cache.set(row.id, { username: row.username, displayName: row.displayName, avatar: row.avatar });
+      // Someone with no row has no profile as far as the indexer knows; the chain settles it.
+      want = want.filter((a) => !cache.has(a));
+    }
+  }
   if (want.length) {
     const res = await pub.multicall({
       allowFailure: true,
@@ -60,7 +79,7 @@ export function useMyProfile(account: `0x${string}` | null, walletClient: Wallet
   const reload = useCallback(async () => {
     if (!account) return;
     cache.delete(account.toLowerCase());
-    const m = await fetchProfiles([account]);
+    const m = await fetchProfiles([account], { onChain: true });
     setProfile(m.get(account.toLowerCase()) ?? EMPTY);
   }, [account]);
 
@@ -70,7 +89,7 @@ export function useMyProfile(account: `0x${string}` | null, walletClient: Wallet
     if (!account) return;
     let off = false;
     cache.delete(account.toLowerCase());
-    void fetchProfiles([account]).then((m) => {
+    void fetchProfiles([account], { onChain: true }).then((m) => {
       if (!off) setProfile(m.get(account.toLowerCase()) ?? EMPTY);
     });
     return () => {

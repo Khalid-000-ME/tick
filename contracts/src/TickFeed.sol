@@ -35,7 +35,9 @@ contract TickFeed {
     mapping(uint64 => mapping(address => bool)) public liked;
     mapping(address => uint64[]) private _postsBy;
 
-    event Posted(uint64 indexed id, address indexed author, bytes image);
+    /// @dev Everything about the post is in the event, not only the photo: an indexer sees
+    ///      events and nothing else, so a caption kept only in storage would be invisible to it.
+    event Posted(uint64 indexed id, address indexed author, string caption, bool card, bytes image);
     event Liked(uint64 indexed id, address indexed by, bool on);
 
     error Empty();
@@ -62,7 +64,7 @@ contract TickFeed {
         );
         id = uint64(_posts.length);
         _postsBy[msg.sender].push(id);
-        emit Posted(id, msg.sender, image);
+        emit Posted(id, msg.sender, caption, card, image);
     }
 
     /// @notice Like, or take the like back if it is already there.

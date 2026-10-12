@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./node_modules/envio/evm.schema.json
 name: tick-indexer
-description: Stakes, settlements and claims for Tick, indexed from Monad testnet via HyperSync.
+description: Stakes, settlements and claims for Tick, plus profiles, groups, chat and the photo feed, indexed from Monad testnet via HyperSync.
 ecosystem: evm
 
 contracts:
@@ -10,6 +10,28 @@ contracts:
       - event: Staked(bytes32 indexed marketId, address indexed user, bool above, uint256 amount, int64 priceAtStake, uint64 priceAge, bytes32 feedId, int64 strike, uint64 closesAt)
       - event: Settled(bytes32 indexed marketId, uint8 outcome, int64 settlePrice, uint256 totalAbove, uint256 totalBelow, address indexed settler, uint256 bounty)
       - event: Claimed(bytes32 indexed marketId, address indexed user, uint256 payout)
+
+  - name: TickProfiles
+    abi_file_path: ./abis/TickProfiles.json
+    events:
+      - event: ProfileSet(address indexed user, string username, string displayName, string avatar)
+
+  - name: TickSocial
+    abi_file_path: ./abis/TickSocial.json
+    events:
+      - event: GroupCreated(uint64 indexed id, address indexed creator, string name, string avatar)
+      - event: GroupChanged(uint64 indexed id, string name, string avatar)
+      - event: GroupJoined(uint64 indexed id, address indexed member)
+      - event: RoomCreated(uint64 indexed id, uint64 indexed groupId, address indexed creator, string name)
+      - event: RoomJoined(uint64 indexed id, address indexed member)
+      - event: GroupPosted(uint64 indexed id, address indexed from, string text)
+      - event: RoomPosted(uint64 indexed id, address indexed from, string text)
+
+  - name: TickFeed
+    abi_file_path: ./abis/TickFeed.json
+    events:
+      - event: Posted(uint64 indexed id, address indexed author, string caption, bool card, bytes image)
+      - event: Liked(uint64 indexed id, address indexed by, bool on)
 
 field_selection:
   transaction_fields:
@@ -22,3 +44,14 @@ chains:
     contracts:
       - name: Tick
         address: "0x16B57356a482Fc5b307bB76D7dC8F5d76A6Be1b2"
+      # Each of these starts at its own deployment block, so the first sync does not scan
+      # blocks where the contract did not exist yet.
+      - name: TickProfiles
+        address: "0xaD241b9D273462F6DBf67D74c8aDa2B907D91c59"
+        start_block: 70101588
+      - name: TickSocial
+        address: "0x26307B3c17A0a1e3Fb381c70D7F9584D933a3129"
+        start_block: 70476020
+      - name: TickFeed
+        address: "0x26608eDF8e677431fFDDda4d1630D6B99d383433"
+        start_block: 70493723

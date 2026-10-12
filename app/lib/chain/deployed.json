@@ -17,7 +17,7 @@
     "TickProfiles": "0xaD241b9D273462F6DBf67D74c8aDa2B907D91c59",
     "GasStation": "0x1FAE6A8F254505480678D80835E19ECB8236490A",
     "TickSocial": "0x26307B3c17A0a1e3Fb381c70D7F9584D933a3129",
-    "TickFeed": "0x390686951bF5a91a17dfE229fdF632ACd7418E6b"
+    "TickFeed": "0x26608eDF8e677431fFDDda4d1630D6B99d383433"
   },
   "settleBountyBps": 5000,
   "maxSettleBountyUsd": 2,
@@ -27,5 +27,8 @@
   "gasStation": {
     "monPerUsdc": "1000000000000000000",
     "maxFillUsdc": 5
-  }
+  },
+  "socialDeployBlock": 70476020,
+  "feedDeployBlock": 70493723,
+  "profilesDeployBlock": 70101588
 }

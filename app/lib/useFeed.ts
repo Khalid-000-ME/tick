@@ -22,7 +22,7 @@ export function useFeed(account: `0x${string}` | null, walletClient: WalletClien
 
   /** Fetch results for any authors not seen yet, and which of these posts this wallet liked. */
   const enrich = useCallback(
-    async (batch: FeedPost[]) => {
+    async (batch: FeedPost[], onChain = false) => {
       const fresh = [...new Set(batch.map((p) => p.author))].filter((a) => !known.current.has(a));
       fresh.forEach((a) => known.current.add(a));
       if (fresh.length) {
@@ -36,16 +36,16 @@ export function useFeed(account: `0x${string}` | null, walletClient: WalletClien
         }
       }
       if (account) {
-        const mine = await fetchLikedBy(account, batch.map((p) => p.id)).catch(() => new Set<number>());
+        const mine = await fetchLikedBy(account, batch.map((p) => p.id), onChain).catch(() => new Set<number>());
         setLiked((prev) => new Set([...prev, ...mine]));
       }
     },
     [account]
   );
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (onChain = false) => {
     try {
-      const top = await fetchFeed(0, PAGE);
+      const top = await fetchFeed(0, PAGE, onChain);
       setPosts((prev) => {
         if (!prev) return top;
         // New posts and fresh like counts on the top page; older pages already loaded stay.
@@ -53,7 +53,7 @@ export function useFeed(account: `0x${string}` | null, walletClient: WalletClien
         return [...top, ...prev.filter((p) => !ids.has(p.id))].sort((a, b) => b.id - a.id);
       });
       setHasMore(top.length === PAGE);
-      await enrich(top);
+      await enrich(top, onChain);
     } catch {
       setPosts((prev) => prev ?? []);
     }
@@ -63,7 +63,7 @@ export function useFeed(account: `0x${string}` | null, walletClient: WalletClien
     let off = false;
     const poll = async () => {
       if (off) return;
-      await refresh();
+      await refresh(false);
     };
     void poll();
     const t = setInterval(poll, 15_000);
@@ -89,7 +89,8 @@ export function useFeed(account: `0x${string}` | null, walletClient: WalletClien
   const publish = useCallback(
     async (caption: string, image: Uint8Array, card: boolean) => {
       const r = await sendFeed(walletClient, account, "post", [caption, encodeImage(image), card], postGas(image.length));
-      if (r.ok) await refresh();
+      // Your own post is read from the chain: the indexer would show it a few seconds late.
+      if (r.ok) await refresh(true);
       return r;
     },
     [walletClient, account, refresh]
