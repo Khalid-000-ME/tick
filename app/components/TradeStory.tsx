@@ -1,14 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { Fraunces } from "next/font/google";
 import { motion, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
-
-/**
- * The payout is the one number that should feel like a moment, so it gets a display face:
- * Fraunces, which has a true heavy italic (a single-weight face would be faked bold).
- */
-const payoutFace = Fraunces({ subsets: ["latin"], weight: "800", style: "italic", variable: "--font-payout" });
 
 /**
  * One whole trade, played by scrolling.
@@ -106,36 +99,22 @@ export function TradeStory() {
   const cardIn = useTransform(p, [0, 0.06], [0.92, 1]);
   const cardOpacity = useTransform(p, [0, 0.05], [0.4, 1]);
 
-  // The card is filmed, not flipped. One camera move runs through the whole story, every
-  // value eased by a spring so the card carries weight and never snaps:
-  //   entry    rises from lying flat on a table and tilts up, angled toward the captions
-  //   tap      the camera leans in on the buttons; the click presses the card, which rebounds
-  //   window   a slow pan from left to right across the chart while the candles print
-  //   win      squares up and lifts toward the reader as the glow behind it blooms
-  //   hold     after the win the card stays exactly where it is until the section ends
-  // No roll (rotateZ): combined with a turn it reads as a warped trapezoid, not depth.
-  // Positive rotateY sends the right edge away, so the card faces the captions on its left.
-  // The click is the longest beat and gets its own choreography, on a stiffer spring
-  // than the rest so the press is crisp and the release overshoots:
-  //   0.12-0.20  approach   the cursor curves in; the camera starts leaning toward Above
-  //   0.20-0.28  lean in    the card turns its left half, where Above is, toward the reader
-  //   0.28-0.31  hover      the button lifts and glows under the cursor
-  //   0.31-0.33  press      the card is pushed back, tilting away; the button sinks
-  //   0.33-0.36  release    ripple, green fill, the card springs forward past rest
-  //   0.36-0.40  confirm    the "staked" toast pops; the camera pulls back out to the chart
-  const CAM = [0, 0.1, 0.14, 0.2, 0.28, 0.31, 0.325, 0.345, 0.37, 0.4, 0.51, 0.62, 0.68, 0.84, 1];
-  const soft = { stiffness: 90, damping: 22, mass: 0.6 };
-  const crisp = { stiffness: 260, damping: 19, mass: 0.5 };
-  const rotateX = useSpring(useTransform(p, CAM, [34, 12, 12, 16, 20, 21, 28, 13, 18, 14, 9, 6, 0, 0, 0]), crisp);
-  const rotateY = useSpring(useTransform(p, CAM, [14, 10, 10, 12, 16, 16, 18, 13, 14, 10, 1, -9, 0, 0, 0]), soft);
-  const lift = useSpring(useTransform(p, CAM, [140, 0, 0, -10, -30, -32, -18, -42, -34, -12, 0, 0, -12, -12, -12]), crisp);
-  const pan = useSpring(useTransform(p, CAM, [40, 0, 0, 8, 22, 24, 26, 20, 22, 22, 0, -30, 0, 0, 0]), soft);
-  const zoom = useSpring(useTransform(p, CAM, [0.88, 1, 1, 1.03, 1.08, 1.09, 1.02, 1.12, 1.08, 1.02, 1, 1, 1.05, 1.05, 1.05]), crisp);
+  // The card stays flat and face-on. No tilt, no turn: the only real motion is the bounce
+  // when the cursor clicks, so the click is the thing the eye goes to.
+  //   entry    rises a little and scales up as it comes in
+  //   hover    a touch of anticipation as the cursor arrives
+  //   press    squashes down and dips, as if pushed into the page
+  //   release  springs back past its resting size and hops up, then settles
+  //   win      lifts and grows slightly, then holds for the rest of the section
+  const CAM = [0, 0.1, 0.28, 0.325, 0.345, 0.4, 0.68, 1];
+  // Low damping on the click values, so the release overshoots and wobbles out.
+  const bouncy = { stiffness: 300, damping: 13, mass: 0.6 };
+  const zoom = useSpring(useTransform(p, CAM, [0.92, 1, 1.02, 0.94, 1.08, 1, 1.04, 1.04]), bouncy);
+  const lift = useSpring(useTransform(p, CAM, [70, 0, -4, 10, -16, 0, -10, -10]), bouncy);
   const cardScale = useTransform([zoom, cardIn], ([z, c]: number[]) => z * c);
-  // Light falls from above, so the shadow drops further the more the card lies back, and
-  // slides away from the side it turns toward.
-  const cardShadow = useTransform([rotateX, rotateY], ([rx, ry]: number[]) =>
-    `${(-ry * 1.5).toFixed(1)}px ${(28 + rx * 2.2).toFixed(1)}px 110px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset`
+  // One steady shadow, pulled in tight while the card is pressed down.
+  const cardShadow = useTransform(lift, (v) =>
+    `0px ${(46 + v * 0.9).toFixed(1)}px ${(90 + v * 1.2).toFixed(1)}px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset`
   );
   // A lime glow behind the card: faint as it rises, warmer through the window, a bloom on the win.
   const glowOpacity = useTransform(p, [0, 0.12, 0.33, 0.35, 0.4, 0.62, 0.68, 1], [0, 0.25, 0.35, 0.8, 0.3, 0.5, 0.9, 0.9]);
@@ -149,7 +128,7 @@ export function TradeStory() {
   const cursorOpacity = useTransform(p, [0.12, 0.15, 0.38, 0.41], [0, 1, 1, 0]);
   const cursorPress = useTransform(p, [0.31, 0.32, 0.335, 0.345], [1, 0.78, 0.78, 1]);
   // The button: lifts and glows on hover, sinks on press, pops on release, settles.
-  const aboveScale = useSpring(useTransform(p, [0.27, 0.29, 0.31, 0.325, 0.345, 0.37], [1, 1.05, 1.05, 0.93, 1.06, 1]), crisp);
+  const aboveScale = useSpring(useTransform(p, [0.27, 0.29, 0.31, 0.325, 0.345, 0.37], [1, 1.05, 1.05, 0.93, 1.06, 1]), bouncy);
   const aboveGlow = useTransform(p, [0.27, 0.29, 0.31, 0.335, 0.37, 0.4], [
     "0 0 0 0 rgba(216,243,95,0)",
     "0 0 0 3px rgba(216,243,95,0.35)",
@@ -166,7 +145,7 @@ export function TradeStory() {
   const tapHint = useTransform(p, [0.3, 0.33], [1, 0]);
   const stakedNote = useTransform(p, [0.36, 0.39], [0, 1]);
   const toastOpacity = useTransform(p, [0.355, 0.365, 0.395, 0.41], [0, 1, 1, 0]);
-  const toastY = useSpring(useTransform(p, [0.355, 0.37], [16, 0]), crisp);
+  const toastY = useSpring(useTransform(p, [0.355, 0.37], [16, 0]), bouncy);
 
   // The window, compressed: the countdown still reads 30 to 0, just over a shorter scroll.
   const price = useTransform(p, PRICE_STOPS, PRICE_VALUES);
@@ -186,6 +165,12 @@ export function TradeStory() {
 
   return (
     <section ref={ref} id="how" className="story" aria-label="How a trade plays out">
+      {/* Geist Pixel is too new for this Next version's next/font/google list, so the
+          payout's face is loaded as a stylesheet. React hoists it into the head, and it is
+          declared here so only the landing page pays for it. The lint rule below is about
+          the pages router's _document, which this app does not use. */}
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Pixel&display=swap" precedence="default" />
       <div className="story-sticky">
         <div className="story-copy">
           <p className="story-eyebrow">One trade, start to finish</p>
@@ -205,7 +190,7 @@ export function TradeStory() {
         <motion.i className="story-glow" style={{ opacity: glowOpacity, scale: glowScale }} aria-hidden="true" />
         <motion.div
           className="story-card"
-          style={{ scale: cardScale, opacity: cardOpacity, rotateX, rotateY, x: pan, y: lift, boxShadow: cardShadow, transformPerspective: 1500 }}
+          style={{ scale: cardScale, opacity: cardOpacity, y: lift, boxShadow: cardShadow }}
         >
           <div className="story-card-head">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -293,7 +278,7 @@ export function TradeStory() {
             ))}
             <motion.div className="story-won-inner" style={{ scale: wonScale }}>
               <p>You won</p>
-              <strong className={payoutFace.variable}>$1.96</strong>
+              <strong>$1.96</strong>
               <span>paid out on a $1 stake, in 30 seconds</span>
             </motion.div>
           </motion.div>

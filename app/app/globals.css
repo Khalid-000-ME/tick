@@ -2210,3 +2210,6 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   .first-trade ol { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) { .landing-why { padding: 90px 16px 100px; } .why-grid { grid-template-columns: minmax(0, 1fr); } }
+/* The payout in Geist Pixel: one weight, no italic, so it is sized and spaced instead. */
+.story-won-inner strong { font-family: "Geist Pixel", var(--font-geist-mono), monospace; font-weight: 400; font-style: normal; font-size: 104px; letter-spacing: .01em; line-height: 1; }
+@media (max-width: 900px) { .story-won-inner strong { font-size: 68px; } }
