@@ -112,9 +112,10 @@ export function TradeStory() {
   const zoom = useSpring(useTransform(p, CAM, [0.92, 1, 1.02, 0.94, 1.08, 1, 1.04, 1.04]), bouncy);
   const lift = useSpring(useTransform(p, CAM, [70, 0, -4, 10, -16, 0, -10, -10]), bouncy);
   const cardScale = useTransform([zoom, cardIn], ([z, c]: number[]) => z * c);
-  // One steady shadow, pulled in tight while the card is pressed down.
+  // Two soft shadows, a wide one for depth and a tight one for the edge, pulled in while
+  // the card is pressed down. Softer and shorter than a single hard drop.
   const cardShadow = useTransform(lift, (v) =>
-    `0px ${(46 + v * 0.9).toFixed(1)}px ${(90 + v * 1.2).toFixed(1)}px rgba(0,0,0,0.6)`
+    `0px ${(30 + v * 0.7).toFixed(1)}px ${(64 + v).toFixed(1)}px rgba(6,8,5,0.42), 0px 2px 6px rgba(6,8,5,0.14)`
   );
   // A lime glow behind the card: faint as it rises, warmer through the window, a bloom on the win.
   const glowOpacity = useTransform(p, [0, 0.12, 0.33, 0.35, 0.4, 0.62, 0.68, 1], [0, 0.25, 0.35, 0.8, 0.3, 0.5, 0.9, 0.9]);
@@ -131,15 +132,15 @@ export function TradeStory() {
   const aboveScale = useSpring(useTransform(p, [0.27, 0.29, 0.31, 0.325, 0.345, 0.37], [1, 1.05, 1.05, 0.93, 1.06, 1]), bouncy);
   const aboveGlow = useTransform(p, [0.27, 0.29, 0.31, 0.335, 0.37, 0.4], [
     "0 0 0 0 rgba(22,163,74,0)",
-    "0 0 0 3px rgba(22,163,74,0.3)",
-    "0 0 0 3px rgba(22,163,74,0.3)",
-    "0 0 0 1px rgba(22,163,74,0.18)",
-    "0 0 40px 6px rgba(74,222,128,0.55)",
+    "0 0 0 2px rgba(22,163,74,0.2)",
+    "0 0 0 2px rgba(22,163,74,0.2)",
+    "0 0 0 1px rgba(22,163,74,0.14)",
+    "0 0 26px 3px rgba(74,222,128,0.38)",
     "0 0 0 0 rgba(74,222,128,0)",
   ]);
   const ripple = useTransform(p, [0.335, 0.38], [0, 3.2]);
   const rippleOpacity = useTransform(p, [0.335, 0.38], [0.8, 0]);
-  const aboveFill = useTransform(p, [0.333, 0.345], ["rgba(22,163,74,0.06)", "rgba(34,197,94,1)"]);
+  const aboveFill = useTransform(p, [0.333, 0.345], ["rgba(22,163,74,0.05)", "rgba(34,197,94,0.92)"]);
   const aboveText = useTransform(p, [0.333, 0.345], ["#15803d", "#06120a"]);
   const belowDim = useTransform(p, [0.335, 0.36], [1, 0.35]);
   const tapHint = useTransform(p, [0.3, 0.33], [1, 0]);

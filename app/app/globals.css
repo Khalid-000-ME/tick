@@ -2063,14 +2063,15 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .story-steps span { flex: 1; height: 3px; border-radius: 3px; background: #232b1e; overflow: hidden; }
 .story-steps i { display: block; height: 100%; background: var(--acid); }
 
-/* The window: paper white, a solid black frame, and the same uppercase mono throughout. */
-.story-card { position: relative; width: 100%; padding: 22px; border-radius: 22px; background: #fffefa; border: 8px solid #10120f; color: #10120f; overflow: hidden; font-family: var(--font-geist-mono), monospace; text-transform: uppercase; letter-spacing: .05em; will-change: transform; }
+/* The window: paper white with a hairline edge, the weight carried by light and shadow
+   rather than a drawn-on frame. */
+.story-card { position: relative; width: 100%; padding: 26px; border-radius: 18px; background: #fffefc; border: 1px solid rgba(16, 18, 15, .10); color: #10120f; overflow: hidden; font-family: var(--font-geist-mono), monospace; text-transform: uppercase; letter-spacing: .05em; will-change: transform; }
 .story-card-head { display: flex; align-items: center; gap: 12px; }
 .story-card-head img { border-radius: 50%; }
 .story-card-head strong { display: block; font-size: 16px; font-weight: 600; letter-spacing: .08em; }
 .story-card-head span { font: 11px var(--font-geist-mono), monospace; letter-spacing: .08em; color: #686b64; }
 .story-count { margin-left: auto; font: 600 34px var(--font-geist-mono), monospace; font-style: normal; letter-spacing: -.04em; color: #10120f; font-variant-numeric: tabular-nums; }
-.story-bar { height: 3px; margin: 16px -22px 0; background: #e4e3da; }
+.story-bar { height: 2px; margin: 16px -26px 0; background: #ebe9e0; }
 .story-bar span { display: block; height: 100%; background: #173f31; }
 .story-price-row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 18px; }
 .story-price-row strong { font: 600 30px var(--font-geist-mono), monospace; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
@@ -2078,11 +2079,11 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .story-chart { display: block; width: 100%; height: auto; margin: 14px 0 18px; overflow: visible; }
 .story-chart text { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 .story-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.story-side { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 14px 16px; border-radius: 12px; border: 1.5px solid; }
+.story-side { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 15px 16px; border-radius: 12px; border: 1px solid; }
 .story-side span { font-size: 15px; font-weight: 600; letter-spacing: .08em; }
 .story-side small { font: 11px var(--font-geist-mono), monospace; letter-spacing: .08em; opacity: .8; }
-.story-side.is-up { border-color: #16a34a; transform-origin: center; }
-.story-side.is-down { border-color: #dc2626; color: #b91c1c; background: rgba(220, 38, 38, .06); }
+.story-side.is-up { border-color: rgba(22, 163, 74, .32); transform-origin: center; }
+.story-side.is-down { border-color: rgba(220, 38, 38, .26); color: #b42318; background: rgba(220, 38, 38, .04); }
 .story-ripple { position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; background: rgba(255, 255, 255, .8); pointer-events: none; }
 .story-cursor { position: absolute; left: 50%; top: 50%; pointer-events: none; filter: drop-shadow(0 6px 8px rgba(16, 18, 15, .35)); z-index: 2; }
 .story-status { position: relative; height: 18px; margin-top: 14px; font: 12px var(--font-geist-mono), monospace; letter-spacing: .08em; color: #686b64; }
@@ -2112,8 +2113,8 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   .story-captions { height: 150px; margin-top: 12px; }
   .story-caption h2 { font-size: 30px; }
   .story-caption p { margin-top: 10px; font-size: 14px; }
-  .story-stage .story-card { width: 90%; padding: 16px; }
-  .story-bar { margin: 12px -16px 0; }
+  .story-stage .story-card { width: 90%; padding: 18px; }
+  .story-bar { margin: 12px -18px 0; }
   .story-won-inner strong { font-size: 68px; }
   .story-toast { bottom: 128px; font-size: 12px; padding: 10px 16px; }
 }
@@ -2458,3 +2459,10 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 /* The header owns a stacking context above the panels, so its menu can never slide behind
    the chart or the ticket. */
 .terminal-shell .terminal-header { position: relative; z-index: 30; }
+
+/* The logo above the headline: a rounded tile with a soft bloom behind it. */
+.hero-logo { position: relative; display: grid; place-items: center; width: 74px; height: 74px; margin: 0 auto 26px; border-radius: 22px; border: 1px solid rgba(216, 243, 95, .3); background: linear-gradient(160deg, #222a1b, #0c0f09); box-shadow: 0 16px 38px rgba(0, 0, 0, .5), 0 0 22px rgba(216, 243, 95, .16), inset 0 1px 0 rgba(255, 255, 255, .08); }
+.hero-logo::before { content: ""; position: absolute; inset: -26px; z-index: -1; border-radius: 40px; background: radial-gradient(closest-side, rgba(216, 243, 95, .55), rgba(216, 243, 95, 0) 70%); filter: blur(16px); }
+.landing-shell .hero-logo .brand-mark { margin: 0; transform: skew(-17deg) scale(1.2); }
+.landing-shell .hero-logo .brand-mark i { background: var(--acid); }
+@media (max-width: 560px) { .hero-logo { width: 62px; height: 62px; border-radius: 18px; margin-bottom: 20px; } }
