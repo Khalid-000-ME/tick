@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tick | The world's first 30-second prediction market",
+  title: "Tick | Trade in 30 seconds. Flex your card.",
   description:
-    "The world's first 30-second prediction market. Record-time price markets on Monad, settled by reading Pyth. A stake is only accepted while the on-chain price is fresh. Nobody referees the outcome.",
+    "The world's first 30-second prediction market. Sign up, trade, and flex your card: every win becomes a verified card you can post to the feed or your group.",
 };
 
 export const viewport: Viewport = {

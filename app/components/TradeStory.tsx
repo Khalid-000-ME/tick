@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
+import { StoryFlex } from "@/components/StoryFlex";
 
 /**
  * One whole trade, played by scrolling.
@@ -17,7 +18,9 @@ import { motion, useScroll, useSpring, useTransform, type MotionValue } from "mo
  *   0.00 to 0.12  the market opens: history candles print, the strike line appears
  *   0.12 to 0.40  the click, the longest beat: approach, hover, press, release, confirm
  *   0.40 to 0.62  the 30-second window: countdown, candles climb, live price tag
- *   0.64 to 1.00  the win
+ *   0.64 to 0.74  the win
+ *   0.74 to 1.00  the card: it is generated from the win, then posted to the feed
+ *                 (components/StoryFlex), which is the point of the product
  */
 
 // ---- the price series ----------------------------------------------------------------
@@ -85,10 +88,11 @@ const usd = (v: number) => `$${v.toLocaleString("en-US", { minimumFractionDigits
 const plain = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const CAPTIONS = [
-  { range: [0, 0.12], title: "A market opens every 30 seconds.", body: `Strike: ${usd(STRIKE)}, Bitcoin right now.` },
-  { range: [0.12, 0.4], title: "Think it ends higher? Tap Above.", body: "One tap. $1 staked." },
-  { range: [0.4, 0.64], title: "Thirty seconds. That's it.", body: "Live from Pyth." },
-  { range: [0.64, 1], title: "You won.", body: "Paid out automatically." },
+  { range: [0, 0.12], title: "Sign up, and a market is already open.", body: `A new one every 30 seconds. Strike: ${usd(STRIKE)}, Bitcoin right now.` },
+  { range: [0.12, 0.4], title: "Trade it. Tap Above.", body: "One tap. $1 staked." },
+  { range: [0.4, 0.64], title: "Thirty seconds, and it settles.", body: "Live from Pyth. Nobody referees it." },
+  { range: [0.64, 0.78], title: "You won. Tick makes your card.", body: "Drawn from your real record, verified on chain." },
+  { range: [0.78, 1], title: "Flex it.", body: "Post it to the feed or your group. The profit is the post." },
 ] as const;
 
 export function TradeStory() {
@@ -97,7 +101,7 @@ export function TradeStory() {
 
   // Opening
   const cardIn = useTransform(p, [0, 0.06], [0.92, 1]);
-  const cardOpacity = useTransform(p, [0, 0.05], [0.4, 1]);
+  const cardOpacity = useTransform(p, [0, 0.05, 0.7, 0.745], [0.4, 1, 1, 0]);
 
   // The card stays flat and face-on. No tilt, no turn: the only real motion is the bounce
   // when the cursor clicks, so the click is the thing the eye goes to.
@@ -174,7 +178,7 @@ export function TradeStory() {
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Pixel&display=swap" precedence="default" />
       <div className="story-sticky">
         <div className="story-copy">
-          <p className="story-eyebrow">One trade, start to finish</p>
+          <p className="story-eyebrow">Sign up. Trade. Flex your card.</p>
           <div className="story-captions">
             {CAPTIONS.map((c, i) => (
               <Caption key={c.title} p={p} range={c.range} first={i === 0} last={i === CAPTIONS.length - 1} title={c.title} body={c.body} />
@@ -284,6 +288,7 @@ export function TradeStory() {
             </motion.div>
           </motion.div>
         </motion.div>
+        <StoryFlex p={p} bouncy={bouncy} />
         </div>
       </div>
     </section>

@@ -1,54 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, CurrencyDollar, Fingerprint, HandTap, Lightning, Trophy, UsersThree } from "@phosphor-icons/react";
+import { ArrowDown, ArrowUpRight, Fingerprint, IdentificationCard, Lightning, ShareNetwork } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { Brand } from "@/components/Brand";
 import DotGrid from "@/components/DotGrid";
 import { TradeStory } from "@/components/TradeStory";
+import { openAuth } from "@/lib/authSession";
 
-/* Why Tick, in six lines. Every claim here is either shipped or labelled as coming. */
+/* The product in four lines, led by the card. Every claim here is shipped. */
 /* The whole journey, in the order someone actually does it, written to them. Every line
    is true of the product today except the card checkout, which says it is coming. */
 const STEPS = [
   {
     Icon: Fingerprint,
     kicker: "Takes seconds",
-    title: "Sign in with Google.",
-    copy: "Or a passkey, email or X. No seed phrase. No extension.",
-  },
-  {
-    Icon: CurrencyDollar,
-    kicker: "Stable, not volatile",
-    title: "Add stablecoins.",
-    copy: "Your balance is USDC, so a dollar stays a dollar. Fees come out of it too.",
-    tag: "Card checkout coming",
-  },
-  {
-    Icon: HandTap,
-    kicker: "No bankroll needed",
-    title: "Start with ten cents.",
-    copy: "Risk almost nothing to find out if you are any good.",
+    title: "Sign up.",
+    copy: "Google, a passkey, email or X. No seed phrase. Two testnet USDC on us.",
   },
   {
     Icon: Lightning,
     kicker: "A world first",
-    title: "Know in thirty seconds.",
-    copy: "The first prediction market to settle in 30 seconds. Polymarket's quickest takes five minutes.",
+    title: "Trade.",
+    copy: "Call a price in thirty seconds, from ten cents. Polymarket's quickest takes five minutes.",
     source: { label: "CoinMarketCap", href: "https://coinmarketcap.com/academy/article/polymarket-debuts-5-minute-bitcoin-prediction-markets-with-instant-settlement" },
   },
   {
-    Icon: UsersThree,
-    kicker: "Better with people",
-    title: "Bring the group.",
-    copy: "Make a room, send the link, and watch the table move together.",
+    Icon: IdentificationCard,
+    kicker: "The whole point",
+    title: "Flex your card.",
+    copy: "Win, and Tick draws your card from your real record, verified on chain. Nobody can fake it.",
   },
   {
-    Icon: Trophy,
-    kicker: "Nothing up front",
-    title: "Post what you made.",
-    copy: "Every result has a card. We take 2% of winnings, nothing if you miss.",
+    Icon: ShareNetwork,
+    kicker: "Better with people",
+    title: "Post it. Rank up.",
+    copy: "Put it on the feed or in your group, climb the leaderboard, challenge a room.",
   },
 ] as const;
 
@@ -73,7 +61,7 @@ export function LandingExperience() {
           <Brand />
           <nav aria-label="Primary navigation">
             <a href="#how">How it works</a><a href="#why">Why Tick</a>
-            <Link href="/feed" className="landing-nav-cta">Start free <ArrowUpRight weight="bold" /></Link>
+            <button type="button" className="landing-nav-cta" onClick={() => openAuth("signup")}>Sign up <ArrowUpRight weight="bold" /></button>
           </nav>
         </div>
       </header>
@@ -111,13 +99,13 @@ export function LandingExperience() {
           <div className="landing-hero-scrim" aria-hidden="true" />
           <motion.div className="landing-hero-content" initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>
             <span className="hero-logo" aria-hidden="true"><span className="brand-mark"><i /><i /><i /></span></span>
-            <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
+            <h1 id="landing-title">Sign up. Trade.<br /><em>Flex your card.</em></h1>
             <p className="landing-lede">
-              A record time, ten times faster than Polymarket. Call it with your group, and post what you made.
+              Call a price in thirty seconds. Win, and Tick turns it into a card that proves it. Post it and show your crew.
             </p>
             <div className="landing-actions">
-              <Link href="/feed" className="landing-primary">Open the feed <ArrowUpRight weight="bold" /></Link>
-              <a href="#how" className="landing-secondary">How it works <ArrowDown /></a>
+              <button type="button" className="landing-primary" onClick={() => openAuth("signup")}>Sign up free <ArrowUpRight weight="bold" /></button>
+              <a href="#how" className="landing-secondary">See the card made <ArrowDown /></a>
             </div>
           </motion.div>
           <p className="landing-claim">The <em>world&apos;s first</em> 30-second prediction market</p>
@@ -128,7 +116,7 @@ export function LandingExperience() {
 
         <section className="landing-why" id="why">
           <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}>
-            <p>Why Tick</p><h2>The fastest market on Earth. Your first call, in about a minute.</h2>
+            <p>Why Tick</p><h2>Everything here builds one thing: the card you post.</h2>
           </motion.div>
           <ol className="steps">
             {STEPS.map((step, index) => (
@@ -146,7 +134,6 @@ export function LandingExperience() {
                   <p className="step-kicker"><step.Icon weight="duotone" /> {step.kicker}</p>
                   <h3>{step.title}</h3>
                   <p className="step-copy">{step.copy}</p>
-                  {"tag" in step && <span className="step-tag">{step.tag}</span>}
                   {"source" in step && (
                     <a className="step-source" href={step.source.href} target="_blank" rel="noreferrer">Source: {step.source.label}</a>
                   )}
@@ -156,14 +143,14 @@ export function LandingExperience() {
           </ol>
           <div className="steps-cta">
             <p>No application. No minimum. Bring whoever you like.</p>
-            <Link href="/feed" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
+            <button type="button" className="landing-primary" onClick={() => openAuth("signup")}>Get your first card <ArrowUpRight weight="bold" /></button>
           </div>
         </section>
 
         <section className="landing-close">
           <p>The world&apos;s first 30-second markets. Crypto. Equities. Sport.</p>
-          <h2>One line.<br />Two sides.<br /><em>Thirty seconds.</em></h2>
-          <Link href="/feed" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
+          <h2>Sign up.<br />Trade.<br /><em>Flex your card.</em></h2>
+          <button type="button" className="landing-primary" onClick={() => openAuth("signup")}>Sign up free <ArrowUpRight weight="bold" /></button>
         </section>
       </main>
       <footer className="landing-footer"><Brand /></footer>
