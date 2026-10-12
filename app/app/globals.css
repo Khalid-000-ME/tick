@@ -1883,9 +1883,13 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .profile-id { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
 .profile-avatar-tools { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .profile-styles { display: flex; gap: 6px; align-items: center; }
-.profile-styles button { padding: 2px; border-radius: 50%; border: 2px solid transparent; background: none; cursor: pointer; transition: border-color 180ms; }
+/* A fixed square, centred, so the ring is a circle. The avatar is an inline element, and
+   inside a button it picked up a line box (about 7px of space below it): the button came
+   out 42 wide by 49 tall and its round border became an oval. */
+.profile-styles button { display: grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 0; line-height: 0; border-radius: 50%; border: 2px solid transparent; background: none; cursor: pointer; transition: border-color 180ms; }
+.profile-styles button .avatar { display: block; }
 .profile-styles button.is-active { border-color: var(--t-accent, var(--t-ink)); }
-.profile-shuffle { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50% !important; border: 1px solid var(--t-line) !important; color: var(--t-dim); }
+.profile-shuffle { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50% !important; border: 2px solid var(--t-line) !important; color: var(--t-dim); }
 .profile-shuffle:hover { color: var(--t-ink); }
 .profile-url { display: flex; gap: 6px; }
 .profile-url input, .profile-plain { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--t-line); border-radius: 8px; background: var(--t-bg); color: var(--t-ink); font-size: 13px; }
