@@ -14,10 +14,10 @@ import { motion, useScroll, useSpring, useTransform, type MotionValue } from "mo
  * strike, a price axis and a live price tag. The numbers are illustrative, not live.
  *
  * Beats, as fractions of the section's scroll:
- *   0.00 to 0.16  the market opens: history candles print, the strike line appears
- *   0.16 to 0.34  the cursor moves in and taps Above
- *   0.34 to 0.58  the 30-second window: countdown, candles climb, live price tag
- *   0.60 to 1.00  the win
+ *   0.00 to 0.12  the market opens: history candles print, the strike line appears
+ *   0.12 to 0.40  the click, the longest beat: approach, hover, press, release, confirm
+ *   0.40 to 0.62  the 30-second window: countdown, candles climb, live price tag
+ *   0.64 to 1.00  the win
  */
 
 // ---- the price series ----------------------------------------------------------------
@@ -72,7 +72,7 @@ const TICKS = [83600, 83620, 83640, 83660, 83680];
 const BODY_W = 12;
 
 // ---- timeline -------------------------------------------------------------------------
-const WINDOW: [number, number] = [0.34, 0.58];
+const WINDOW: [number, number] = [0.4, 0.62];
 const slot = (j: number) => {
   const len = (WINDOW[1] - WINDOW[0]) / WINDOW_CANDLES;
   return [WINDOW[0] + j * len, WINDOW[0] + (j + 1) * len] as const;
@@ -85,10 +85,10 @@ const usd = (v: number) => `$${v.toLocaleString("en-US", { minimumFractionDigits
 const plain = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const CAPTIONS = [
-  { range: [0, 0.16], title: "A market opens every 30 seconds.", body: `The strike is Bitcoin's price right now: ${usd(STRIKE)}.` },
-  { range: [0.16, 0.34], title: "Think it ends higher? Tap Above.", body: "One tap. $1 staked. No order book to fill." },
-  { range: [0.34, 0.6], title: "Thirty seconds. That's it.", body: "The price runs against the strike, live from Pyth." },
-  { range: [0.6, 1], title: "You won.", body: "Paid to your balance automatically. The next market is already open." },
+  { range: [0, 0.12], title: "A market opens every 30 seconds.", body: `The strike is Bitcoin's price right now: ${usd(STRIKE)}.` },
+  { range: [0.12, 0.4], title: "Think it ends higher? Tap Above.", body: "One tap. $1 staked. No order book to fill." },
+  { range: [0.4, 0.64], title: "Thirty seconds. That's it.", body: "The price runs against the strike, live from Pyth." },
+  { range: [0.64, 1], title: "You won.", body: "Paid to your balance automatically. The next market is already open." },
 ] as const;
 
 export function TradeStory() {
@@ -108,55 +108,74 @@ export function TradeStory() {
   //   exit     lies back down as the section ends, so the last frames still move
   // No roll (rotateZ): combined with a turn it reads as a warped trapezoid, not depth.
   // Positive rotateY sends the right edge away, so the card faces the captions on its left.
-  const CAM = [0, 0.12, 0.16, 0.24, 0.3, 0.34, 0.46, 0.58, 0.64, 0.82, 1];
-  const spring = { stiffness: 90, damping: 22, mass: 0.6 };
-  const rotateX = useSpring(useTransform(p, CAM, [34, 12, 11, 18, 20, 17, 10, 6, 0, 0, 22]), spring);
-  const rotateY = useSpring(useTransform(p, CAM, [14, 10, 8, 4, 3, 10, 2, -9, 0, 0, 8]), spring);
-  const lift = useSpring(useTransform(p, CAM, [140, 0, 0, -24, -30, -20, 0, 0, -12, -12, 40]), spring);
-  const pan = useSpring(useTransform(p, CAM, [40, 0, 0, -10, -12, 22, 0, -30, 0, 0, 0]), spring);
-  const zoom = useSpring(useTransform(p, CAM, [0.88, 1, 1, 1.04, 1.06, 1.03, 1, 1, 1.05, 1.05, 0.94]), spring);
-  // The click is crisp, so it is not sprung: a quick press on top of the camera's zoom.
-  const press = useTransform(p, [0.285, 0.295, 0.305], [1, 0.965, 1]);
-  const cardScale = useTransform([zoom, press, cardIn], ([z, k, c]: number[]) => z * k * c);
+  // The click is the longest beat and gets its own choreography, on a stiffer spring
+  // than the rest so the press is crisp and the release overshoots:
+  //   0.12-0.20  approach   the cursor curves in; the camera starts leaning toward Above
+  //   0.20-0.28  lean in    the card turns its left half, where Above is, toward the reader
+  //   0.28-0.31  hover      the button lifts and glows under the cursor
+  //   0.31-0.33  press      the card is pushed back, tilting away; the button sinks
+  //   0.33-0.36  release    ripple, green fill, the card springs forward past rest
+  //   0.36-0.40  confirm    the "staked" toast pops; the camera pulls back out to the chart
+  const CAM = [0, 0.1, 0.14, 0.2, 0.28, 0.31, 0.325, 0.345, 0.37, 0.4, 0.51, 0.62, 0.68, 0.84, 1];
+  const soft = { stiffness: 90, damping: 22, mass: 0.6 };
+  const crisp = { stiffness: 260, damping: 19, mass: 0.5 };
+  const rotateX = useSpring(useTransform(p, CAM, [34, 12, 12, 16, 20, 21, 28, 13, 18, 14, 9, 6, 0, 0, 22]), crisp);
+  const rotateY = useSpring(useTransform(p, CAM, [14, 10, 10, 12, 16, 16, 18, 13, 14, 10, 1, -9, 0, 0, 8]), soft);
+  const lift = useSpring(useTransform(p, CAM, [140, 0, 0, -10, -30, -32, -18, -42, -34, -12, 0, 0, -12, -12, 40]), crisp);
+  const pan = useSpring(useTransform(p, CAM, [40, 0, 0, 8, 22, 24, 26, 20, 22, 22, 0, -30, 0, 0, 0]), soft);
+  const zoom = useSpring(useTransform(p, CAM, [0.88, 1, 1, 1.03, 1.08, 1.09, 1.02, 1.12, 1.08, 1.02, 1, 1, 1.05, 1.05, 0.94]), crisp);
+  const cardScale = useTransform([zoom, cardIn], ([z, c]: number[]) => z * c);
   // Light falls from above, so the shadow drops further the more the card lies back, and
   // slides away from the side it turns toward.
   const cardShadow = useTransform([rotateX, rotateY], ([rx, ry]: number[]) =>
     `${(-ry * 1.5).toFixed(1)}px ${(28 + rx * 2.2).toFixed(1)}px 110px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset`
   );
   // A lime glow behind the card: faint as it rises, warmer through the window, a bloom on the win.
-  const glowOpacity = useTransform(p, [0, 0.12, 0.34, 0.58, 0.64, 0.82, 1], [0, 0.25, 0.3, 0.5, 0.95, 0.7, 0.15]);
-  const glowScale = useTransform(p, [0, 0.58, 0.66, 1], [0.7, 0.95, 1.25, 1]);
-  const strikeLen = useTransform(p, [0.08, 0.15], [0, 1]);
-  const strikeTags = useTransform(p, [0.13, 0.16], [0, 1]);
+  const glowOpacity = useTransform(p, [0, 0.12, 0.33, 0.35, 0.4, 0.62, 0.68, 0.84, 1], [0, 0.25, 0.35, 0.8, 0.3, 0.5, 0.95, 0.7, 0.15]);
+  const glowScale = useTransform(p, [0, 0.62, 0.7, 1], [0.7, 0.95, 1.25, 1]);
+  const strikeLen = useTransform(p, [0.05, 0.11], [0, 1]);
+  const strikeTags = useTransform(p, [0.1, 0.12], [0, 1]);
 
-  // The tap
-  const cursorX = useTransform(p, [0.16, 0.27], [260, 0]);
-  const cursorY = useTransform(p, [0.16, 0.27], [150, 0]);
-  const cursorOpacity = useTransform(p, [0.16, 0.2, 0.38, 0.42], [0, 1, 1, 0]);
-  const cursorPress = useTransform(p, [0.27, 0.29, 0.31], [1, 0.82, 1]);
-  const ripple = useTransform(p, [0.29, 0.36], [0, 2.6]);
-  const rippleOpacity = useTransform(p, [0.29, 0.36], [0.7, 0]);
-  const aboveFill = useTransform(p, [0.28, 0.3], ["rgba(34,197,94,0.08)", "rgba(34,197,94,1)"]);
-  const aboveText = useTransform(p, [0.28, 0.3], ["#4ade80", "#06120a"]);
-  const belowDim = useTransform(p, [0.28, 0.32], [1, 0.35]);
-  const tapHint = useTransform(p, [0.26, 0.3], [1, 0]);
-  const stakedNote = useTransform(p, [0.3, 0.34], [0, 1]);
+  // The click, beat by beat (see CAM above). The cursor arcs in rather than sliding.
+  const cursorX = useTransform(p, [0.12, 0.2, 0.26, 0.28], [280, 190, 34, 0]);
+  const cursorY = useTransform(p, [0.12, 0.2, 0.26, 0.28], [170, 50, 8, 0]);
+  const cursorOpacity = useTransform(p, [0.12, 0.15, 0.38, 0.41], [0, 1, 1, 0]);
+  const cursorPress = useTransform(p, [0.31, 0.32, 0.335, 0.345], [1, 0.78, 0.78, 1]);
+  // The button: lifts and glows on hover, sinks on press, pops on release, settles.
+  const aboveScale = useSpring(useTransform(p, [0.27, 0.29, 0.31, 0.325, 0.345, 0.37], [1, 1.05, 1.05, 0.93, 1.06, 1]), crisp);
+  const aboveGlow = useTransform(p, [0.27, 0.29, 0.31, 0.335, 0.37, 0.4], [
+    "0 0 0 0 rgba(216,243,95,0)",
+    "0 0 0 3px rgba(216,243,95,0.35)",
+    "0 0 0 3px rgba(216,243,95,0.35)",
+    "0 0 0 1px rgba(216,243,95,0.2)",
+    "0 0 40px 6px rgba(74,222,128,0.55)",
+    "0 0 0 0 rgba(74,222,128,0)",
+  ]);
+  const ripple = useTransform(p, [0.335, 0.38], [0, 3.2]);
+  const rippleOpacity = useTransform(p, [0.335, 0.38], [0.8, 0]);
+  const aboveFill = useTransform(p, [0.333, 0.345], ["rgba(34,197,94,0.08)", "rgba(34,197,94,1)"]);
+  const aboveText = useTransform(p, [0.333, 0.345], ["#4ade80", "#06120a"]);
+  const belowDim = useTransform(p, [0.335, 0.36], [1, 0.35]);
+  const tapHint = useTransform(p, [0.3, 0.33], [1, 0]);
+  const stakedNote = useTransform(p, [0.36, 0.39], [0, 1]);
+  const toastOpacity = useTransform(p, [0.355, 0.365, 0.395, 0.41], [0, 1, 1, 0]);
+  const toastY = useSpring(useTransform(p, [0.355, 0.37], [16, 0]), crisp);
 
   // The window, compressed: the countdown still reads 30 to 0, just over a shorter scroll.
   const price = useTransform(p, PRICE_STOPS, PRICE_VALUES);
   const priceText = useTransform(price, usd);
   const tagText = useTransform(price, plain);
   const tagY = useTransform(price, (v) => yOf(v) - 11);
-  const tagFill = useTransform(p, [0.33, 0.35], ["#8b927f", "#22c55e"]);
-  const tagOpacity = useTransform(p, [0.1, 0.13], [0, 1]);
+  const tagFill = useTransform(p, [0.39, 0.41], ["#8b927f", "#22c55e"]);
+  const tagOpacity = useTransform(p, [0.08, 0.11], [0, 1]);
   const countdown = useTransform(p, WINDOW, [30, 0]);
   const countdownText = useTransform(countdown, (v) => `${Math.ceil(v)}s`);
   const barWidth = useTransform(p, WINDOW, ["100%", "0%"]);
-  const aboveZone = useTransform(p, [0.44, 0.54], [0, 1]);
+  const aboveZone = useTransform(p, [0.5, 0.6], [0, 1]);
 
   // The win
-  const wonOpacity = useTransform(p, [0.6, 0.65], [0, 1]);
-  const wonScale = useTransform(p, [0.6, 0.66], [0.8, 1]);
+  const wonOpacity = useTransform(p, [0.64, 0.69], [0, 1]);
+  const wonScale = useTransform(p, [0.64, 0.7], [0.8, 1]);
 
   return (
     <section ref={ref} className="story" aria-label="How a trade plays out">
@@ -238,7 +257,7 @@ export function TradeStory() {
           </svg>
 
           <div className="story-sides">
-            <motion.div className="story-side is-up" style={{ background: aboveFill, color: aboveText }}>
+            <motion.div className="story-side is-up" style={{ background: aboveFill, color: aboveText, scale: aboveScale, boxShadow: aboveGlow }}>
               <span>Above</span>
               <small>wins 1.96x</small>
               <motion.i className="story-ripple" style={{ scale: ripple, opacity: rippleOpacity }} />
@@ -257,6 +276,9 @@ export function TradeStory() {
             <motion.span style={{ opacity: tapHint }}>Tap a side to stake</motion.span>
             <motion.span style={{ opacity: stakedNote }}>Staked $1 on Above</motion.span>
           </div>
+          <motion.div className="story-toast" style={{ opacity: toastOpacity, y: toastY, x: "-50%" }} aria-hidden="true">
+            <i>✓</i> $1 staked on Above
+          </motion.div>
 
           <motion.div className="story-won" style={{ opacity: wonOpacity }}>
             {Array.from({ length: 12 }, (_, i) => (
@@ -324,9 +346,9 @@ function Step({ p, range }: { p: MotionValue<number>; range: readonly [number, n
 
 /** Sparks thrown out from the win. */
 function Spark({ p, angle }: { p: MotionValue<number>; angle: number }) {
-  const dist = useTransform(p, [0.6, 0.72], [0, 170]);
+  const dist = useTransform(p, [0.64, 0.76], [0, 170]);
   const x = useTransform(dist, (d) => Math.cos(angle) * d);
   const y = useTransform(dist, (d) => Math.sin(angle) * d);
-  const opacity = useTransform(p, [0.6, 0.63, 0.72, 0.78], [0, 1, 1, 0]);
+  const opacity = useTransform(p, [0.64, 0.67, 0.76, 0.82], [0, 1, 1, 0]);
   return <motion.i className="story-spark" style={{ x, y, opacity }} />;
 }
