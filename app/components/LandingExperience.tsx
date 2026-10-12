@@ -114,7 +114,7 @@ export function LandingExperience() {
               <a href="#how" className="landing-secondary">How it works <ArrowDown /></a>
             </div>
           </motion.div>
-          <div className="landing-hero-index" aria-hidden="true"><span>PYTH / MONAD</span><strong>00:30</strong></div>
+          <div className="landing-hero-index" aria-hidden="true"><strong>00:30</strong></div>
         </section>
 
         <TradeStory />

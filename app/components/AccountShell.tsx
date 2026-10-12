@@ -5,6 +5,7 @@ import { ArrowLeft, Moon, Sun } from "@phosphor-icons/react";
 import { WalletMenu } from "@/components/WalletMenu";
 import { ModeSwitch } from "@/components/ModeSwitch";
 import { Brand } from "@/components/Brand";
+import { TickerStrip } from "@/components/TickerStrip";
 import { useTheme } from "@/lib/useTheme";
 import { useTickWallet } from "@/lib/useTickWallet";
 
@@ -19,7 +20,7 @@ export function AccountShell({
   active: "markets" | "portfolio" | "fund" | "settlers" | "leaderboard" | "profile";
   wallet: Wallet;
   children: React.ReactNode;
-  /** A running strip under the header, as the board and terminal have. */
+  /** Overrides the default strip (all markets), e.g. sports on a match page. */
   strip?: React.ReactNode;
 }) {
   const { theme, toggle } = useTheme();
@@ -29,7 +30,7 @@ export function AccountShell({
       {/* The strip, when a page has one, is the very first thing on screen; the header is
           pinned under it, and the two scroll as one. */}
       <div className="page-top">
-      {strip}
+      {strip ?? <TickerStrip />}
       <header className="terminal-header page-header">
         <Link href="/markets" className="terminal-back" aria-label="Back to the markets"><ArrowLeft /></Link>
         <Brand />
