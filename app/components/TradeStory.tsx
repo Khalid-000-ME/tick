@@ -114,7 +114,7 @@ export function TradeStory() {
   const cardScale = useTransform([zoom, cardIn], ([z, c]: number[]) => z * c);
   // One steady shadow, pulled in tight while the card is pressed down.
   const cardShadow = useTransform(lift, (v) =>
-    `0px ${(30 + v * 0.7).toFixed(1)}px ${(70 + v * 1.0).toFixed(1)}px rgba(16,18,15,0.22)`
+    `0px ${(46 + v * 0.9).toFixed(1)}px ${(90 + v * 1.2).toFixed(1)}px rgba(0,0,0,0.6)`
   );
   // A lime glow behind the card: faint as it rises, warmer through the window, a bloom on the win.
   const glowOpacity = useTransform(p, [0, 0.12, 0.33, 0.35, 0.4, 0.62, 0.68, 1], [0, 0.25, 0.35, 0.8, 0.3, 0.5, 0.9, 0.9]);
