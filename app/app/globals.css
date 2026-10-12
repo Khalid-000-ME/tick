@@ -2314,3 +2314,9 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   .terminal-shell .terminal-header .terminal-nav { gap: 0; }
   .terminal-shell .terminal-header .terminal-nav a { padding: 7px 7px; font-size: 11.5px; }
 }
+
+/* The welcome-gift confirmation: a short pill that fades itself out. */
+.gift-toast { position: fixed; left: 50%; bottom: 24px; z-index: 90; display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px); padding: 12px 14px 12px 18px; border-radius: 999px; background: #0c0e0a; color: #eef1e6; font-size: 14px; box-shadow: 0 16px 44px rgba(0, 0, 0, .35); transform: translateX(-50%); animation: gift-in .4s cubic-bezier(.22, 1, .36, 1); }
+.gift-toast svg { color: var(--acid); font-size: 20px; flex: none; }
+.gift-toast button { display: grid; place-items: center; width: 26px; height: 26px; margin-left: 4px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .1); color: inherit; cursor: pointer; }
+@keyframes gift-in { from { opacity: 0; transform: translate(-50%, 14px); } }
