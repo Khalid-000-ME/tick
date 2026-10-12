@@ -62,6 +62,8 @@ export function LandingExperience() {
               activeColor="#d8f35f"
               // No spreading circle while the page loads: the grid is simply there.
               intro={false}
+              // No shockwave when the page is clicked; the dots only follow the pointer.
+              clickShock={false}
               // Spacing from React Bits' "Dense" preset, for a tighter field.
               dotSize={3}
               gap={10}
