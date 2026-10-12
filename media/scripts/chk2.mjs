@@ -1,0 +1,10 @@
+import { chromium } from "playwright";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
+await p.goto("file:///tmp/deck.html");
+await p.evaluate(() => document.fonts.ready);
+await p.waitForTimeout(1200);
+const pages = await p.$$(".pg");
+await pages[0].screenshot({ path: "/tmp/s1.png" });
+await pages[4].screenshot({ path: "/tmp/s5.png" });
+await b.close();
