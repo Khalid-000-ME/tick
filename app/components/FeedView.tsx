@@ -3,9 +3,12 @@
 import { useMemo, useState } from "react";
 import { AccountShell } from "@/components/AccountShell";
 import { Composer } from "@/components/Composer";
+import { FeedNews } from "@/components/FeedNews";
+import { MyGroups, TopMarkets } from "@/components/FeedSidebars";
 import { PostCard } from "@/components/PostCard";
 import { openAuth } from "@/lib/authSession";
 import { useFeed } from "@/lib/useFeed";
+import { useSocial } from "@/lib/useSocial";
 import { useProfiles, useMyProfile } from "@/lib/profiles";
 import { useTickWallet } from "@/lib/useTickWallet";
 
@@ -23,6 +26,7 @@ export function FeedView() {
   const feed = useFeed(account, walletClient);
   const { profile } = useMyProfile(account, walletClient);
   const [tab, setTab] = useState<Tab>("latest");
+  const social = useSocial(account, walletClient);
 
   const profiles = useProfiles(feed.posts?.map((p) => p.author) ?? []);
   const shown = useMemo(() => {
@@ -34,7 +38,11 @@ export function FeedView() {
   const signedIn = status === "ready" && !!account;
 
   return (
-    <AccountShell active="feed" wallet={wallet}>
+    <AccountShell active="feed" wallet={wallet} wide>
+      <div className="feed-layout">
+      <aside className="feed-rail is-left">
+        <MyGroups signedIn={signedIn} groups={social.groups} mine={social.myGroups} rooms={social.mine} loading={social.loading} />
+      </aside>
       <div className="feed-col">
         <Composer
           account={signedIn ? account : null}
@@ -75,6 +83,11 @@ export function FeedView() {
             )}
           </>
         )}
+      </div>
+      <aside className="feed-rail is-right">
+        <TopMarkets />
+        <FeedNews />
+      </aside>
       </div>
     </AccountShell>
   );

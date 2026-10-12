@@ -16,12 +16,15 @@ export function AccountShell({
   wallet,
   children,
   strip,
+  wide = false,
 }: {
   active: "feed" | "markets" | "portfolio" | "fund" | "settlers" | "leaderboard" | "profile" | "groups";
   wallet: Wallet;
   children: React.ReactNode;
   /** Overrides the default strip (all markets), e.g. sports on a match page. */
   strip?: React.ReactNode;
+  /** A page that lays out its own columns and needs the full width. */
+  wide?: boolean;
 }) {
   const { theme, toggle } = useTheme();
 
@@ -54,7 +57,7 @@ export function AccountShell({
         <WalletMenu wallet={wallet} />
       </header>
       </div>
-      <main className="page-main">{children}</main>
+      <main className={`page-main ${wide ? "is-wide" : ""}`}>{children}</main>
     </div>
   );
 }

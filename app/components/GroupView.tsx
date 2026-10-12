@@ -6,6 +6,7 @@ import { ArrowRight, Check, Copy, PencilSimple, Trophy, UploadSimple, UsersThree
 import { AccountShell } from "@/components/AccountShell";
 import { Avatar, AVATAR_STYLES, genAvatar, type AvatarStyle } from "@/components/Avatar";
 import { ChatPanel } from "@/components/ChatPanel";
+import { ShareActions } from "@/components/ShareActions";
 import { useAvatarUpload } from "@/lib/useAvatarUpload";
 import { useProfiles } from "@/lib/profiles";
 import { fetchGroup, fetchGroupMembers, fetchRoomsIn, useSocial, type Group, type Room } from "@/lib/useSocial";
@@ -85,6 +86,7 @@ export function GroupView({ id }: { id: number }) {
                   {busy ? "Joining…" : "Join group"}
                 </button>
               )}
+              {joined && account && (() => { const me = board.find((b) => b.address === account.toLowerCase()); return me ? <ShareActions address={me.address} net={me.net} compact /> : null; })()}
               {mine && (
                 <button type="button" className="btn-ghost" onClick={() => setEditing((v) => !v)}>
                   <PencilSimple weight="bold" /> {editing ? "Done" : "Edit"}
@@ -143,6 +145,7 @@ export function GroupView({ id }: { id: number }) {
                         <small>{s.bets} calls</small>
                       </span>
                       <span className={`room-net ${s.net >= 0 ? "is-up" : "is-down"}`}>{s.net >= 0 ? "+" : "−"}${Math.abs(s.net).toFixed(2)}</span>
+                      <Link className="room-card-link" href={`/w/${s.address}`}>Card</Link>
                     </li>
                   );
                 })}

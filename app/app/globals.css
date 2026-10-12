@@ -2598,3 +2598,52 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .results-card.is-overlay { position: absolute; left: 14px; bottom: 14px; right: auto; margin: 0; padding: 14px 18px 13px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: linear-gradient(135deg, rgba(8, 10, 6, .72), rgba(8, 10, 6, .5)); }
 .results-card.is-overlay .results-net { font-size: 38px; }
 @media (max-width: 520px) { .results-net { font-size: 46px; } .results-card.is-overlay .results-net { font-size: 32px; } }
+
+/* ---- The feed's three columns ---- */
+.page-main.is-wide { max-width: 1360px; padding-left: 20px; padding-right: 20px; }
+.feed-layout { display: grid; grid-template-columns: 270px minmax(0, 620px) 340px; gap: 22px; justify-content: center; align-items: start; }
+.feed-layout .feed-col { width: 100%; margin: 0; }
+.feed-rail { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 138px; max-height: calc(100dvh - 156px); overflow-y: auto; scrollbar-width: thin; padding-bottom: 8px; }
+.rail-card { border: 1px solid var(--t-line); border-radius: 16px; background: var(--t-surface); padding: 14px; }
+.rail-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.rail-head h2 { font-size: 14px; font-weight: 650; letter-spacing: -.01em; margin-right: auto; }
+.rail-head svg { font-size: 17px; }
+.rail-head a { font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--t-dim); }
+.rail-head a:hover { color: var(--t-ink); }
+.rail-sub { margin: 14px 0 6px; font: 600 10px var(--font-geist-mono), monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--t-dim); }
+.rail-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; color: var(--t-dim); font-size: 13px; }
+.rail-list { display: flex; flex-direction: column; gap: 4px; }
+.rail-list a { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px; color: inherit; }
+.rail-list a:hover { background: var(--t-line); }
+.rail-list .avatar { flex: none; border-radius: 10px; overflow: hidden; }
+.rail-name { display: flex; flex-direction: column; min-width: 0; margin-right: auto; }
+.rail-name strong { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-name small { font: 11px var(--font-geist-mono), monospace; color: var(--t-dim); }
+.rail-list > li > a > svg { flex: none; color: var(--t-dim); }
+.rail-list.is-compact a { padding: 6px 8px; }
+.market-icon { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--t-line); }
+.market-quote { text-align: right; flex: none; }
+.market-quote strong { font: 600 13px var(--font-geist-mono), monospace; font-variant-numeric: tabular-nums; }
+.market-quote small { font: 11px var(--font-geist-mono), monospace; color: var(--t-dim); }
+.rail-news .news-panel { border-radius: 16px; }
+
+@media (max-width: 1180px) {
+  .feed-layout { grid-template-columns: minmax(0, 1fr); max-width: 640px; margin: 0 auto; gap: 16px; }
+  /* The rails dissolve into the one column, so each block can take its own place in it:
+     markets first, then groups, then the feed, then the news. */
+  .feed-rail { display: contents; }
+  .rail-card.is-markets { order: 1; }
+  .rail-card.is-groups { order: 2; }
+  .feed-layout .feed-col { order: 3; }
+  .rail-news { order: 4; }
+  .rail-card.is-markets .market-rail { flex-direction: row; overflow-x: auto; gap: 8px; scrollbar-width: none; }
+  .rail-card.is-markets .market-rail li { flex: 0 0 auto; }
+  .rail-card.is-markets .market-rail a { border: 1px solid var(--t-line); min-width: 190px; }
+}
+
+/* A card shared into a chat. */
+.chat-card { margin: 6px 0 4px; max-width: 320px; }
+.chat-card .results-card { margin: 0; padding: 16px 18px 14px; }
+.chat-card .results-net { font-size: 40px; }
+.chat-share { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+@media (max-width: 520px) { .chat-share { padding: 0 10px; } .chat-share { font-size: 12px; } }

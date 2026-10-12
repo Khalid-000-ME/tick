@@ -41,7 +41,7 @@ export function ResultsCard({ standing, overlay = false }: { standing?: Standing
         {standing
           ? standing.bets === 0
             ? "No calls yet"
-            : `${standing.bets} calls${standing.rank ? ` · #${standing.rank} overall` : ""}`
+            : `${standing.bets} calls${standing.rank ? ` · #${standing.rank} overall` : ""}${standing.open > 0 ? ` · $${standing.open.toFixed(2)} open` : ""}`
           : "Reading the chain"}
       </span>
     </div>

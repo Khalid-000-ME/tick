@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { WalletClient } from "viem";
 import { PAGE, encodeImage, fetchFeed, fetchLikedBy, postGas, sendFeed, type FeedPost } from "@/lib/feed";
 
-export interface Standing { address: string; bets: number; staked: number; returned: number; net: number; rank: number | null }
+export interface Standing { address: string; bets: number; staked: number; open: number; returned: number; net: number; rank: number | null }
 
 /**
  * The feed: the newest posts, older ones on demand, who has liked what, and how each author

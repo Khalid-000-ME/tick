@@ -17,6 +17,8 @@ interface Trader {
   address: string;
   bets: number;
   staked: number;
+  /** Staked on markets that have not settled yet. */
+  open: number;
   returned: number;
   net: number;
 }
@@ -60,7 +62,7 @@ export function Leaderboard({ you }: { you?: string | null }) {
 
       <div className="stake-table lb-table" role="table">
         <div className="stake-head" role="row">
-          <span>#</span><span>Trader</span><span>Stakes</span><span>Staked</span><span>Returned</span><span>Net</span>
+          <span>#</span><span>Trader</span><span>Stakes</span><span>Settled</span><span>Returned</span><span>Net</span>
         </div>
         {data.traders.map((t, i) => (
           <div key={t.address} className={`stake-row ${i < 3 ? MEDAL[i] : ""} ${you && t.address === you.toLowerCase() ? "is-you" : ""}`} role="row">
@@ -76,7 +78,7 @@ export function Leaderboard({ you }: { you?: string | null }) {
               {you && t.address === you.toLowerCase() && <small className="lb-you">you</small>}
             </span>
             <span className="mono">{t.bets}</span>
-            <span className="mono">${t.staked.toFixed(2)}</span>
+            <span className="mono">${(t.staked - (t.open ?? 0)).toFixed(2)}</span>
             <span className="mono">${t.returned.toFixed(2)}</span>
             <span className={`mono lb-net ${t.net >= 0 ? "is-up" : "is-down"}`}>
               {t.net >= 0 ? "+" : "−"}${Math.abs(t.net).toFixed(2)}
@@ -85,8 +87,9 @@ export function Leaderboard({ you }: { you?: string | null }) {
         ))}
       </div>
       <p className="page-foot">
-        <Trophy weight="bold" /> Net is what claims paid minus everything staked, read from the on-chain index.
-        Winnings not yet collected still count as spent.
+        <Trophy weight="bold" /> Net is profit on markets that have settled: what each position paid minus what was
+        staked on it, whether or not the winnings have been collected. Stakes still open are not counted yet. This is the
+        same figure as your Portfolio and your card.
       </p>
     </section>
   );
