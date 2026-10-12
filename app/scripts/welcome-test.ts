@@ -6,7 +6,7 @@
  *
  *   npx tsx scripts/welcome-test.ts
  */
-import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from "jose";
+import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair, type KeyLike } from "jose";
 import { ownsWallet, verifyAccessToken } from "../lib/server/privyAuth.js";
 
 const APP = "app_test_123";
@@ -22,7 +22,7 @@ async function main() {
   const forger = await generateKeyPair("ES256");
   const jwk = { ...(await exportJWK(real.publicKey)), alg: "ES256", use: "sig" };
   const keys = createLocalJWKSet({ keys: [jwk] });
-  const sign = (key: CryptoKey | Uint8Array, claims: { iss?: string; aud?: string; sub?: string; exp?: string | number }) =>
+  const sign = (key: KeyLike | Uint8Array, claims: { iss?: string; aud?: string; sub?: string; exp?: string | number }) =>
     new SignJWT({}).setProtectedHeader({ alg: "ES256" }).setIssuer(claims.iss ?? "privy.io").setAudience(claims.aud ?? APP).setSubject(claims.sub ?? "did:privy:abc123").setIssuedAt().setExpirationTime(claims.exp ?? "1h").sign(key);
 
   console.log("access token");

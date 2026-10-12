@@ -14,6 +14,7 @@ import { StakeSheet } from "@/components/StakeSheet";
 import { useSettings } from "@/lib/useSettings";
 import { WalletMenu } from "@/components/WalletMenu";
 import { ModeSwitch } from "@/components/ModeSwitch";
+import { RailGrip } from "@/components/RailGrip";
 import { TickerStrip } from "@/components/TickerStrip";
 import { NewsPanel } from "@/components/NewsPanel";
 import { PositionsDock } from "@/components/PositionsDock";
@@ -243,7 +244,8 @@ export function MarketTerminal() {
           </div>
         </section>
         <div className="terminal-rail">
-        <NewsPanel title={`What's moving ${feed.symbol}`} symbol={feed.symbol} />
+        <RailGrip />
+        <NewsPanel title={`What's moving ${feed.symbol}`} symbol={feed.symbol} foldKey="tick.terminal.news" />
         <aside className="terminal-ticket" aria-label="Market order">
           <div className="ticket-heading"><h1>Will {feed.symbol} close above</h1></div>
           <StrikeStepper open={market.openStrike} value={strikeOverride} expo={feed.expo} onChange={setStrikeOverride} />

@@ -79,6 +79,8 @@ export function TVChart({
   const [frame, setFrame] = useState<number>(5);
   const frameRef = useRef(frame);
   const [ready, setReady] = useState(false);
+  // Where the volume pane starts, in pixels from the top of the chart, so its label can sit on it.
+  const [volTop, setVolTop] = useState<number | null>(null);
 
   // Build the chart once per theme; series survive asset and timeframe changes.
   useEffect(() => {
@@ -114,12 +116,25 @@ export function TVChart({
     c.panes()[0]?.setStretchFactor(0.78);
     c.panes()[1]?.setStretchFactor(0.22);
 
+    // The label for the volume pane is plain HTML over the canvas, so it needs the price
+    // pane's height, which changes with the window size and the stretch factors above.
+    const place = () => {
+      const h = c.panes()[0]?.getHeight();
+      if (h) setVolTop(h);
+    };
+    c.timeScale().subscribeSizeChange(place);
+    const raf = requestAnimationFrame(place);
+    const ro = new ResizeObserver(place);
+    ro.observe(box.current);
+
     chart.current = c;
     candles.current = cs;
     volume.current = vs;
     strikeLine.current = null;
     setReady(true);
     return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
       c.remove();
       chart.current = null;
       candles.current = null;
@@ -231,9 +246,15 @@ export function TVChart({
             {f.label}
           </button>
         ))}
-        <span className="tv-legend">Volume staked on Tick, USDC</span>
       </div>
-      <div ref={box} className="tv-canvas" />
+      <div className="tv-canvas">
+        <div ref={box} className="tv-plot" />
+        {volTop !== null && (
+          <span className="tv-volume-label" style={{ top: volTop + 8 }}>
+            Volume <small>USDC staked</small>
+          </span>
+        )}
+      </div>
     </div>
   );
 }

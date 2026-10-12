@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowSquareOut, Newspaper } from "@phosphor-icons/react";
+import { ArrowSquareOut, CaretDown, Newspaper } from "@phosphor-icons/react";
+import { usePersisted } from "@/lib/usePersisted";
 
 /**
  * Live headlines beside a market.
@@ -40,6 +41,7 @@ export function NewsPanel({
   teams,
   limit = 12,
   variant = "rail",
+  foldKey,
 }: {
   topic?: "markets" | "sports";
   title: string;
@@ -52,7 +54,15 @@ export function NewsPanel({
   limit?: number;
   /** "rail" sits in the terminal's side column; "panel" is a standalone card. */
   variant?: "rail" | "panel";
+  /**
+   * Makes the panel foldable and remembers the choice under this key. Unset, the panel is
+   * always open. Folded, only the header shows. With no saved choice the panel is open on a
+   * desktop and folded on a phone, so a small screen opens on the chart and the trade
+   * buttons rather than on a list of headlines.
+   */
+  foldKey?: string;
 }) {
+  const [saved, setSaved] = usePersisted(foldKey ?? "tick.news.unused");
   const [items, setItems] = useState<Item[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -103,12 +113,30 @@ export function NewsPanel({
   const focus = symbol ?? league;
 
   return (
-    <section className={`news-panel is-${variant}`} aria-label={title}>
+    <section className={`news-panel is-${variant}`} aria-label={title} data-fold={foldKey ? (saved ?? "auto") : "open"}>
       <header className="news-head">
         <Newspaper weight="bold" />
         <strong>{title}</strong>
         {!failed && items && <span className="news-live" title="Refreshes every 20 seconds"><i />Live</span>}
+        {foldKey && (
+          <button
+            type="button"
+            className="news-fold"
+            aria-label="Show or hide the news"
+            aria-controls="news-body"
+            // With no saved choice the panel's state depends on the screen, which is only known
+            // in the browser, so aria-expanded is set once the person has chosen.
+            aria-expanded={saved === null ? undefined : saved === "open"}
+            onClick={() => {
+              const showing = saved === "open" || (saved === null && !window.matchMedia("(max-width: 980px)").matches);
+              setSaved(showing ? "closed" : "open");
+            }}
+          >
+            <CaretDown weight="bold" />
+          </button>
+        )}
       </header>
+      <div className="news-body" id="news-body">
       {failed && !items ? (
         <p className="news-empty">News feeds are unreachable right now.</p>
       ) : items === null ? (
@@ -135,6 +163,7 @@ export function NewsPanel({
           })}
         </ul>
       )}
+      </div>
     </section>
   );
 }
