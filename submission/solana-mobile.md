@@ -122,8 +122,11 @@ https://github.com/Khalid-000-ME/tick
 
 **Demo video URL** — upload `media/out/tick-demo.mp4` to YouTube or Drive and paste the link.
 
-**Android APK URL** — `mobile/dist/tick.apk`. It needs a direct download link: a GitHub release asset is
-the simplest (`gh release create v1.0 mobile/dist/tick.apk`), or Drive with link sharing on.
+**Android APK URL** — published as a GitHub release asset, paste this:
+
+https://github.com/Khalid-000-ME/tick/releases/download/v1.0.0/tick-v1.0.0.apk
+
+Release page: https://github.com/Khalid-000-ME/tick/releases/tag/v1.0.0
 
 ---
 
