@@ -214,19 +214,21 @@ export async function sendUsdc(
 
 /* ------------------------------------------------------------------ gas tank */
 
-/** MON (wei) a fill of `units` USDC returns at the live rate. */
+/** Gas (in wei, the chain's own unit) a fill of `units` USDC returns at the live rate. */
 export async function quoteGas(units: bigint): Promise<bigint> {
   if (units <= 0n) return 0n;
   return (await pub.readContract({ address: CONTRACTS.gasStation, abi: GasStationAbi, functionName: "quote", args: [units] })) as bigint;
 }
 
-export async function gasStationInfo(): Promise<{ reserve: bigint; maxFill: bigint; gasPrice: bigint }> {
-  const [reserve, maxFill, gasPrice] = await Promise.all([
+export async function gasStationInfo(): Promise<{ reserve: bigint; maxFill: bigint; gasPrice: bigint; weiPerUsdc: bigint }> {
+  const [reserve, maxFill, gasPrice, weiPerUsdc] = await Promise.all([
     pub.getBalance({ address: CONTRACTS.gasStation }),
     pub.readContract({ address: CONTRACTS.gasStation, abi: GasStationAbi, functionName: "maxFill" }) as Promise<bigint>,
     pub.getGasPrice(),
+    // The live rate, as one USDC's worth, so a fill can be sized without asking again.
+    quoteGas(1_000_000n),
   ]);
-  return { reserve, maxFill, gasPrice };
+  return { reserve, maxFill, gasPrice, weiPerUsdc };
 }
 
 /** Gas a stake costs at the limit Monad charges: the unit the tank is measured in. */
@@ -234,6 +236,43 @@ export const STAKE_GAS = 300_000n;
 export function stakesFor(monWei: bigint, gasPrice: bigint): number {
   if (gasPrice <= 0n) return 0;
   return Number(monWei / (STAKE_GAS * gasPrice));
+}
+
+/**
+ * The tank, as a percentage.
+ *
+ * Nobody signing up to call a price wants to learn what MON is, so gas is never shown as a
+ * token balance: it is a tank that is some percent full, and it is filled with USDC, which
+ * is the only money a trader here holds. A full tank is FULL_TANK trades' worth of gas.
+ */
+export const FULL_TANK = 40;
+
+export function gasPercent(monWei: bigint, gasPrice: bigint): number {
+  const stakes = stakesFor(monWei, gasPrice);
+  if (stakes <= 0) return monWei > 0n ? 1 : 0;
+  return Math.max(1, Math.min(100, Math.round((stakes / FULL_TANK) * 100)));
+}
+
+/**
+ * What it costs to fill the tank, in USDC units: the gap to full at the station's live rate,
+ * kept inside the per-fill limit and what the trader actually holds. Null when there is
+ * nothing to do, or nothing to pay with.
+ */
+export function planFill(
+  f: Funds,
+  station: { maxFill: bigint; gasPrice: bigint; weiPerUsdc: bigint }
+): { units: bigint; percentNow: number; percentAfter: number } | null {
+  const percentNow = gasPercent(f.mon, station.gasPrice);
+  if (percentNow >= 100 || station.weiPerUsdc <= 0n || station.gasPrice <= 0n) return null;
+  const full = BigInt(FULL_TANK) * STAKE_GAS * station.gasPrice;
+  const missing = full - f.mon;
+  if (missing <= 0n) return null;
+  // Round up to the nearest cent, so a fill always moves the needle.
+  let units = ((missing * 1_000_000n + station.weiPerUsdc - 1n) / station.weiPerUsdc / 10_000n + 1n) * 10_000n;
+  if (units > station.maxFill) units = station.maxFill;
+  if (units > f.total) units = (f.total / 10_000n) * 10_000n;
+  if (units <= 0n) return null;
+  return { units, percentNow, percentAfter: gasPercent(f.mon + (units * station.weiPerUsdc) / 1_000_000n, station.gasPrice) };
 }
 
 /**
@@ -264,7 +303,7 @@ export async function fillGas(walletClient: WalletClient, account: `0x${string}`
     const quoted = await quoteGas(units);
     step("Filling…");
     await send(walletClient, account, { address: CONTRACTS.gasStation, abi: GasStationAbi, functionName: "fill", args: [units, quoted], gas: FUND_GAS.fill } as never);
-    return { ok: true, message: `Filled ${Number(formatEther(quoted)).toFixed(3)} MON for ${fmt(units)} USDC.` };
+    return { ok: true, message: `Gas filled for ${fmt(units)} USDC.` };
   } catch (e) {
     const name = (e as { cause?: { data?: { errorName?: string } } }).cause?.data?.errorName;
     if (name === "ReserveTooLow") return { ok: false, message: "The platform gas reserve is low right now. Try a smaller fill." };

@@ -204,7 +204,7 @@ export function MarketTerminal() {
         >{theme === "dark" ? <Sun weight="bold" /> : <Moon weight="bold" />}</button>
         <WalletMenu
           wallet={wallet}
-          onCopied={(addr) => setNotice(`Wallet address copied: ${addr}. Fund it with MON at faucet.monad.xyz. An embedded wallet starts empty and cannot pay gas.`)}
+          onCopied={(addr) => setNotice(`Wallet address copied: ${addr}. Send USDC to it, then tap Fill gas on the Fund page.`)}
         />
       </header>
       {/* Draining bar under the header: the same countdown, readable without reading. */}
@@ -276,7 +276,7 @@ export function MarketTerminal() {
           className={`footer-toggle ${auto.enabled ? "is-on" : ""}`}
           onClick={() => auto.setEnabled(!auto.enabled)}
           title={auto.enabled
-            ? "Posting a Pyth update every few seconds. Each one is a real transaction paid in MON. Click to stop."
+            ? "Posting a Pyth update every few seconds. Each one is a real transaction and uses gas. Click to stop."
             : "A fresh price is posted only when you stake, so nothing is spent while idle. Click to keep it warm instead."}
         >
           <span className="footer-toggle-dot" />

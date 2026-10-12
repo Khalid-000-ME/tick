@@ -1,4 +1,4 @@
-import { formatEther, type PublicClient } from "viem";
+import { type PublicClient } from "viem";
 
 /**
  * Monad charges the gas LIMIT up front and the RPC rejects a transaction outright
@@ -15,9 +15,8 @@ export async function gasShortfall(
   const [balance, price] = await Promise.all([pub.getBalance({ address: account }), pub.getGasPrice()]);
   const needed = (gasLimits.reduce((a, b) => a + b, 0n) * price * 125n) / 100n;
   if (balance >= needed) return null;
-  return (
-    `This wallet needs about ${Number(formatEther(needed)).toFixed(3)} MON for gas and has ` +
-    `${Number(formatEther(balance)).toFixed(3)}. Top up at faucet.monad.xyz, then try again. ` +
-    `Address: ${account}`
-  );
+  // Never named in the chain's own token: a trader holds USDC, and the Fund page turns a
+  // few cents of it into gas with one button.
+  const left = needed > 0n ? Math.min(99, Math.floor((Number(balance) / Number(needed)) * 100)) : 0;
+  return `Your gas tank is ${left}% of what this needs. Open Fund and tap Fill gas; it costs a few cents of USDC.`;
 }

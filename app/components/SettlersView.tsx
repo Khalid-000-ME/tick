@@ -181,7 +181,7 @@ export function SettlersView() {
           <section className="settler-cta">
             <h2>Run a settler</h2>
             <p>
-              Any wallet holding a little MON can do this. It finds closed markets from the event log, fetches Pyth&apos;s first price
+              Any wallet with a little gas can do this. It finds closed markets from the event log, fetches Pyth&apos;s first price
               after the close, and keeps the bounty. No account, no permission.
             </p>
             <pre><code>cd app && npm install{"\n"}SETTLER_PK=&lt;a testnet-only key&gt; npm run settler</code></pre>

@@ -2,20 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ArrowUpRight, Check, Copy, GasPump, Info } from "@phosphor-icons/react";
-import { formatEther, formatUnits, getAddress, parseUnits } from "viem";
+import { formatUnits, getAddress, parseUnits } from "viem";
 import { AccountShell } from "@/components/AccountShell";
 import { CONTRACTS, explorerAddress, explorerTx, monadTestnet } from "@/lib/chain/config";
-import { fillGas, fmt, gasStationInfo, quoteGas, readFunds, recipientProblem, sendUsdc, stakesFor, type Funds } from "@/lib/funds";
+import { fillGas, fmt, gasPercent, gasStationInfo, planFill, readFunds, recipientProblem, sendUsdc, stakesFor, type Funds } from "@/lib/funds";
 import { useTickWallet } from "@/lib/useTickWallet";
-
-/** USDC amounts offered for a gas fill. */
-const FILLS = [0.1, 0.25, 0.5, 1];
 
 export function FundView() {
   const wallet = useTickWallet();
   const { account, status, walletClient } = wallet;
   const [funds, setFunds] = useState<Funds | null>(null);
-  const [station, setStation] = useState<{ reserve: bigint; maxFill: bigint; gasPrice: bigint } | null>(null);
+  const [station, setStation] = useState<{ reserve: bigint; maxFill: bigint; gasPrice: bigint; weiPerUsdc: bigint } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -27,15 +24,12 @@ export function FundView() {
   const [wAmt, setWAmt] = useState("");
   const [confirming, setConfirming] = useState(false);
 
-  const [fill, setFill] = useState("0.25");
-  const [quote, setQuote] = useState<{ amount: string; mon: bigint } | null>(null);
-
   const load = useCallback(async () => {
     if (!account) return;
     try {
-      const [f, s] = await Promise.all([readFunds(account), gasStationInfo()]);
+      const [f, st] = await Promise.all([readFunds(account), gasStationInfo()]);
       setFunds(f);
-      setStation(s);
+      setStation(st);
     } catch {
       /* a failed poll keeps the last numbers on screen */
     }
@@ -55,24 +49,12 @@ export function FundView() {
     };
   }, [load]);
 
-  // The live quote for whatever is typed, read from the contract so it is the rate the
-  // fill will actually get.
-  const fillUnits = toUnits(fill);
-  useEffect(() => {
-    let off = false;
-    const t = setTimeout(() => {
-      void quoteGas(fillUnits).then((mon) => { if (!off) setQuote({ amount: fill, mon }); }).catch(() => {});
-    }, 200);
-    return () => { off = true; clearTimeout(t); };
-  }, [fill, fillUnits]);
-  const quoted = quote?.amount === fill ? quote.mon : null;
-
   async function doFill() {
-    if (!walletClient || !account) return setNote("The wallet is not ready to sign yet. Reconnect it and try again.");
+    if (!walletClient || !account || !plan) return setNote("The wallet is not ready to sign yet. Reconnect it and try again.");
     setNote(null);
     setNoteHref(null);
     setBusy("Filling…");
-    const r = await fillGas(walletClient, account, fillUnits, setBusy);
+    const r = await fillGas(walletClient, account, plan.units, setBusy);
     setNote(r.message);
     setBusy(null);
     await load();
@@ -102,9 +84,10 @@ export function FundView() {
     });
   }
 
+  const tank = funds && station ? gasPercent(funds.mon, station.gasPrice) : null;
   const tankStakes = funds && station ? stakesFor(funds.mon, station.gasPrice) : null;
-  const fillStakes = quoted !== null && station ? stakesFor(quoted, station.gasPrice) : null;
-  const overMax = station ? fillUnits > station.maxFill : false;
+  const plan = funds && station ? planFill(funds, station) : null;
+  const canFill = !!plan && !!funds && funds.total >= plan.units;
   const toProblem = recipientProblem(wTo, account);
   const wUnits = parseUsdc(wAmt);
   const overBalance = !!funds && wUnits > funds.total;
@@ -128,8 +111,8 @@ export function FundView() {
             </div>
             <div className="stat">
               <span>Gas tank</span>
-              <strong>{tankStakes === null ? "-" : `${tankStakes} stakes`}</strong>
-              <small>{funds ? `${Number(formatEther(funds.mon)).toFixed(3)} MON` : ""}</small>
+              <strong>{tank === null ? "-" : `${tank}%`}</strong>
+              <small>{tankStakes === null ? "" : `about ${tankStakes} trades`}</small>
             </div>
           </section>
 
@@ -137,32 +120,24 @@ export function FundView() {
             <div className="fund-gas-head">
               <GasPump weight="bold" />
               <div>
-                <h2>Fill gas with USDC</h2>
-                <p>Pay in USDC. We top up your gas.</p>
+                <h2>Gas</h2>
+                <p>Every trade needs a little gas. We buy it with your USDC, so there is nothing else to hold.</p>
               </div>
             </div>
-            <div className="fund-gas-row">
-              <div className="match-amounts">
-                {FILLS.map((v) => (
-                  <button key={v} type="button" className={fill === String(v) ? "is-active" : ""} onClick={() => setFill(String(v))}>${v}</button>
-                ))}
-              </div>
-              <label className="amount-custom">
-                <span>$</span>
-                <input inputMode="decimal" value={fill} onChange={(e) => setFill(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="USDC to spend on gas" />
-              </label>
+            <div className="gas-meter" role="img" aria-label={tank === null ? "Gas tank unknown" : `Gas tank ${tank}% full`}>
+              <i style={{ width: `${tank ?? 0}%` }} className={tank !== null && tank < 20 ? "is-low" : ""} />
             </div>
             <p className="fund-quote">
-              {fillUnits <= 0n
-                ? "Enter an amount."
-                : overMax
-                  ? `Up to ${fmt(station!.maxFill)} USDC per fill.`
-                  : quoted === null
-                    ? "Quoting…"
-                    : <>Fills <strong>{Number(formatEther(quoted)).toFixed(3)} MON</strong>, about {fillStakes} stakes.</>}
+              {tank === null
+                ? "Reading your tank…"
+                : plan === null
+                  ? "Your tank is full."
+                  : !canFill
+                    ? "Add USDC first, then fill the tank."
+                    : <>Fills to {plan.percentAfter}% for <strong>{fmt(plan.units)} USDC</strong>.</>}
             </p>
-            <button type="button" className="btn-solid" disabled={!!busy || fillUnits <= 0n || overMax || quoted === null || (funds ? funds.total < fillUnits : true)} onClick={() => void doFill()}>
-              {busy ?? `Fill for $${fill || "0"}`}
+            <button type="button" className="btn-solid" disabled={!!busy || !canFill} onClick={() => void doFill()}>
+              {busy ?? (plan === null ? "Tank full" : "Fill gas")}
             </button>
           </section>
 

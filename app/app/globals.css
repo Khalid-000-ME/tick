@@ -2420,3 +2420,8 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .ob-next { padding: 0 26px; }
 .ob-skip { align-self: center; margin-top: 12px; border: 0; background: none; color: var(--a-dim); font-size: 12px; cursor: pointer; text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { .ob-body { animation: none; } }
+
+/* The gas tank, as a tank rather than a token balance. */
+.gas-meter { height: 10px; margin: 2px 0 12px; border-radius: 999px; background: var(--t-line); overflow: hidden; }
+.gas-meter i { display: block; height: 100%; border-radius: 999px; background: var(--yes); transition: width .4s ease; }
+.gas-meter i.is-low { background: #e0803f; }
