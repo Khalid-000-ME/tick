@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ArrowDown, ArrowUpRight, CurrencyDollar, Fingerprint, HandTap, Lightning, Trophy } from "@phosphor-icons/react";
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { useRef, useState } from "react";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { Brand } from "@/components/Brand";
 import DotGrid from "@/components/DotGrid";
 import { TradeStory } from "@/components/TradeStory";
@@ -47,22 +48,31 @@ const STEPS = [
 
 export function LandingExperience() {
   const reduceMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll();
+  const { scrollY, scrollYProgress } = useScroll();
+
+  // The navbar is transparent while the hero is in focus and becomes a floating capsule once
+  // the hero has scrolled away. The threshold is the hero's own height, so it holds at any
+  // screen size; a little before the bottom edge, so the change lands as the hero leaves.
+  const heroRef = useRef<HTMLElement>(null);
+  const [capsule, setCapsule] = useState(false);
+  useMotionValueEvent(scrollY, "change", (y) => setCapsule(y > (heroRef.current?.offsetHeight ?? 700) - 90));
   const heroY = useTransform(scrollYProgress, [0, 0.34], [0, reduceMotion ? 0 : 90]);
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, reduceMotion ? 1 : 1.07]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.32], [1, 0.3]);
 
   return (
     <div className="landing-shell">
-      <header className="landing-nav">
-        <Brand />
-        <nav aria-label="Primary navigation">
-          <a href="#how">How it works</a><a href="#why">Why Tick</a>
-          <Link href="/markets" className="landing-nav-cta">Start free <ArrowUpRight weight="bold" /></Link>
-        </nav>
+      <header className={`landing-nav ${capsule ? "is-capsule" : ""}`}>
+        <div className="landing-nav-bar">
+          <Brand />
+          <nav aria-label="Primary navigation">
+            <a href="#how">How it works</a><a href="#why">Why Tick</a>
+            <Link href="/markets" className="landing-nav-cta">Start free <ArrowUpRight weight="bold" /></Link>
+          </nav>
+        </div>
       </header>
       <main>
-        <section className="landing-hero" aria-labelledby="landing-title">
+        <section ref={heroRef} className="landing-hero" aria-labelledby="landing-title">
           <motion.div className="landing-hero-media" style={{ y: heroY, scale: heroScale, opacity: heroOpacity }} aria-hidden="true">
             {/* Interactive dot field. It listens on the window, so the pointer moves it even
                 over the headline and buttons; the canvas itself never takes clicks. Reduced

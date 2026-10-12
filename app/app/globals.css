@@ -324,7 +324,14 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
    colour. Lumping them in one rule painted a solid block behind the "." after "tick". */
 .landing-shell .brand-mark i, .terminal-shell .brand-mark i { background: var(--forest); }
 .landing-shell .brand-period, .terminal-shell .brand-period { color: var(--forest); background: none; }
-.landing-nav { position: absolute; z-index: 20; top: 0; left: 50%; width: min(1480px, calc(100% - 64px)); height: 82px; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; color: #f6f7ed; border-bottom: 1px solid #ffffff38; }
+/* The landing navbar: fixed to the top, with no border. Over the hero it is transparent; once
+   the hero has scrolled away (.is-capsule, set in LandingExperience) the bar narrows into a
+   floating dark-glass capsule that stays pinned. */
+.landing-nav { position: fixed; z-index: 50; top: 0; left: 0; right: 0; display: flex; justify-content: center; padding: 0 32px; color: #f6f7ed; pointer-events: none; transition: padding-top .45s cubic-bezier(.22, 1, .36, 1); }
+.landing-nav-bar { pointer-events: auto; display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 1480px; height: 82px; padding: 0; border-radius: 999px; background: transparent; box-shadow: none; transition: max-width .45s cubic-bezier(.22, 1, .36, 1), height .45s cubic-bezier(.22, 1, .36, 1), padding .45s cubic-bezier(.22, 1, .36, 1), background-color .3s, box-shadow .3s; }
+.landing-nav.is-capsule { padding-top: 14px; }
+.landing-nav.is-capsule .landing-nav-bar { max-width: 860px; height: 58px; padding: 0 9px 0 24px; background: rgba(28, 32, 26, .84); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); box-shadow: 0 14px 44px rgba(16, 18, 15, .3); }
+.landing-nav.is-capsule .landing-nav-cta { min-height: 40px; border-radius: 999px; }
 .landing-nav .brand { color: #fff; }
 .landing-nav .brand-mark i { background: var(--acid); }
 .landing-nav .brand-period { color: var(--acid); }
@@ -491,7 +498,7 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
   .terminal-main { grid-template-columns: 1fr; }.terminal-chart-panel { border-right: 0; }.terminal-ticket { border-top: 1px solid var(--line-light); }.terminal-header-center { display: none; }
 }
 @media (max-width: 700px) {
-  .landing-nav { width: calc(100% - 32px); height: 68px; }.landing-nav nav > a:not(.landing-nav-cta) { display: none; }.landing-nav-cta { min-height: 38px; padding: 0 12px; gap: 9px; }
+  .landing-nav { padding: 0 16px; }.landing-nav-bar { height: 68px; }.landing-nav.is-capsule .landing-nav-bar { height: 54px; padding: 0 8px 0 18px; }.landing-nav nav > a:not(.landing-nav-cta) { display: none; }.landing-nav-cta { min-height: 38px; padding: 0 12px; gap: 9px; }
   .landing-hero { min-height: 690px; height: 100dvh; }.landing-hero-media { inset: 0 -70% 0 -20%; }.landing-hero-scrim { background: linear-gradient(90deg, #050706dc, #05070645), linear-gradient(0deg, #050706bb, transparent 60%); }.landing-hero-content { left: 20px; width: calc(100% - 40px); top: 46%; transform: translateY(-50%); }.landing-hero h1 { font-size: clamp(49px, 14vw, 70px); }.landing-lede { font-size: 14px; }.landing-actions { align-items: flex-start; flex-direction: column; gap: 18px; }.landing-hero-index { right: 20px; bottom: 25px; }.landing-hero-index span { display: none; }
   .landing-signal { width: calc(100% - 40px); grid-template-columns: 1fr 1fr; padding: 18px 0; gap: 17px 12px; font-size: 8px; }.landing-mechanism { width: calc(100% - 40px); padding: 95px 0 110px; }.landing-section-head h2, .landing-proof-copy h2 { font-size: 43px; }.landing-principles { margin-top: 55px; }.landing-proof { padding: 90px 20px; }.proof-window { height: 360px; }.landing-close { padding: 100px 20px; }.landing-footer { width: calc(100% - 40px); flex-wrap: wrap; padding: 26px 0; }
   .terminal-header { height: 66px; grid-template-columns: auto 1fr auto; padding: 0 14px; }.terminal-header .brand { font-size: 26px; }.terminal-wallet { padding: 0 10px; }.terminal-back { display: none; }.terminal-main { min-height: 0; }.terminal-chart-panel { padding: 15px 14px; }.terminal-toolbar { flex-wrap: wrap; gap: 13px; }.asset-select { min-width: 170px; }.terminal-price { margin-left: auto; }.terminal-oracle { width: 100%; margin-left: 0; padding-top: 12px; border-top: 1px solid var(--line-light); }.price-chart { height: 52vh; min-height: 380px; background-size: 56px 56px; }.close-line { right: 9%; }.cutoff-strip { grid-template-columns: auto 1fr auto; }.cutoff-strip > svg { display: none; }.terminal-ticket { padding: 25px 18px 28px; }.terminal-footer { padding: 13px 14px; flex-wrap: wrap; justify-content: flex-start; }.terminal-footer span { margin-right: 14px; }
