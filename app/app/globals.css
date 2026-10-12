@@ -2185,3 +2185,28 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   .roadmap-track::before { left: 7px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; background: linear-gradient(180deg, var(--forest) 0%, var(--forest) 22%, var(--line-light) 30%); }
   .roadmap-track > li::before { left: -28px; top: 28px; }
 }
+
+/* ---- Why Tick: the selling points, on the dark of the story above. */
+.landing-why { padding: 120px max(32px, calc((100vw - 1280px) / 2)) 130px; background: #070907; color: #eef1e6; }
+.landing-why .landing-section-head p { color: var(--acid); }
+.landing-why .landing-section-head h2 { color: #f4f6ec; }
+.why-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 64px; }
+.why-grid article { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 28px; border: 1px solid #222a1d; border-radius: 16px; background: linear-gradient(180deg, #10160d, #0b0f09); }
+.why-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: rgba(216, 243, 95, .1); color: var(--acid); font-size: 24px; }
+.why-grid h3 { margin-top: 6px; font-size: 22px; letter-spacing: -.03em; font-weight: 600; }
+.why-grid p { color: #a9b09d; font-size: 14.5px; line-height: 1.65; }
+.why-tag { align-self: flex-start; margin-top: 4px; padding: 4px 10px; border-radius: 999px; border: 1px solid #3b4a1f; color: var(--acid); font: 600 10px var(--font-geist-mono), monospace; letter-spacing: .12em; text-transform: uppercase; }
+.why-source { margin-top: auto; color: #6f7866; font: 11px var(--font-geist-mono), monospace; text-decoration: underline; text-underline-offset: 3px; }
+.first-trade { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 32px; margin-top: 24px; padding: 28px 32px; border: 1px solid #3b4a1f; border-radius: 16px; background: radial-gradient(120% 140% at 0% 0%, #1b2610 0%, #0c110a 60%); }
+.first-trade-label { font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--acid); }
+.first-trade ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; list-style: none; padding: 0; }
+.first-trade li { display: flex; gap: 14px; align-items: flex-start; }
+.first-trade li > span { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--acid); color: #10140c; font: 700 13px var(--font-geist-mono), monospace; }
+.first-trade strong { display: block; font-size: 16px; }
+.first-trade small { display: block; margin-top: 4px; color: #a9b09d; font-size: 13px; line-height: 1.5; }
+@media (max-width: 1000px) {
+  .why-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .first-trade { grid-template-columns: minmax(0, 1fr); }
+  .first-trade ol { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) { .landing-why { padding: 90px 16px 100px; } .why-grid { grid-template-columns: minmax(0, 1fr); } }

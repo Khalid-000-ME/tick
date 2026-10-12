@@ -1,24 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight } from "@phosphor-icons/react";
+import { ArrowDown, ArrowUpRight, CreditCard, CurrencyDollar, Fingerprint, GasPump, HandTap, Lightning } from "@phosphor-icons/react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { Brand } from "@/components/Brand";
 import DotGrid from "@/components/DotGrid";
 import { TradeStory } from "@/components/TradeStory";
+
+/* Why Tick, in six lines. Every claim here is either shipped or labelled as coming. */
+const WHY = [
+  {
+    Icon: Lightning,
+    title: "Faster than Polymarket.",
+    copy: "Polymarket's quickest markets run five minutes. Tick's run thirty seconds, and the next one opens the moment one closes.",
+    source: { label: "CoinMarketCap", href: "https://coinmarketcap.com/academy/article/polymarket-debuts-5-minute-bitcoin-prediction-markets-with-instant-settlement" },
+  },
+  { Icon: CurrencyDollar, title: "Dollars in, dollars out.", copy: "Every stake and every payout is in USDC, a dollar stablecoin. No volatile token to buy first, no price risk on your balance." },
+  { Icon: CreditCard, title: "Pay with a card.", copy: "Stripe checkout lets you buy USDC with a card or bank transfer and start trading without ever opening an exchange.", tag: "Coming with mainnet" },
+  { Icon: Fingerprint, title: "Sign in like any app.", copy: "Google, passkey, email or X. Your wallet is created for you: no seed phrase, no extension, nothing to install." },
+  { Icon: GasPump, title: "Network fees, handled.", copy: "Fees are bought with USDC inside Tick, so there is never a second token to go and find." },
+  { Icon: HandTap, title: "Start from ten cents.", copy: "Stakes from $0.10, one tap to place. Small enough to try, fast enough to want another." },
+] as const;
+
+const FIRST_TRADE = [
+  ["Sign in", "With Google, a passkey or X. Done in seconds."],
+  ["Add USDC", "Send it in, or pay by card once Stripe checkout is live."],
+  ["Tap up or down", "Thirty seconds later, you know."],
+] as const;
 
 /* Where Tick goes from here. Plans, not shipped work: the "Now" column is the only one that
    describes what exists today, and every later item is phrased as intent. */
 const ROADMAP = [
   {
     phase: "Now",
-    title: "Live on Monad testnet",
-    items: ["30-second to 5-minute markets on 10 crypto and equity assets", "Live sport, with markets inside the match", "One tap from $0.10, gas bought with USDC"],
+    title: "The product is live",
+    items: ["Markets from 30 seconds to 5 minutes on crypto, stocks and sport", "Sign in with Google, passkey or X; one balance in USDC", "One-tap trading from $0.10, fees paid in USDC"],
   },
   {
     phase: "Next",
-    title: "Mainnet",
-    items: ["Real USDC on Monad mainnet", "Audited contracts", "Buy USDC with a card, without leaving Tick"],
+    title: "Real money, card checkout",
+    items: ["Launch on Monad mainnet with real USDC", "Stripe card and bank checkout inside the app", "Independently audited contracts"],
   },
   {
     phase: "Then",
@@ -62,7 +83,7 @@ export function LandingExperience() {
       <header className="landing-nav">
         <Brand />
         <nav aria-label="Primary navigation">
-          <a href="#how">How it works</a><a href="#market">Valuation</a><a href="#roadmap">Roadmap</a>
+          <a href="#how">How it works</a><a href="#why">Why Tick</a><a href="#market">Valuation</a><a href="#roadmap">Roadmap</a>
           <Link href="/markets" className="landing-nav-cta">Start free <ArrowUpRight weight="bold" /></Link>
         </nav>
       </header>
@@ -101,9 +122,8 @@ export function LandingExperience() {
           <motion.div className="landing-hero-content" initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>
             <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
             <p className="landing-lede">
-              Crypto, equities and live sport. Tap green or red. If you are right, you split what
-              the other side staked. There is no house taking the other end of your bet and no one who can decide
-              you lost.
+              Prediction markets ten times faster than Polymarket&apos;s, settled in dollars. Crypto, stocks
+              and live sport, a new market every thirty seconds. Sign in with Google and make your first call in three taps.
             </p>
             <div className="landing-actions">
               <Link href="/markets" className="landing-primary">Browse live markets <ArrowUpRight weight="bold" /></Link>
@@ -115,9 +135,41 @@ export function LandingExperience() {
 
         <TradeStory />
 
+        <section className="landing-why" id="why">
+          <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}>
+            <p>Why Tick</p><h2>Faster than the biggest name in prediction, and easier to start.</h2>
+          </motion.div>
+          <div className="why-grid">
+            {WHY.map((w, index) => (
+              <motion.article
+                key={w.title}
+                initial={reduceMotion ? false : { opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ delay: (index % 3) * 0.08, duration: 0.5 }}
+              >
+                <div className="why-icon"><w.Icon weight="duotone" /></div>
+                <h3>{w.title}</h3>
+                <p>{w.copy}</p>
+                {"tag" in w && <span className="why-tag">{w.tag}</span>}
+                {"source" in w && <a className="why-source" href={w.source.href} target="_blank" rel="noreferrer">Source: {w.source.label}</a>}
+              </motion.article>
+            ))}
+          </div>
+          <div className="first-trade">
+            <p className="first-trade-label">Your first trade</p>
+            <ol>
+              {FIRST_TRADE.map(([title, copy], index) => (
+                <li key={title}><span>{index + 1}</span><div><strong>{title}</strong><small>{copy}</small></div></li>
+              ))}
+            </ol>
+            <Link href="/markets" className="landing-primary">Try it now <ArrowUpRight weight="bold" /></Link>
+          </div>
+        </section>
+
         <section className="landing-market" id="market">
           <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}>
-            <p>Future valuation</p><h2>Prediction markets grew 10x in a year. The money went to the fastest ones.</h2>
+            <p>Future valuation</p><h2>A $180M business at 0.6% of a market that grew 10x in a year.</h2>
           </motion.div>
 
           <div className="market-stats">
@@ -169,7 +221,7 @@ export function LandingExperience() {
 
         <section className="landing-roadmap" id="roadmap">
           <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}>
-            <p>How we expand</p><h2>From thirty seconds on testnet to every market, everywhere.</h2>
+            <p>How we expand</p><h2>From the fastest market to every market, everywhere.</h2>
           </motion.div>
           <ol className="roadmap-track">
             {ROADMAP.map((step, index) => (
