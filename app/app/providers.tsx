@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { PrivyProvider, usePrivy } from "@privy-io/react-auth";
 import { AuthDialog } from "@/components/AuthDialog";
+import { Onboarding } from "@/components/Onboarding";
 import { WelcomeGift } from "@/components/WelcomeGift";
 import { clearMarks, readMarks, shouldEndSession } from "@/lib/authSession";
 import { monadTestnet } from "@/lib/chain/config";
@@ -66,6 +67,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <SessionGuard />
       <AuthDialog />
       <WelcomeGift />
+      <Onboarding />
       {children}
     </PrivyProvider>
   );

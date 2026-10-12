@@ -68,3 +68,35 @@ export function clearMarks() {
   }
   if (typeof document !== "undefined") document.cookie = `${SESSION_COOKIE}=; path=/; SameSite=Lax; Max-Age=0`;
 }
+
+/**
+ * Whether a brand-new account should be walked through setting up its profile.
+ * Set when someone commits to a method from the "Sign up" tab, before any redirect, because
+ * Google and X leave the page and the page that comes back has to know. Cleared when the
+ * walkthrough is finished or skipped.
+ */
+const ONBOARD_KEY = "tick.onboard.pending";
+
+export function markOnboarding() {
+  try {
+    localStorage.setItem(ONBOARD_KEY, "1");
+  } catch {
+    /* no storage, no walkthrough: harmless */
+  }
+}
+
+export function onboardingPending(): boolean {
+  try {
+    return localStorage.getItem(ONBOARD_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function clearOnboarding() {
+  try {
+    localStorage.removeItem(ONBOARD_KEY);
+  } catch {
+    /* nothing to clear */
+  }
+}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPublicClient, http, type WalletClient } from "viem";
 import { TickProfilesAbi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
+import { requestGas } from "@/lib/requestGas";
 
 /**
  * Profiles on chain: read one, read many at once, and save your own.
@@ -90,6 +91,9 @@ export function useMyProfile(account: `0x${string}` | null, walletClient: Wallet
       if (!walletClient || !account) return { ok: false, message: "Log in first." };
       setSaving(true);
       try {
+        // A new account has no MON for the transaction. The server tops it up when needed
+        // and does nothing when the wallet already has enough.
+        await requestGas(account);
         const hash = await walletClient.writeContract({
           address: CONTRACTS.tickProfiles, abi: TickProfilesAbi, functionName: "setProfile",
           args: [next.username, next.displayName, next.avatar], account, chain: monadTestnet, gas: 600_000n,

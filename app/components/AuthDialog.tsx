@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLoginWithEmail, useLoginWithOAuth, useLoginWithPasskey, usePrivy, useSignupWithPasskey } from "@privy-io/react-auth";
 import { ArrowLeft, EnvelopeSimple, Fingerprint, GoogleLogo, Wallet, X, XLogo } from "@phosphor-icons/react";
-import { markSignIn, onAuthOpen, type AuthMode } from "@/lib/authSession";
+import { markOnboarding, markSignIn, onAuthOpen, type AuthMode } from "@/lib/authSession";
 
 /**
  * The one place anyone signs in or signs up. Every "Log in", "Sign up" and "Connect" in the
@@ -83,7 +83,10 @@ export function AuthDialog() {
     setError(null);
     setBusy(label);
     // The marks go down before the attempt, not after it succeeds: OAuth leaves the page.
-    if (commit) markSignIn(remember);
+    if (commit) {
+      markSignIn(remember);
+      if (mode === "signup") markOnboarding();
+    }
     try {
       await fn();
     } catch (e) {
