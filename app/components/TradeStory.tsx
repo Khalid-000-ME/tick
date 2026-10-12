@@ -1,7 +1,14 @@
 "use client";
 
 import { useRef } from "react";
+import { Fraunces } from "next/font/google";
 import { motion, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
+
+/**
+ * The payout is the one number that should feel like a moment, so it gets a display face:
+ * Fraunces, which has a true heavy italic (a single-weight face would be faked bold).
+ */
+const payoutFace = Fraunces({ subsets: ["latin"], weight: "800", style: "italic", variable: "--font-payout" });
 
 /**
  * One whole trade, played by scrolling.
@@ -105,7 +112,7 @@ export function TradeStory() {
   //   tap      the camera leans in on the buttons; the click presses the card, which rebounds
   //   window   a slow pan from left to right across the chart while the candles print
   //   win      squares up and lifts toward the reader as the glow behind it blooms
-  //   exit     lies back down as the section ends, so the last frames still move
+  //   hold     after the win the card stays exactly where it is until the section ends
   // No roll (rotateZ): combined with a turn it reads as a warped trapezoid, not depth.
   // Positive rotateY sends the right edge away, so the card faces the captions on its left.
   // The click is the longest beat and gets its own choreography, on a stiffer spring
@@ -119,11 +126,11 @@ export function TradeStory() {
   const CAM = [0, 0.1, 0.14, 0.2, 0.28, 0.31, 0.325, 0.345, 0.37, 0.4, 0.51, 0.62, 0.68, 0.84, 1];
   const soft = { stiffness: 90, damping: 22, mass: 0.6 };
   const crisp = { stiffness: 260, damping: 19, mass: 0.5 };
-  const rotateX = useSpring(useTransform(p, CAM, [34, 12, 12, 16, 20, 21, 28, 13, 18, 14, 9, 6, 0, 0, 22]), crisp);
-  const rotateY = useSpring(useTransform(p, CAM, [14, 10, 10, 12, 16, 16, 18, 13, 14, 10, 1, -9, 0, 0, 8]), soft);
-  const lift = useSpring(useTransform(p, CAM, [140, 0, 0, -10, -30, -32, -18, -42, -34, -12, 0, 0, -12, -12, 40]), crisp);
+  const rotateX = useSpring(useTransform(p, CAM, [34, 12, 12, 16, 20, 21, 28, 13, 18, 14, 9, 6, 0, 0, 0]), crisp);
+  const rotateY = useSpring(useTransform(p, CAM, [14, 10, 10, 12, 16, 16, 18, 13, 14, 10, 1, -9, 0, 0, 0]), soft);
+  const lift = useSpring(useTransform(p, CAM, [140, 0, 0, -10, -30, -32, -18, -42, -34, -12, 0, 0, -12, -12, -12]), crisp);
   const pan = useSpring(useTransform(p, CAM, [40, 0, 0, 8, 22, 24, 26, 20, 22, 22, 0, -30, 0, 0, 0]), soft);
-  const zoom = useSpring(useTransform(p, CAM, [0.88, 1, 1, 1.03, 1.08, 1.09, 1.02, 1.12, 1.08, 1.02, 1, 1, 1.05, 1.05, 0.94]), crisp);
+  const zoom = useSpring(useTransform(p, CAM, [0.88, 1, 1, 1.03, 1.08, 1.09, 1.02, 1.12, 1.08, 1.02, 1, 1, 1.05, 1.05, 1.05]), crisp);
   const cardScale = useTransform([zoom, cardIn], ([z, c]: number[]) => z * c);
   // Light falls from above, so the shadow drops further the more the card lies back, and
   // slides away from the side it turns toward.
@@ -131,8 +138,8 @@ export function TradeStory() {
     `${(-ry * 1.5).toFixed(1)}px ${(28 + rx * 2.2).toFixed(1)}px 110px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset`
   );
   // A lime glow behind the card: faint as it rises, warmer through the window, a bloom on the win.
-  const glowOpacity = useTransform(p, [0, 0.12, 0.33, 0.35, 0.4, 0.62, 0.68, 0.84, 1], [0, 0.25, 0.35, 0.8, 0.3, 0.5, 0.95, 0.7, 0.15]);
-  const glowScale = useTransform(p, [0, 0.62, 0.7, 1], [0.7, 0.95, 1.25, 1]);
+  const glowOpacity = useTransform(p, [0, 0.12, 0.33, 0.35, 0.4, 0.62, 0.68, 1], [0, 0.25, 0.35, 0.8, 0.3, 0.5, 0.9, 0.9]);
+  const glowScale = useTransform(p, [0, 0.62, 0.7, 1], [0.7, 0.95, 1.15, 1.15]);
   const strikeLen = useTransform(p, [0.05, 0.11], [0, 1]);
   const strikeTags = useTransform(p, [0.1, 0.12], [0, 1]);
 
@@ -286,7 +293,7 @@ export function TradeStory() {
             ))}
             <motion.div className="story-won-inner" style={{ scale: wonScale }}>
               <p>You won</p>
-              <strong>$1.96</strong>
+              <strong className={payoutFace.variable}>$1.96</strong>
               <span>paid out on a $1 stake, in 30 seconds</span>
             </motion.div>
           </motion.div>

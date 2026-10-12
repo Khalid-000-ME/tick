@@ -2151,3 +2151,12 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 /* The confirmation sits above the buttons, centred on the card, not over Below. */
 .story-toast { bottom: 150px; padding: 12px 20px; font-size: 14px; }
 @media (max-width: 900px) { .story-toast { bottom: 128px; font-size: 12px; padding: 10px 16px; } }
+/* A thicker white frame, and the payout in Instrument Serif (set by class in TradeStory):
+   large, italic, lime-lit, in place of the mono used for the rest of the card. */
+.story-card { border-width: 8px; }
+.story-won-inner strong { font-weight: 400; font-style: italic; font-size: 132px; line-height: .9; letter-spacing: -.02em; color: #f4f6ec; text-shadow: 0 0 48px rgba(216, 243, 95, .45); }
+@media (max-width: 900px) { .story-won-inner strong { font-size: 96px; } }
+.story-won-inner strong { font-family: var(--font-payout), Georgia, serif; }
+/* Bold payout: Fraunces 800 italic. */
+.story-won-inner strong { font-weight: 800; font-size: 124px; letter-spacing: -.03em; }
+@media (max-width: 900px) { .story-won-inner strong { font-size: 88px; } }
