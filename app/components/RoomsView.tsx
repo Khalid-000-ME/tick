@@ -15,22 +15,22 @@ import { useTickWallet } from "@/lib/useTickWallet";
  */
 export function RoomsView() {
   const wallet = useTickWallet();
-  const { account, status } = wallet;
-  const { groups, mine, loading, act } = useSocial(account);
+  const { account, status, walletClient } = wallet;
+  const { groups, mine, myGroups, loading, send } = useSocial(account, walletClient);
   const [roomName, setRoomName] = useState("");
   const [roomGroup, setRoomGroup] = useState("");
+  const [joinId, setJoinId] = useState("");
   const [groupName, setGroupName] = useState("");
-  const [code, setCode] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const signedIn = status === "ready" && !!account;
 
-  async function run(action: string, payload: Record<string, unknown>) {
+  async function run(fn: "createGroup" | "joinGroup" | "createRoom" | "joinRoom", args: readonly unknown[], working: string) {
     setBusy(true);
-    setNote(null);
-    const r = await act(action, payload);
-    setNote(r.ok ? null : (r.error ?? "That did not work."));
+    setNote(working);
+    const r = await send(fn, args);
+    setNote(r.ok ? null : r.message);
     setBusy(false);
     return r;
   }
@@ -39,7 +39,7 @@ export function RoomsView() {
     <AccountShell active="rooms" wallet={wallet}>
       <section className="page-intro">
         <h1>Rooms</h1>
-        <p>Play the same thirty seconds as everyone else, and settle who was right.</p>
+        <p>Play the same thirty seconds as everyone else, and settle who was right. Rooms and groups live on chain.</p>
       </section>
 
       {!signedIn ? (
@@ -55,10 +55,10 @@ export function RoomsView() {
             ) : (
               <ul className="room-list">
                 {mine.map((r) => (
-                  <li key={r.code}>
-                    <Link href={`/rooms/${r.code}`}>
+                  <li key={r.id}>
+                    <Link href={`/rooms/${r.id}`}>
                       <strong>{r.name}</strong>
-                      <span>{r.members.length} in · {r.code}</span>
+                      <span>{r.members} in · room {r.id}</span>
                       <ArrowRight weight="bold" />
                     </Link>
                   </li>
@@ -72,13 +72,13 @@ export function RoomsView() {
                 <option value="">No group</option>
                 {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
-              <button type="button" className="btn-solid" disabled={busy || !roomName.trim()} onClick={() => void run("room.create", { name: roomName, groupId: roomGroup || null }).then((r) => r.ok && setRoomName(""))}>
+              <button type="button" className="btn-solid" disabled={busy || !roomName.trim()} onClick={() => void run("createRoom", [roomName, BigInt(roomGroup || 0)], "Making the room…").then((r) => r.ok && setRoomName(""))}>
                 <Plus weight="bold" /> Make a room
               </button>
             </div>
             <div className="social-form">
-              <input value={code} maxLength={6} placeholder="Join with a code" onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} />
-              <button type="button" className="btn-ghost" disabled={busy || code.length < 4} onClick={() => void run("room.join", { code }).then((r) => r.ok && setCode(""))}>Join</button>
+              <input value={joinId} inputMode="numeric" placeholder="Join with a room number" onChange={(e) => setJoinId(e.target.value.replace(/[^0-9]/g, ""))} />
+              <button type="button" className="btn-ghost" disabled={busy || !joinId} onClick={() => void run("joinRoom", [BigInt(joinId)], "Joining…").then((r) => r.ok && setJoinId(""))}>Join</button>
             </div>
             {note && <p className="match-note">{note}</p>}
           </section>
@@ -88,15 +88,15 @@ export function RoomsView() {
             <p className="match-meta">A group is a standing crowd. Rooms inside it are the contests.</p>
             <ul className="room-list">
               {groups.map((g) => {
-                const inIt = !!account && g.members.includes(account.toLowerCase());
+                const inIt = myGroups.includes(g.id);
                 return (
                   <li key={g.id}>
                     <div className="room-row">
                       <UsersThree weight="bold" />
                       <strong>{g.name}</strong>
-                      <span>{g.memberCount ?? g.members.length} in</span>
+                      <span>{g.members} in · {g.rooms} rooms</span>
                       {inIt ? <em>Joined</em> : (
-                        <button type="button" className="btn-ghost small" disabled={busy} onClick={() => void run("group.join", { groupId: g.id })}>Join</button>
+                        <button type="button" className="btn-ghost small" disabled={busy} onClick={() => void run("joinGroup", [BigInt(g.id)], "Joining…")}>Join</button>
                       )}
                     </div>
                   </li>
@@ -106,7 +106,7 @@ export function RoomsView() {
             </ul>
             <div className="social-form">
               <input value={groupName} maxLength={40} placeholder="Start a group" onChange={(e) => setGroupName(e.target.value)} />
-              <button type="button" className="btn-solid" disabled={busy || !groupName.trim()} onClick={() => void run("group.create", { name: groupName }).then((r) => r.ok && setGroupName(""))}>
+              <button type="button" className="btn-solid" disabled={busy || !groupName.trim()} onClick={() => void run("createGroup", [groupName], "Starting the group…").then((r) => r.ok && setGroupName(""))}>
                 <Plus weight="bold" /> Start
               </button>
             </div>

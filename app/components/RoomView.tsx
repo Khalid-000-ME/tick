@@ -7,33 +7,38 @@ import { AccountShell } from "@/components/AccountShell";
 import { Avatar } from "@/components/Avatar";
 import { ShareActions } from "@/components/ShareActions";
 import { useProfiles } from "@/lib/profiles";
-import { useSocial, type Group, type Room, type Standing } from "@/lib/useSocial";
+import { fetchRoom, useSocial, type Group, type Room, type Standing } from "@/lib/useSocial";
 import { useTickWallet } from "@/lib/useTickWallet";
 
 /**
  * One room: who is in it, who is ahead, and the link that brings the rest in.
  *
- * The table is the same arithmetic as the global board, read from the chain index, so a room
- * is a view of real results rather than a scoreboard of its own.
+ * Membership is read from TickSocial and the money from the chain index, so everything on
+ * this page can be checked by anyone against the chain. Nothing here is our word for it.
  */
-export function RoomView({ code }: { code: string }) {
+export function RoomView({ id }: { id: number }) {
   const wallet = useTickWallet();
-  const { account } = wallet;
-  const { act } = useSocial(account);
-  const [data, setData] = useState<{ room: Room; group: Group | null; standings: Standing[]; error?: string } | null>(null);
+  const { account, walletClient } = wallet;
+  const { send } = useSocial(account, walletClient);
+  const [room, setRoom] = useState<{ room: Room; group: Group | null; members: string[] } | null>(null);
+  const [table, setTable] = useState<Standing[]>([]);
   const [missing, setMissing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`/api/social?room=${code}`, { cache: "no-store" });
-      if (res.status === 404) return setMissing(true);
-      setData((await res.json()) as { room: Room; group: Group | null; standings: Standing[] });
-    } catch {
-      /* keep what is on screen */
+      const found = await fetchRoom(id);
+      if (!found) return setMissing(true);
+      setRoom(found);
+      const res = await fetch(`/api/standings?addresses=${found.members.join(",")}`, { cache: "no-store" });
+      const body = (await res.json()) as { standings: Standing[] };
+      setTable([...body.standings].sort((a, b) => b.net - a.net || b.bets - a.bets));
+    } catch (e) {
+      // The page keeps whatever it already showed; the next poll tries again.
+      console.error(`[room] ${((e as Error).message ?? "").split("\n")[0]}`);
     }
-  }, [code]);
+  }, [id]);
 
   useEffect(() => {
     let off = false;
@@ -49,23 +54,23 @@ export function RoomView({ code }: { code: string }) {
     };
   }, [load]);
 
-  const profiles = useProfiles(data?.standings.map((s) => s.address) ?? []);
-  const inRoom = !!account && !!data?.room.members.includes(account.toLowerCase());
-  const me = data?.standings.find((s) => account && s.address === account.toLowerCase());
+  const profiles = useProfiles(table.map((s) => s.address));
+  const inRoom = !!account && !!room?.members.includes(account.toLowerCase());
+  const me = table.find((s) => account && s.address === account.toLowerCase());
 
   return (
     <AccountShell active="rooms" wallet={wallet}>
       {missing ? (
-        <div className="page-empty">No room has that code.</div>
-      ) : !data ? (
-        <div className="page-empty">Loading the room…</div>
+        <div className="page-empty">No room has that number.</div>
+      ) : !room ? (
+        <div className="page-empty">Reading the room from the chain…</div>
       ) : (
         <>
           <section className="page-intro">
-            <h1>{data.room.name}</h1>
+            <h1>{room.room.name}</h1>
             <p>
-              {data.group ? <>In {data.group.name} · </> : null}
-              {data.room.members.length} playing · code {data.room.code}
+              {room.group ? <>In {room.group.name} · </> : null}
+              {room.members.length} playing · room {room.room.id}
             </p>
           </section>
 
@@ -74,7 +79,7 @@ export function RoomView({ code }: { code: string }) {
               type="button"
               className="btn-ghost"
               onClick={() => {
-                void navigator.clipboard?.writeText(`${window.location.origin}/rooms/${data.room.code}`);
+                void navigator.clipboard?.writeText(`${window.location.origin}/rooms/${room.room.id}`);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1600);
               }}
@@ -82,8 +87,19 @@ export function RoomView({ code }: { code: string }) {
               {copied ? <Check weight="bold" /> : <Copy weight="bold" />} {copied ? "Invite copied" : "Copy invite link"}
             </button>
             {account && !inRoom && (
-              <button type="button" className="btn-solid" disabled={busy} onClick={() => { setBusy(true); void act("room.join", { code }).then(() => { setBusy(false); void load(); }); }}>
-                Join this room
+              <button
+                type="button"
+                className="btn-solid"
+                disabled={busy}
+                onClick={() => {
+                  setBusy(true);
+                  void send("joinRoom", [BigInt(room.room.id)]).then(() => {
+                    setBusy(false);
+                    void load();
+                  });
+                }}
+              >
+                {busy ? "Joining…" : "Join this room"}
               </button>
             )}
             {me && <ShareActions address={me.address} net={me.net} compact />}
@@ -91,9 +107,8 @@ export function RoomView({ code }: { code: string }) {
 
           <section className="match-panel">
             <header className="match-panel-head"><h2><Trophy weight="bold" /> Standings</h2></header>
-            {data.error && <p className="match-note">Results are unavailable right now, so everyone reads as zero.</p>}
             <ol className="room-board">
-              {data.standings.map((s, i) => {
+              {table.map((s, i) => {
                 const p = profiles.get(s.address);
                 const you = !!account && s.address === account.toLowerCase();
                 return (
