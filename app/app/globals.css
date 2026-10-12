@@ -1720,8 +1720,6 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .board-card.has-banner.is-featured > .board-card-body { padding-left: 24px; padding-right: 24px; }
 .card-banner { position: relative; height: 88px; overflow: hidden; display: flex; align-items: flex-end; padding: 14px 18px; }
 .card-banner.is-tall { height: 124px; padding: 20px 24px; }
-.card-banner-ghost { position: absolute; right: -28px; top: -34px; opacity: .17; transform: rotate(-12deg); pointer-events: none; }
-.card-banner-ghost img { width: 150px; height: 150px; }
 .card-banner-mark { position: relative; display: flex; align-items: center; gap: 9px; color: #fff; }
 .card-banner-mark b { font-size: 17px; font-weight: 650; letter-spacing: -.02em; }
 .card-banner.is-tall .card-banner-mark b { font-size: 22px; }
@@ -1748,7 +1746,7 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .card-hit { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
 .board-card:has(.card-hit):hover { border-color: var(--t-ink); }
 .board-card .board-outcome, .board-card .board-card-foot { position: relative; z-index: 2; }
-.board-card.is-closed .card-banner { filter: grayscale(.7) brightness(.8); }
+.board-card.is-closed .card-head { filter: grayscale(.7); opacity: .7; }
 .board-card.is-closed .board-clock { color: var(--t-dim); }
 
 /* ---- minimal cards ---- */
@@ -2198,3 +2196,16 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .wd-warn { color: var(--t-down, #ef4444); font-size: 12px !important; }
 .wd-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .page-note a { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- Market card header: the icon and ticker, then the window and what is left. Flat, on
+   the card itself, so there is no banner to scroll past. */
+.board-card.has-banner > .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 18px 0; }
+.board-card.has-banner.is-featured > .card-head { padding: 22px 24px 0; }
+.card-head-mark { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.card-head-mark img { border-radius: 50%; flex: none; }
+.card-head-mark b { font-size: 18px; font-weight: 650; letter-spacing: -.02em; }
+.card-head.is-big .card-head-mark b { font-size: 24px; }
+.card-head-mark em { font-style: normal; font-size: 13px; color: var(--t-dim); }
+.card-head-chips { display: flex; align-items: center; gap: 6px; flex: none; }
+.card-chip-flat { padding: 4px 9px; border-radius: 99px; background: var(--t-line); color: var(--t-dim); font: 600 10px var(--font-geist-mono), monospace; letter-spacing: .04em; white-space: nowrap; }
+.card-chip-flat.is-urgent { background: var(--t-urgent); color: #fff; }

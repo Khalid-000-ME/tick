@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Moon, Sun } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { OddsChart, type OddsPoint } from "@/components/OddsChart";
-import { CardBanner } from "@/components/CardBanner";
+import { CardHeader } from "@/components/CardBanner";
 import { StrikeStepper } from "@/components/StrikeStepper";
 import { TickAbi } from "@/lib/chain/abi";
 import { CONTRACTS, toUsd as toUsdc } from "@/lib/chain/config";
@@ -277,13 +277,13 @@ function MarketCard({ market, series, featured = false }: { market: LiveMarket; 
   return (
     <article className={`board-card has-banner ${featured ? "is-featured" : ""} ${market.closed ? "is-closed" : ""}`}>
       <Link href={href} className="card-hit" aria-label={`Open ${market.symbol}, ${market.windowLabel}`} />
-      <CardBanner
+      <CardHeader
         symbol={market.symbol}
         label={market.label}
         window={market.windowLabels.join(" / ")}
         status={market.closed ? (market.kind === "equity" ? `Opens ${nextOpenLabel().replace(" ET", "")}` : "Closed") : clock(market.secondsLeft)}
         urgent={!market.closed && market.secondsLeft <= 10}
-        tall={featured}
+        big={featured}
       />
 
       <div className="board-card-title strike-title">
