@@ -85,18 +85,21 @@ export function GroupsApp({ selected }: { selected?: number }) {
     return r.ok;
   }
 
+  const switcher = (
+    <div className="msgr-switch" role="tablist" aria-label="Groups or rooms">
+      {(["groups", "rooms"] as const).map((t) => (
+        <button key={t} type="button" role="tab" aria-selected={pane === t} className={pane === t ? "is-active" : ""} onClick={() => setPane(t)}>
+          {t === "groups" ? "Groups" : "Rooms"}
+        </button>
+      ))}
+    </div>
+  );
+
   const showChat = !!selected;
   return (
     <AccountShell active="groups" wallet={wallet} app>
       <div className={`msgr ${showChat ? "has-chat" : ""} ${details && group ? "has-details" : ""}`}>
         <aside className="msgr-list" aria-label="Groups">
-          <div className="msgr-switch" role="tablist" aria-label="Groups or rooms">
-            {(["groups", "rooms"] as const).map((t) => (
-              <button key={t} type="button" role="tab" aria-selected={pane === t} className={pane === t ? "is-active" : ""} onClick={() => setPane(t)}>
-                {t === "groups" ? "Groups" : "Rooms"}
-              </button>
-            ))}
-          </div>
           {pane === "groups" ? (
             <GroupList
               groups={social.groups}
@@ -108,9 +111,13 @@ export function GroupsApp({ selected }: { selected?: number }) {
               busy={busy}
               onCreate={create}
               loading={social.loading}
+              switcher={switcher}
             />
           ) : (
+            <>
+            <header className="msgr-list-head">{switcher}</header>
             <RoomsPane rooms={social.mine} groups={social.groups} signedIn={signedIn} send={social.send} />
+            </>
           )}
         </aside>
 
@@ -130,7 +137,7 @@ export function GroupsApp({ selected }: { selected?: number }) {
                 <Link href="/groups" className="msgr-icon msgr-back" aria-label="Back to groups"><ArrowLeft weight="bold" /></Link>
                 <button type="button" className="msgr-title" aria-expanded={details} onClick={() => setDetails((v) => !v)}>
                   <Avatar avatar={group.avatar} seed={`group-${group.id}`} name={group.name} size={40} />
-                  <span><strong>{group.name}</strong><small>{group.members} members · {group.rooms} rooms · tap for info</small></span>
+                  <span><strong>{group.name}</strong><small>{group.members} {group.members === 1 ? "member" : "members"} · {group.rooms} {group.rooms === 1 ? "room" : "rooms"}</small></span>
                 </button>
                 <button type="button" className="msgr-icon" aria-label="Group info" onClick={() => setDetails((v) => !v)}><Info weight="bold" /></button>
               </header>

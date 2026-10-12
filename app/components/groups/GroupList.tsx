@@ -24,6 +24,7 @@ export function GroupList({
   busy,
   onCreate,
   loading,
+  switcher,
 }: {
   groups: Group[];
   mine: number[];
@@ -34,6 +35,8 @@ export function GroupList({
   busy: boolean;
   onCreate: (name: string) => Promise<boolean>;
   loading: boolean;
+  /** The Groups/Rooms switch, which sits at the left of the header beside the + button. */
+  switcher: React.ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const [making, setMaking] = useState(false);
@@ -65,7 +68,7 @@ export function GroupList({
           <span className="gl-main">
             <span className="gl-top"><strong>{g.name}</strong><time>{last ? listTime(last.at) : ""}</time></span>
             <span className="gl-bottom">
-              <span className="gl-preview">{joined ? preview(g) : `${g.members} members · ${g.rooms} rooms`}</span>
+              <span className="gl-preview">{joined ? preview(g) : `${g.members} ${g.members === 1 ? "member" : "members"} · ${g.rooms} ${g.rooms === 1 ? "room" : "rooms"}`}</span>
               {n > 0 && <b className="gl-badge" aria-label={`${n} unread`}>{n > 99 ? "99+" : n}</b>}
             </span>
           </span>
@@ -77,9 +80,9 @@ export function GroupList({
   return (
     <>
       <header className="msgr-list-head">
-        <h1>Groups</h1>
+        {switcher}
         {signedIn && (
-          <button type="button" className="msgr-icon" aria-label="Start a group" aria-expanded={making} onClick={() => setMaking((v) => !v)}>
+          <button type="button" className="msgr-new" aria-label={making ? "Cancel" : "Start a group"} aria-expanded={making} onClick={() => setMaking((v) => !v)}>
             <Plus weight="bold" />
           </button>
         )}

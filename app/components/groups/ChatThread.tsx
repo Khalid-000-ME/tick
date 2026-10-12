@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { IdentificationCard, PaperPlaneRight } from "@phosphor-icons/react";
+import { ArrowUp, IdentificationCard } from "@phosphor-icons/react";
 import { Avatar } from "@/components/Avatar";
 import { CARD_TAG } from "@/components/ChatPanel";
 import { ResultsCard } from "@/components/PostCard";
@@ -9,6 +9,13 @@ import { clock, dayKey, dayLabel } from "@/components/groups/format";
 import { useProfiles } from "@/lib/profiles";
 import type { Standing } from "@/lib/useFeed";
 import { fetchChat, type Post } from "@/lib/useSocial";
+
+/** A stable colour slot for a sender, from their address, so each person keeps theirs. */
+const hueOf = (address: string) => {
+  let h = 0;
+  for (let i = 2; i < address.length; i++) h = (h * 31 + address.charCodeAt(i)) >>> 0;
+  return h % 6;
+};
 
 type Row = { kind: "day"; key: string; label: string } | { kind: "msg"; key: string; post: Post; first: boolean };
 
@@ -142,10 +149,12 @@ export function ChatThread({
               <div key={row.key} className={`bubble-row ${mine ? "is-mine" : ""} ${row.first ? "is-first" : ""}`}>
                 {!mine && (row.first ? <Avatar avatar={profile?.avatar} seed={p.from} name={profile?.displayName || profile?.username} size={32} /> : <span className="bubble-gap" />)}
                 <div className={`bubble ${isCard ? "has-card" : ""}`}>
-                  {!mine && row.first && <strong className="bubble-who">{name}</strong>}
+                  {!mine && row.first && <strong className="bubble-who" data-h={hueOf(p.from)}>{name}</strong>}
                   {isCard && <div className="bubble-card"><ResultsCard standing={standings.get(p.from)} /></div>}
-                  {(!isCard || caption) && <p>{caption}</p>}
-                  <time dateTime={new Date(p.at * 1000).toISOString()}>{clock(p.at)}</time>
+                  <div className="bubble-text">
+                    {(!isCard || caption) && <p>{caption}</p>}
+                    <time dateTime={new Date(p.at * 1000).toISOString()}>{clock(p.at)}</time>
+                  </div>
                 </div>
               </div>
             );
@@ -155,15 +164,15 @@ export function ChatThread({
 
       {canPost ? (
         <form className="thread-form" onSubmit={(e) => { e.preventDefault(); if (text.trim()) void run(text.trim()); }}>
-          <button type="button" className="thread-tool" disabled={busy} title="Share your results card" aria-label="Share your results card" onClick={() => void run(`${CARD_TAG}${text.trim() ? ` ${text.trim()}` : ""}`)}>
-            <IdentificationCard weight="bold" />
+          <input value={text} maxLength={270} placeholder="Write a message" onChange={(e) => setText(e.target.value)} aria-label="Message" />
+          <button type="button" className="thread-tool" disabled={busy} title="Share your results card in this chat" onClick={() => void run(`${CARD_TAG}${text.trim() ? ` ${text.trim()}` : ""}`)}>
+            <IdentificationCard weight="bold" /> Card
           </button>
-          <input value={text} maxLength={270} placeholder="Message" onChange={(e) => setText(e.target.value)} aria-label="Message" />
-          <button type="submit" className="thread-send" disabled={busy || !text.trim()} aria-label="Send"><PaperPlaneRight weight="fill" /></button>
+          <button type="submit" className="thread-send" disabled={busy || !text.trim()} aria-label="Send"><ArrowUp weight="bold" /></button>
         </form>
       ) : (
         <div className="thread-join">
-          {account ? <><span>Join to send messages. Reading is open to anyone.</span><button type="button" className="btn-solid small" onClick={onJoin}>Join group</button></> : <span>Log in to join this group and chat.</span>}
+          {account ? <><span>Join to write here. Anyone can read.</span><button type="button" className="btn-solid small" onClick={onJoin}>Join group</button></> : <><span>Log in to join this group and chat.</span><button type="button" className="btn-solid small" onClick={onJoin}>Log in</button></>}
         </div>
       )}
       {note && <p className="thread-note">{note}</p>}

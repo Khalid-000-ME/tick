@@ -40,6 +40,8 @@ export function GroupDetails({
   const [roomName, setRoomName] = useState("");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  // Read once when the panel opens, so "started 2 days ago" does not change under a render.
+  const [openedAt] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     try {
@@ -77,6 +79,9 @@ export function GroupDetails({
     return { p, name: p?.displayName || (p?.username ? `@${p.username}` : `${a.slice(0, 6)}…${a.slice(-4)}`) };
   };
 
+  const days = Math.floor((openedAt / 1000 - group.createdAt) / 86_400);
+  const started = days <= 0 ? "Started today" : days === 1 ? "Started yesterday" : `Started ${days} days ago`;
+
   return (
     <div className="gd">
       <header className="gd-head">
@@ -86,48 +91,58 @@ export function GroupDetails({
 
       <div className="gd-scroll">
         <section className="gd-hero">
-          <Avatar avatar={group.avatar} seed={`group-${group.id}`} name={group.name} size={96} />
+          <Avatar avatar={group.avatar} seed={`group-${group.id}`} name={group.name} size={92} />
           <h3>{group.name}</h3>
-          <p>{members.length || group.members} members · {group.rooms} rooms · {group.messages} messages</p>
-          <div className="gd-actions">
-            <button
-              type="button"
-              className="btn-ghost small"
-              onClick={() => {
-                void navigator.clipboard?.writeText(`${window.location.origin}/groups/${group.id}`);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1600);
-              }}
-            >
-              {copied ? <Check weight="bold" /> : <Copy weight="bold" />} {copied ? "Copied" : "Invite link"}
-            </button>
-            {mine && <button type="button" className="btn-ghost small" onClick={() => setEditing((v) => !v)}><PencilSimple weight="bold" /> {editing ? "Done" : "Edit"}</button>}
-            {joined && me && <ShareActions address={me.address} net={me.net} compact />}
-          </div>
+          <p>{started}</p>
         </section>
+
+        <dl className="gd-stats">
+          <div><dd>{members.length || group.members}</dd><dt>Members</dt></div>
+          <div><dd>{rooms.length || group.rooms}</dd><dt>Rooms</dt></div>
+          <div><dd>{group.messages}</dd><dt>Messages</dt></div>
+        </dl>
+
+        <div className="gd-actions">
+          <button
+            type="button"
+            className="btn-ghost small"
+            onClick={() => {
+              void navigator.clipboard?.writeText(`${window.location.origin}/groups/${group.id}`);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1600);
+            }}
+          >
+            {copied ? <Check weight="bold" /> : <Copy weight="bold" />} {copied ? "Copied" : "Invite link"}
+          </button>
+          {mine && <button type="button" className="btn-ghost small" onClick={() => setEditing((v) => !v)}><PencilSimple weight="bold" /> {editing ? "Done" : "Edit"}</button>}
+          {joined && me && <ShareActions address={me.address} net={me.net} compact />}
+        </div>
 
         {editing && mine && <GroupEditor group={group} onSave={async (name, avatar) => { const r = await send("setGroup", [BigInt(group.id), name, avatar]); if (r.ok) setEditing(false); return r; }} />}
 
         <div className="gd-tabs" role="tablist">
           {(["leaderboard", "rooms", "members"] as const).map((t) => (
             <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? "is-active" : ""} onClick={() => setTab(t)}>
-              {t === "leaderboard" ? "Leaderboard" : t === "rooms" ? `Rooms${rooms.length ? ` ${rooms.length}` : ""}` : `Members ${members.length || ""}`}
+              {t === "leaderboard" ? "Leaderboard" : t === "rooms" ? "Rooms" : "Members"}
+              {t === "rooms" && rooms.length > 0 && <em>{rooms.length}</em>}
+              {t === "members" && members.length > 0 && <em>{members.length}</em>}
             </button>
           ))}
         </div>
 
         {tab === "leaderboard" && (
           <ol className="gd-list">
-            {board.length === 0 && <li className="gd-empty">Nobody has made a call yet.</li>}
+            {board.length === 0 && <li className="gd-empty">Nobody has made a call yet. When they do, the table fills in here.</li>}
             {board.map((s, i) => {
               const { p, name } = who(s.address);
               return (
                 <li key={s.address} className={account && s.address === account.toLowerCase() ? "is-you" : ""}>
-                  <span className="gd-rank">{i + 1}</span>
-                  <Avatar avatar={p?.avatar} seed={s.address} name={p?.displayName || p?.username} size={34} />
-                  <span className="gd-who"><strong>{name}</strong><small>{s.bets} calls</small></span>
-                  <span className={`gd-net ${s.net >= 0 ? "is-up" : "is-down"}`}>{s.net >= 0 ? "+" : "−"}${Math.abs(s.net).toFixed(2)}</span>
-                  <Link className="gd-card" href={`/w/${s.address}`}>Card</Link>
+                  <Link className="gd-row" href={`/w/${s.address}`}>
+                    <span className={`gd-rank ${i === 0 ? "is-first" : ""}`}>{i + 1}</span>
+                    <Avatar avatar={p?.avatar} seed={s.address} name={p?.displayName || p?.username} size={36} />
+                    <span className="gd-who"><strong>{name}</strong><small>{s.bets} {s.bets === 1 ? "call" : "calls"}</small></span>
+                    <span className={`gd-net ${s.net >= 0 ? "is-up" : "is-down"}`}>{s.net >= 0 ? "+" : "−"}${Math.abs(s.net).toFixed(2)}</span>
+                  </Link>
                 </li>
               );
             })}
@@ -136,13 +151,13 @@ export function GroupDetails({
 
         {tab === "rooms" && (
           <div className="gd-list">
-            {rooms.length === 0 && <p className="gd-empty">No contests in this group yet.</p>}
+            {rooms.length === 0 && <p className="gd-empty">No contests in this group yet. Start one and everyone here can join it.</p>}
             <ul>
               {rooms.map((r) => (
                 <li key={r.id}>
-                  <Link href={`/rooms/${r.id}`} className="gd-room">
-                    <span className="gd-who"><strong>{r.name}</strong><small>{r.members} playing · {r.messages} messages</small></span>
-                    <ArrowRight weight="bold" />
+                  <Link href={`/rooms/${r.id}`} className="gd-row">
+                    <span className="gd-who"><strong>{r.name}</strong><small>{r.members} playing · {r.messages} {r.messages === 1 ? "message" : "messages"}</small></span>
+                    <ArrowRight weight="bold" className="gd-chev" />
                   </Link>
                 </li>
               ))}
@@ -161,7 +176,7 @@ export function GroupDetails({
                   });
                 }}
               >
-                <input value={roomName} maxLength={40} placeholder="Start a room in this group" onChange={(e) => setRoomName(e.target.value)} aria-label="Room name" />
+                <input value={roomName} maxLength={40} placeholder="Name a new room" onChange={(e) => setRoomName(e.target.value)} aria-label="Room name" />
                 <button type="submit" className="btn-solid small" disabled={busy || !roomName.trim()}><Plus weight="bold" /> {busy ? "Making…" : "Make"}</button>
               </form>
             )}
@@ -175,10 +190,11 @@ export function GroupDetails({
               const { p, name } = who(a);
               return (
                 <li key={a}>
-                  <Avatar avatar={p?.avatar} seed={a} name={p?.displayName || p?.username} size={34} />
-                  <span className="gd-who"><strong>{name}</strong>{p?.username && p.displayName ? <small>@{p.username}</small> : null}</span>
-                  {a === group.creator.toLowerCase() && <em className="gd-admin">Admin</em>}
-                  <Link className="gd-card" href={`/w/${a}`}>Card</Link>
+                  <Link className="gd-row" href={`/w/${a}`}>
+                    <Avatar avatar={p?.avatar} seed={a} name={p?.displayName || p?.username} size={36} />
+                    <span className="gd-who"><strong>{name}</strong>{p?.username && p.displayName ? <small>@{p.username}</small> : null}</span>
+                    {a === group.creator.toLowerCase() && <em className="gd-admin">Admin</em>}
+                  </Link>
                 </li>
               );
             })}
