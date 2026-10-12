@@ -67,12 +67,16 @@ export function LandingExperience() {
               // Spacing from React Bits' "Dense" preset, for a tighter field.
               dotSize={3}
               gap={10}
-              // React Bits' "Calm" preset, verbatim. Everything else stays at its default.
-              strength={0.5}
-              bounce={0.3}
-              returnDuration={1.4}
-              swell={0.4}
-              stretch={0.2}
+              // Starts from React Bits' "Calm" preset, softened further so the pointer only
+              // nudges the field: a weaker push, near-critical damping so dots glide back
+              // without overshooting, a slower return, little stretching or swelling, and
+              // less neighbour coupling so a nudge does not ripple across the grid.
+              strength={0.2}
+              bounce={0.1}
+              tension={0.2}
+              returnDuration={1.8}
+              swell={0.2}
+              stretch={0.05}
               glow={0.25}
               fade={0.5}
             />
