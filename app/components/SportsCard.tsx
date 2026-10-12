@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { TeamCrest } from "@/components/TeamCrest";
 import Link from "next/link";
 import { FixtureBanner } from "@/components/CardBanner";
 
@@ -70,7 +70,7 @@ export function SportsCard({ event }: { event: SportsEvent }) {
         {sides.map(({ team, odds, mine, theirs, tone }) => (
           <Link key={team.abbr} href={href} className={`board-outcome sports-pick tone-${tone}`}>
             <span className="board-outcome-name">
-              {team.logo && <Image src={team.logo} alt="" width={16} height={16} />}
+              <TeamCrest logo={team.logo} name={team.name} abbr={team.abbr} size={16} />
               <span>{team.short}</span>
               <i style={{ width: `${odds}%` }} />
             </span>

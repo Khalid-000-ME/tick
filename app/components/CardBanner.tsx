@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { TeamCrest } from "@/components/TeamCrest";
 
 /**
  * Asset icons for the market cards, and the fixture banner for sports.
@@ -75,8 +76,8 @@ export function FixtureBanner({
   live?: boolean;
   /** ESPN reports 0-0 before kickoff, so the score is shown only once there is one. */
   showScore?: boolean;
-  home: { abbr: string; logo: string | null; score: number | null };
-  away: { abbr: string; logo: string | null; score: number | null };
+  home: { abbr: string; name?: string; logo: string | null; score: number | null };
+  away: { abbr: string; name?: string; logo: string | null; score: number | null };
   tall?: boolean;
 }) {
   const scored = showScore && home.score !== null && away.score !== null;
@@ -87,11 +88,11 @@ export function FixtureBanner({
         <span className={`card-chip ${live ? "is-live" : ""}`}>{status}</span>
       </span>
       <span className="card-banner-mark">
-        {away.logo && <Image src={away.logo} alt="" width={tall ? 34 : 26} height={tall ? 34 : 26} />}
+        <TeamCrest logo={away.logo} name={away.name} abbr={away.abbr} size={tall ? 34 : 26} />
         <b>{away.abbr}</b>
         <em className="fixture-score">{scored ? `${away.score} : ${home.score}` : "@"}</em>
         <b>{home.abbr}</b>
-        {home.logo && <Image src={home.logo} alt="" width={tall ? 34 : 26} height={tall ? 34 : 26} />}
+        <TeamCrest logo={home.logo} name={home.name} abbr={home.abbr} size={tall ? 34 : 26} />
       </span>
     </div>
   );

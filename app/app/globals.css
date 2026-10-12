@@ -2667,9 +2667,10 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .rail-tabs button.is-active { background: var(--t-ink); color: var(--t-surface); }
 .rail-more { display: inline-flex; align-items: center; gap: 6px; margin: 10px 0 0 8px; font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--t-dim); }
 .rail-more:hover { color: var(--t-ink); }
-.fixture-logos { display: flex; flex: none; width: 46px; }
-.fixture-logos img { width: 26px; height: 26px; object-fit: contain; border-radius: 50%; background: var(--t-surface); }
-.fixture-logos img + img { margin-left: -8px; }
+.fixture-logos { display: flex; flex: none; width: 50px; }
+.fixture-logos > img { width: 26px; height: 26px; object-fit: contain; border-radius: 50%; background: var(--t-surface); }
+.fixture-logos > * + * { margin-left: -4px; }
+.fixture-logos > * { box-shadow: 0 0 0 2px var(--t-surface); border-radius: 50%; }
 .market-quote .is-live { color: var(--t-up); }
 .market-quote .live-tag { display: block; font: 700 9px var(--font-geist-mono), monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--t-up); }
 @media (max-width: 1180px) { .rail-card.is-markets .market-rail a { min-width: 200px; } }
@@ -2844,3 +2845,6 @@ a.gd-row:hover .gd-chev { opacity: 1; }
   .thread-list { padding: 12px 12px 6px; }
   .thread-form, .thread-join { margin: 6px 10px 10px; }
 }
+
+/* A stand-in crest for a team with no logo: initials on a colour taken from its name. */
+.team-crest { display: inline-grid; place-items: center; flex: none; border-radius: 50%; font-family: var(--font-geist-sans), sans-serif; font-weight: 700; letter-spacing: -.02em; line-height: 1; }

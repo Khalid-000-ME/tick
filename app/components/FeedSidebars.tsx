@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowRight, UsersThree } from "@phosphor-icons/react";
 import { Avatar } from "@/components/Avatar";
 import { ASSET_ICONS, ticker } from "@/components/CardBanner";
+import { TeamCrest } from "@/components/TeamCrest";
 import { openAuth } from "@/lib/authSession";
 import { isFrozen } from "@/lib/marketHours";
 import { FEEDS } from "@/lib/pyth";
@@ -89,8 +90,8 @@ interface Fixture {
   espnId: string;
   league: string;
   name: string;
-  home: { abbr: string; score: number | null; logo: string };
-  away: { abbr: string; score: number | null; logo: string };
+  home: { name: string; abbr: string; score: number | null; logo: string | null };
+  away: { name: string; abbr: string; score: number | null; logo: string | null };
   state: "pre" | "in" | "post";
   secondsToKickoff: number;
   open: boolean;
@@ -197,10 +198,8 @@ export function TopMarkets() {
             <li key={g.espnId}>
               <Link href={`/sports/${g.espnId}`} aria-label={`Open ${g.name}`}>
                 <span className="fixture-logos" aria-hidden="true">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- ESPN crest, tiny */}
-                  <img src={g.away.logo} alt="" width={26} height={26} onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
-                  {/* eslint-disable-next-line @next/next/no-img-element -- ESPN crest, tiny */}
-                  <img src={g.home.logo} alt="" width={26} height={26} onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+                  <TeamCrest logo={g.away.logo} name={g.away.name} abbr={g.away.abbr} size={26} />
+                  <TeamCrest logo={g.home.logo} name={g.home.name} abbr={g.home.abbr} size={26} />
                 </span>
                 <span className="rail-name"><strong>{g.away.abbr} at {g.home.abbr}</strong><small>{g.league}</small></span>
                 <span className="market-quote">
