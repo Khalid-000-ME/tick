@@ -33,9 +33,9 @@ const STEPS = [
   },
   {
     Icon: Lightning,
-    kicker: "Ten times quicker",
+    kicker: "A world first",
     title: "Know in thirty seconds.",
-    copy: "Polymarket's quickest take five minutes.",
+    copy: "The first prediction market to settle in 30 seconds. Polymarket's quickest takes five minutes.",
     source: { label: "CoinMarketCap", href: "https://coinmarketcap.com/academy/article/polymarket-debuts-5-minute-bitcoin-prediction-markets-with-instant-settlement" },
   },
   {
@@ -104,9 +104,10 @@ export function LandingExperience() {
           </motion.div>
           <div className="landing-hero-scrim" aria-hidden="true" />
           <motion.div className="landing-hero-content" initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>
+            <p className="landing-badge">The world's first 30-second prediction market</p>
             <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
             <p className="landing-lede">
-              Ten times faster than Polymarket. Paid in stablecoins.
+              Record-breaking speed, ten times faster than Polymarket. Paid in stablecoins.
             </p>
             <div className="landing-actions">
               <Link href="/markets" className="landing-primary">Browse live markets <ArrowUpRight weight="bold" /></Link>
@@ -120,7 +121,7 @@ export function LandingExperience() {
 
         <section className="landing-why" id="why">
           <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}>
-            <p>Why Tick</p><h2>Your first call, in about a minute.</h2>
+            <p>Why Tick</p><h2>The fastest market on Earth. Your first call, in about a minute.</h2>
           </motion.div>
           <ol className="steps">
             {STEPS.map((step, index) => (
@@ -153,7 +154,7 @@ export function LandingExperience() {
         </section>
 
         <section className="landing-close">
-          <p>Crypto. Equities. Sport.</p>
+          <p>The world's first 30-second markets. Crypto. Equities. Sport.</p>
           <h2>One line.<br />Two sides.<br /><em>Thirty seconds.</em></h2>
           <Link href="/markets" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
         </section>
