@@ -2466,3 +2466,11 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .landing-shell .hero-logo .brand-mark { margin: 0; transform: skew(-17deg) scale(1.2); }
 .landing-shell .hero-logo .brand-mark i { background: var(--acid); }
 @media (max-width: 560px) { .hero-logo { width: 62px; height: 62px; border-radius: 18px; margin-bottom: 20px; } }
+
+/* The flat header lays itself out with flex, not the old fixed grid: it has gained items
+   since (the network pill), and a grid with fewer columns than children pushed the wallet
+   button onto a second row, where it floated under the bar over the chart. */
+.terminal-shell.is-flat .terminal-header { display: flex; align-items: center; gap: 16px; }
+.terminal-shell.is-flat .terminal-header .window-clock { margin: 0 auto; }
+.terminal-shell.is-flat .terminal-header .terminal-nav { gap: 4px; }
+.terminal-shell.is-flat .terminal-header > .wallet-menu, .terminal-shell.is-flat .terminal-header > .auth-buttons { flex: none; }
