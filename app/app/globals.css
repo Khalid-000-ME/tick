@@ -2174,3 +2174,27 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 /* The terminal names its market; the board is where you pick one. */
 .asset-select.is-static { cursor: default; pointer-events: none; }
 .asset-select.is-static:hover { background: inherit; }
+
+/* ---- Withdraw: paste an address, set an amount, review, confirm. */
+.fund-withdraw { display: flex; flex-direction: column; gap: 14px; }
+.fund-withdraw header h2 { font-size: 18px; letter-spacing: -.02em; }
+.fund-withdraw header p { margin-top: 4px; color: var(--t-dim); font-size: 13px; }
+.wd-field { display: flex; flex-direction: column; gap: 6px; }
+.wd-field > span { font: 600 10px var(--font-geist-mono), monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--t-dim); }
+.wd-input, .wd-amount { width: 100%; min-height: 46px; padding: 0 14px; border: 1px solid var(--t-line); border-radius: 10px; background: var(--t-bg, transparent); color: var(--t-ink); font: 14px var(--font-geist-mono), monospace; transition: border-color .2s; }
+.wd-input:focus, .wd-amount:focus-within { outline: none; border-color: var(--t-stroke, var(--t-ink)); }
+.wd-input[aria-invalid="true"] { border-color: var(--t-down, #ef4444); }
+.wd-amount { display: flex; align-items: center; gap: 8px; }
+.wd-amount b { color: var(--t-dim); font-weight: 500; }
+.wd-amount input { flex: 1; min-width: 0; height: 44px; border: 0; outline: 0; background: transparent; color: inherit; font: inherit; }
+.wd-amount button { padding: 5px 12px; border: 1px solid var(--t-line); border-radius: 99px; background: transparent; color: var(--t-dim); font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.wd-amount button:hover:not(:disabled) { color: var(--t-ink); border-color: var(--t-ink); }
+.wd-avail, .wd-error { font-size: 12px; }
+.wd-avail { color: var(--t-dim); }
+.wd-error { color: var(--t-down, #ef4444); }
+.wd-confirm { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--t-stroke, var(--t-line)); border-radius: 12px; background: color-mix(in srgb, var(--t-line) 40%, transparent); }
+.wd-confirm p { font-size: 14px; }
+.wd-confirm code { display: block; padding: 10px 12px; border-radius: 8px; background: var(--t-bg, rgba(0, 0, 0, .2)); font: 12.5px var(--font-geist-mono), monospace; word-break: break-all; }
+.wd-warn { color: var(--t-down, #ef4444); font-size: 12px !important; }
+.wd-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.page-note a { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; text-decoration: underline; text-underline-offset: 3px; }

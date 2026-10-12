@@ -1,6 +1,6 @@
 "use client";
 
-import { createPublicClient, formatEther, http, parseAbi, type WalletClient } from "viem";
+import { createPublicClient, formatEther, getAddress, http, isAddress, parseAbi, type WalletClient } from "viem";
 import { Erc20Abi, GasStationAbi } from "@/lib/chain/abi";
 import { CONTRACTS, monadTestnet } from "@/lib/chain/config";
 import { gasShortfall } from "@/lib/gasCheck";
@@ -25,7 +25,7 @@ const VaultAbi = parseAbi([
 ]);
 
 /** Monad charges the gas limit, so each is ~2x its measured estimate. */
-export const FUND_GAS = { approve: 180_000n, deposit: 280_000n, withdraw: 220_000n, fill: 200_000n } as const;
+export const FUND_GAS = { approve: 180_000n, deposit: 280_000n, withdraw: 220_000n, fill: 200_000n, transfer: 120_000n } as const;
 
 export type Venue = "tick" | "sports";
 const ADDRESS: Record<Venue, `0x${string}`> = { tick: CONTRACTS.tick, sports: CONTRACTS.tickSports };
@@ -138,6 +138,78 @@ export async function ensureWalletUsdc(walletClient: WalletClient, account: `0x$
 /** Everything back into the wallet, so it can be sent anywhere. */
 export async function consolidateToWallet(walletClient: WalletClient, account: `0x${string}`, f: Funds, step: Step) {
   return ensureWalletUsdc(walletClient, account, f.total, f, step);
+}
+
+/* ------------------------------------------------------------------ withdrawals */
+
+/** Contracts that must never be a withdrawal target: USDC sent to one is locked there for good. */
+const LOCKED_TARGETS = new Set(Object.values(CONTRACTS).map((a) => a.toLowerCase()));
+
+/**
+ * Why this address cannot receive a withdrawal, or null when it can. Checked on every
+ * keystroke in the form and again before anything is sent, because a pasted address is the
+ * one input here that can lose money: a transfer cannot be recalled.
+ */
+export function recipientProblem(to: string, self: `0x${string}` | null): string | null {
+  const v = to.trim();
+  if (!v) return "Paste the wallet address to send to.";
+  // viem's strict check also verifies the checksum on a mixed-case address, which catches
+  // most typos and bad copies; an all-lowercase address carries no checksum and passes.
+  if (!isAddress(v)) return "That is not a valid address. Check it for typos.";
+  const addr = v.toLowerCase();
+  if (/^0x0{40}$/.test(addr)) return "That is the empty address. Funds sent there are gone.";
+  if (self && addr === self.toLowerCase()) return "That is this wallet. Paste a different one.";
+  if (LOCKED_TARGETS.has(addr)) return "That is a Tick contract address. Funds sent there would be locked.";
+  return null;
+}
+
+/**
+ * Send USDC out to any address on Monad. Whatever the transfer needs is gathered into the
+ * wallet first, from the price and sports balances, so the trader never has to know where
+ * their money was parked. Returns the transaction hash so the page can link to it.
+ */
+export async function sendUsdc(
+  walletClient: WalletClient,
+  account: `0x${string}`,
+  to: string,
+  units: bigint,
+  step: Step
+): Promise<{ ok: boolean; message: string; hash?: `0x${string}` }> {
+  const problem = recipientProblem(to, account);
+  if (problem) return { ok: false, message: problem };
+  if (units <= 0n) return { ok: false, message: "Enter an amount above zero." };
+  try {
+    step("Checking balance…");
+    const f = await readFunds(account);
+    if (f.total < units) return { ok: false, message: `You have ${fmt(f.total)} USDC and asked to send ${fmt(units)}.` };
+
+    // Only the contracts that actually need emptying cost a withdrawal's gas.
+    const pulls = f.wallet >= units ? 0 : (f.sports > 0n ? 1 : 0) + (f.tick > 0n ? 1 : 0);
+    const planned = [FUND_GAS.transfer, ...Array<bigint>(pulls).fill(FUND_GAS.withdraw)];
+    let short = await gasShortfall(pub, account, planned);
+    if (short) {
+      step("Getting starter gas…");
+      if (await requestGas(account)) short = await gasShortfall(pub, account, planned);
+    }
+    if (short) return { ok: false, message: short };
+
+    const moved = await ensureWalletUsdc(walletClient, account, units, f, step);
+    if (moved) return { ok: false, message: moved };
+
+    step("Sending…");
+    const hash = await walletClient.writeContract({
+      address: CONTRACTS.usdc, abi: Erc20Abi, functionName: "transfer",
+      args: [getAddress(to.trim()), units], account: walletClient.account ?? account, chain: monadTestnet, gas: FUND_GAS.transfer,
+    });
+    const rc = await pub.waitForTransactionReceipt({ hash });
+    if (rc.status !== "success") return { ok: false, message: "The transfer reverted on chain. Nothing was sent.", hash };
+    const t = getAddress(to.trim());
+    return { ok: true, message: `Sent ${fmt(units)} USDC to ${t.slice(0, 6)}...${t.slice(-4)}.`, hash };
+  } catch (e) {
+    const msg = (e as { shortMessage?: string }).shortMessage ?? (e as Error).message;
+    if (/user rejected|denied/i.test(msg)) return { ok: false, message: "You rejected the transaction." };
+    return { ok: false, message: msg.split("\n")[0] };
+  }
 }
 
 /* ------------------------------------------------------------------ gas tank */

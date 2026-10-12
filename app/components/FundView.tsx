@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, GasPump, Info } from "@phosphor-icons/react";
-import { formatEther } from "viem";
+import { ArrowUpRight, Check, Copy, GasPump, Info } from "@phosphor-icons/react";
+import { formatEther, formatUnits, getAddress, parseUnits } from "viem";
 import { AccountShell } from "@/components/AccountShell";
-import { CONTRACTS, explorerAddress, monadTestnet } from "@/lib/chain/config";
-import { consolidateToWallet, fillGas, fmt, gasStationInfo, quoteGas, readFunds, stakesFor, type Funds } from "@/lib/funds";
+import { CONTRACTS, explorerAddress, explorerTx, monadTestnet } from "@/lib/chain/config";
+import { fillGas, fmt, gasStationInfo, quoteGas, readFunds, recipientProblem, sendUsdc, stakesFor, type Funds } from "@/lib/funds";
 import { useTickWallet } from "@/lib/useTickWallet";
 
 /** USDC amounts offered for a gas fill. */
@@ -19,6 +19,13 @@ export function FundView() {
   const [copied, setCopied] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [noteHref, setNoteHref] = useState<string | null>(null);
+
+  // Withdrawal form. Editing either field drops back out of the confirm step, so what was
+  // confirmed is always exactly what is on screen.
+  const [wTo, setWTo] = useState("");
+  const [wAmt, setWAmt] = useState("");
+  const [confirming, setConfirming] = useState(false);
 
   const [fill, setFill] = useState("0.25");
   const [quote, setQuote] = useState<{ amount: string; mon: bigint } | null>(null);
@@ -63,6 +70,7 @@ export function FundView() {
   async function doFill() {
     if (!walletClient || !account) return setNote("The wallet is not ready to sign yet. Reconnect it and try again.");
     setNote(null);
+    setNoteHref(null);
     setBusy("Filling…");
     const r = await fillGas(walletClient, account, fillUnits, setBusy);
     setNote(r.message);
@@ -70,19 +78,21 @@ export function FundView() {
     await load();
   }
 
-  async function toWallet() {
-    if (!walletClient || !account || !funds) return;
+  async function doWithdraw() {
+    if (!walletClient || !account) return setNote("The wallet is not ready to sign yet. Reconnect it and try again.");
     setNote(null);
-    setBusy("Moving…");
-    try {
-      const r = await consolidateToWallet(walletClient, account, funds, setBusy);
-      setNote(r ?? `All ${fmt(funds.total)} USDC is in your wallet now, ready to send anywhere.`);
-    } catch (e) {
-      setNote(((e as { shortMessage?: string }).shortMessage ?? (e as Error).message).split("\n")[0]);
-    } finally {
-      setBusy(null);
-      await load();
+    setNoteHref(null);
+    setBusy("Sending…");
+    const r = await sendUsdc(walletClient, account, wTo, wUnits, setBusy);
+    if (r.ok) {
+      setWTo("");
+      setWAmt("");
     }
+    setConfirming(false);
+    setNote(r.message);
+    setNoteHref(r.hash ? explorerTx(r.hash) : null);
+    setBusy(null);
+    await load();
   }
 
   function copy(key: string, value: string) {
@@ -95,13 +105,16 @@ export function FundView() {
   const tankStakes = funds && station ? stakesFor(funds.mon, station.gasPrice) : null;
   const fillStakes = quoted !== null && station ? stakesFor(quoted, station.gasPrice) : null;
   const overMax = station ? fillUnits > station.maxFill : false;
-  const parked = funds ? funds.tick + funds.sports : 0n;
+  const toProblem = recipientProblem(wTo, account);
+  const wUnits = parseUsdc(wAmt);
+  const overBalance = !!funds && wUnits > funds.total;
+  const canReview = !toProblem && wUnits > 0n && !!funds && !overBalance;
 
   return (
     <AccountShell active="fund" wallet={wallet}>
       <section className="page-intro">
         <h1>Fund your account</h1>
-        <p>One balance for every market. Add USDC to your address, and fill your gas tank with USDC.</p>
+        <p>One balance. Every market.</p>
       </section>
 
       {status !== "ready" || !account ? (
@@ -112,11 +125,6 @@ export function FundView() {
             <div className="stat">
               <span>Balance · USDC</span>
               <strong>{funds ? fmt(funds.total) : "-"}</strong>
-              {funds && parked > 0n && (
-                <button type="button" className="btn-ghost small" disabled={!!busy} onClick={() => void toWallet()}>
-                  Move all to wallet
-                </button>
-              )}
             </div>
             <div className="stat">
               <span>Gas tank</span>
@@ -130,7 +138,7 @@ export function FundView() {
               <GasPump weight="bold" />
               <div>
                 <h2>Fill gas with USDC</h2>
-                <p>Every transaction needs a little MON. Pay in USDC and the platform fills your tank in one transaction.</p>
+                <p>Pay in USDC. We top up your gas.</p>
               </div>
             </div>
             <div className="fund-gas-row">
@@ -172,16 +180,64 @@ export function FundView() {
             </p>
           </section>
 
+          <section className="fund-card fund-withdraw" aria-label="Withdraw">
+            <header>
+              <h2>Withdraw</h2>
+              <p>Send USDC to any wallet on Monad.</p>
+            </header>
+            <label className="wd-field">
+              <span>To</span>
+              <input
+                className="wd-input"
+                value={wTo}
+                onChange={(e) => { setWTo(e.target.value); setConfirming(false); }}
+                placeholder="Paste a wallet address, 0x..."
+                spellCheck={false}
+                autoComplete="off"
+                aria-invalid={!!toProblem && wTo.trim() !== ""}
+              />
+            </label>
+            {toProblem && wTo.trim() !== "" && <p className="wd-error" role="alert">{toProblem}</p>}
+            <label className="wd-field">
+              <span>Amount</span>
+              <div className="wd-amount">
+                <b>$</b>
+                <input
+                  inputMode="decimal"
+                  value={wAmt}
+                  onChange={(e) => { setWAmt(e.target.value.replace(/[^0-9.]/g, "")); setConfirming(false); }}
+                  placeholder="0.00"
+                  aria-label="USDC to withdraw"
+                />
+                <button type="button" disabled={!funds || funds.total === 0n} onClick={() => { if (funds) { setWAmt(formatUnits(funds.total, 6)); setConfirming(false); } }}>Max</button>
+              </div>
+            </label>
+            <p className={overBalance ? "wd-error" : "wd-avail"}>{overBalance ? `More than your ${funds ? fmt(funds.total) : "0.00"} USDC balance.` : `Available: ${funds ? fmt(funds.total) : "-"} USDC`}</p>
+            {!confirming ? (
+              <button type="button" className="btn-solid" disabled={!canReview || !!busy} onClick={() => setConfirming(true)}>Review withdrawal</button>
+            ) : (
+              <div className="wd-confirm">
+                <p>Send <strong>${wAmt} USDC</strong> to</p>
+                <code>{wTo.trim() && !toProblem ? getAddress(wTo.trim()) : ""}</code>
+                <p className="wd-warn">Monad Testnet only. This cannot be undone.</p>
+                <div className="wd-actions">
+                  <button type="button" className="btn-solid" disabled={!!busy} onClick={() => void doWithdraw()}>{busy ?? "Confirm and send"}</button>
+                  <button type="button" className="btn-ghost" disabled={!!busy} onClick={() => setConfirming(false)}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </section>
+
           <section className="fund-grid">
             <article className="fund-option">
               <h2>Get test USDC</h2>
-              <p>Circle&apos;s faucet sends free testnet USDC. Choose Monad Testnet and paste your address.</p>
+              <p>Free testnet USDC from Circle.</p>
               <a className="btn-solid" href="https://faucet.circle.com" target="_blank" rel="noreferrer">Open Circle&apos;s faucet</a>
             </article>
 
             <article className="fund-option">
               <h2>Send from another wallet</h2>
-              <p>Transfer USDC on Monad Testnet to your address. It lands within a block or two.</p>
+              <p>USDC on Monad Testnet, to the address above.</p>
               <div className="fund-token">
                 <span>USDC contract</span>
                 <code>{CONTRACTS.usdc}</code>
@@ -193,15 +249,18 @@ export function FundView() {
 
             <article className="fund-option is-muted">
               <h2>Buy with a card <span className="soon-pill">Coming soon</span></h2>
-              <p>A Stripe-powered checkout to buy USDC with a card or bank transfer, landing straight in your balance.</p>
+              <p>Pay by card with Stripe.</p>
             </article>
           </section>
 
           {note && (
             <div className="page-note" role="status">
               <Info weight="bold" />
-              <p>{note}</p>
-              <button type="button" onClick={() => setNote(null)} aria-label="Dismiss">×</button>
+              <p>
+                {note}
+                {noteHref && <> <a href={noteHref} target="_blank" rel="noreferrer">View transaction <ArrowUpRight weight="bold" /></a></>}
+              </p>
+              <button type="button" onClick={() => { setNote(null); setNoteHref(null); }} aria-label="Dismiss">×</button>
             </div>
           )}
         </>
@@ -213,4 +272,11 @@ export function FundView() {
 function toUnits(v: string): bigint {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? BigInt(Math.round(n * 1e6)) : 0n;
+}
+
+/** A USDC amount typed as text, to base units. Anything malformed or beyond six decimals is zero. */
+function parseUsdc(v: string): bigint {
+  const t = v.trim();
+  if (t === "" || t === "." || !/^\d*\.?\d{0,6}$/.test(t)) return 0n;
+  return parseUnits(t, 6);
 }
