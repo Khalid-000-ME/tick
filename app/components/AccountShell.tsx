@@ -17,7 +17,7 @@ export function AccountShell({
   children,
   strip,
 }: {
-  active: "markets" | "portfolio" | "fund" | "settlers" | "leaderboard" | "profile";
+  active: "markets" | "portfolio" | "fund" | "settlers" | "leaderboard" | "profile" | "rooms";
   wallet: Wallet;
   children: React.ReactNode;
   /** Overrides the default strip (all markets), e.g. sports on a match page. */
@@ -37,6 +37,7 @@ export function AccountShell({
         <nav className="terminal-nav page-nav" aria-label="Account">
           <Link href="/markets" aria-current={active === "markets" ? "page" : undefined}>Markets</Link>
           <Link href="/portfolio" aria-current={active === "portfolio" ? "page" : undefined}>Portfolio</Link>
+          <Link href="/rooms" aria-current={active === "rooms" ? "page" : undefined}>Rooms</Link>
           <Link href="/leaderboard" aria-current={active === "leaderboard" ? "page" : undefined}>Leaderboard</Link>
           <Link href="/fund" aria-current={active === "fund" ? "page" : undefined}>Fund</Link>
         </nav>

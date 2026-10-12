@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowSquareOut, CaretDown, X } from "@phosphor-icons/react";
+import { ShareActions } from "@/components/ShareActions";
 import { isRefundPending, statusOf, type Position, type PositionStatus } from "@/lib/usePositions";
 import { explorerTx } from "@/lib/chain/config";
 
@@ -28,12 +29,14 @@ const VERDICT: Record<PositionStatus, { label: string; tone: string }> = {
 
 export function PositionsDock({
   positions,
+  account,
   justResolved,
   dismiss,
   claim,
   claiming,
 }: {
   positions: Position[];
+  account?: string | null;
   justResolved: Position | null;
   dismiss: () => void;
   claim: (id: `0x${string}`) => Promise<{ ok: boolean; message: string }>;
@@ -53,7 +56,7 @@ export function PositionsDock({
 
   return (
     <div className="dock">
-      {justResolved && <ResultCard position={justResolved} dismiss={dismiss} claim={claim} claiming={claiming} />}
+      {justResolved && <ResultCard position={justResolved} account={account} dismiss={dismiss} claim={claim} claiming={claiming} />}
 
       <div className={`dock-panel ${open ? "is-open" : ""}`}>
         <button className="dock-head" type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
@@ -124,11 +127,13 @@ export function PositionsDock({
 
 function ResultCard({
   position,
+  account,
   dismiss,
   claim,
   claiming,
 }: {
   position: Position;
+  account?: string | null;
   dismiss: () => void;
   claim: (id: `0x${string}`) => Promise<{ ok: boolean; message: string }>;
   claiming: string | null;
@@ -167,6 +172,11 @@ function ResultCard({
       )}
       {status === "refunded" && (
         <span className="result-detail">Only one side had money, so the market voided and every stake is returned.</span>
+      )}
+      {status === "won" && account && (
+        // The win is the reason to post, so the share sits on the win itself rather than
+        // somewhere a trader would have to go looking for it.
+        <ShareActions address={account} net={pnl} compact />
       )}
       {isRefundPending(position) && (
         <button

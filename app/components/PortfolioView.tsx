@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { ArrowSquareOut, Info } from "@phosphor-icons/react";
 import { AccountShell } from "@/components/AccountShell";
+import { ShareActions } from "@/components/ShareActions";
 import { VerifyPanel } from "@/components/VerifyPanel";
 import { SportsPortfolio } from "@/components/SportsPortfolio";
 import { useTickWallet } from "@/lib/useTickWallet";
@@ -123,6 +124,11 @@ export function PortfolioView() {
             />
             <Stat label="Total staked" value={stats.staked.toFixed(2)} />
           </section>
+
+          <div className="portfolio-share">
+            <ShareActions address={account} net={stats.net} compact />
+            <small>Your card shows what the chain says you made. Anyone can open it.</small>
+          </div>
 
           {pendingRefunds.length > 0 && (
             <section className="refund-bar" role="status">

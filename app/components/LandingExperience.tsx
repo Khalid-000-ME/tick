@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, CurrencyDollar, Fingerprint, HandTap, Lightning, Trophy } from "@phosphor-icons/react";
+import { ArrowDown, ArrowUpRight, CurrencyDollar, Fingerprint, HandTap, Lightning, Trophy, UsersThree } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { Brand } from "@/components/Brand";
@@ -39,10 +39,16 @@ const STEPS = [
     source: { label: "CoinMarketCap", href: "https://coinmarketcap.com/academy/article/polymarket-debuts-5-minute-bitcoin-prediction-markets-with-instant-settlement" },
   },
   {
+    Icon: UsersThree,
+    kicker: "Better with people",
+    title: "Bring the group.",
+    copy: "Make a room, send the link, and watch the table move together.",
+  },
+  {
     Icon: Trophy,
     kicker: "Nothing up front",
-    title: "Keep what you win.",
-    copy: "We take 2% of winnings. Nothing if you miss.",
+    title: "Post what you made.",
+    copy: "Every result has a card. We take 2% of winnings, nothing if you miss.",
   },
 ] as const;
 
@@ -107,7 +113,7 @@ export function LandingExperience() {
             <span className="hero-logo" aria-hidden="true"><span className="brand-mark"><i /><i /><i /></span></span>
             <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
             <p className="landing-lede">
-              A record time, ten times faster than Polymarket. Paid in stablecoins.
+              A record time, ten times faster than Polymarket. Call it with your group, and post what you made.
             </p>
             <div className="landing-actions">
               <Link href="/markets" className="landing-primary">Browse live markets <ArrowUpRight weight="bold" /></Link>
@@ -149,7 +155,7 @@ export function LandingExperience() {
             ))}
           </ol>
           <div className="steps-cta">
-            <p>No application. No minimum.</p>
+            <p>No application. No minimum. Bring whoever you like.</p>
             <Link href="/markets" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
           </div>
         </section>
