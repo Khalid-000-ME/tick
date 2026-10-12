@@ -73,7 +73,7 @@ export function LandingExperience() {
           <Brand />
           <nav aria-label="Primary navigation">
             <a href="#how">How it works</a><a href="#why">Why Tick</a>
-            <Link href="/markets" className="landing-nav-cta">Start free <ArrowUpRight weight="bold" /></Link>
+            <Link href="/feed" className="landing-nav-cta">Start free <ArrowUpRight weight="bold" /></Link>
           </nav>
         </div>
       </header>
@@ -116,7 +116,7 @@ export function LandingExperience() {
               A record time, ten times faster than Polymarket. Call it with your group, and post what you made.
             </p>
             <div className="landing-actions">
-              <Link href="/markets" className="landing-primary">Browse live markets <ArrowUpRight weight="bold" /></Link>
+              <Link href="/feed" className="landing-primary">Open the feed <ArrowUpRight weight="bold" /></Link>
               <a href="#how" className="landing-secondary">How it works <ArrowDown /></a>
             </div>
           </motion.div>
@@ -156,14 +156,14 @@ export function LandingExperience() {
           </ol>
           <div className="steps-cta">
             <p>No application. No minimum. Bring whoever you like.</p>
-            <Link href="/markets" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
+            <Link href="/feed" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
           </div>
         </section>
 
         <section className="landing-close">
           <p>The world&apos;s first 30-second markets. Crypto. Equities. Sport.</p>
           <h2>One line.<br />Two sides.<br /><em>Thirty seconds.</em></h2>
-          <Link href="/markets" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
+          <Link href="/feed" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
         </section>
       </main>
       <footer className="landing-footer"><Brand /></footer>

@@ -60,7 +60,7 @@ export function RoomView({ id }: { id: number }) {
   const me = table.find((s) => account && s.address === account.toLowerCase());
 
   return (
-    <AccountShell active="rooms" wallet={wallet}>
+    <AccountShell active="groups" wallet={wallet}>
       {missing ? (
         <div className="page-empty">No room has that number.</div>
       ) : !room ? (

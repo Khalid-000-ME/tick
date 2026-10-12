@@ -27,6 +27,7 @@ export const CONTRACTS = {
   tickSports: deployed.contracts.TickSports as `0x${string}`,
   tickProfiles: deployed.contracts.TickProfiles as `0x${string}`,
   tickSocial: deployed.contracts.TickSocial as `0x${string}`,
+  tickFeed: deployed.contracts.TickFeed as `0x${string}`,
   gasStation: deployed.contracts.GasStation as `0x${string}`,
 } as const;
 

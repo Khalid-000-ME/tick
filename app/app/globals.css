@@ -2542,3 +2542,59 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .chat-form { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--t-line); }
 .chat-form input { flex: 1; min-height: 42px; padding: 0 12px; border: 1px solid var(--t-line); border-radius: 10px; background: transparent; color: var(--t-ink); font-size: 14px; }
 .chat-form button { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+
+/* ---- The feed ---- */
+.feed-col { width: min(620px, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+.feed-tabs { display: inline-flex; align-self: flex-start; gap: 4px; padding: 4px; border-radius: 999px; background: var(--t-line); }
+.feed-tabs button { padding: 7px 18px; border: 0; border-radius: 999px; background: transparent; color: var(--t-dim); font: 600 13px var(--font-geist-sans), sans-serif; cursor: pointer; }
+.feed-tabs button.is-active { background: var(--t-ink); color: var(--t-surface); }
+.feed-empty { padding: 40px 0; text-align: center; color: var(--t-dim); font-size: 14px; }
+.feed-more { align-self: center; }
+
+.composer { padding: 16px; border: 1px solid var(--t-line); border-radius: 18px; background: var(--t-surface); }
+.composer.is-locked { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.composer.is-locked p { color: var(--t-dim); font-size: 14px; }
+.composer-row { display: flex; gap: 12px; align-items: flex-start; }
+.composer-row .avatar { flex: none; border-radius: 50%; overflow: hidden; }
+.composer-row textarea { flex: 1; resize: none; border: 0; outline: 0; background: transparent; color: var(--t-ink); font: 16px/1.45 var(--font-geist-sans), sans-serif; padding-top: 8px; }
+.composer-photo { position: relative; margin: 12px 0 0 52px; width: fit-content; max-width: calc(100% - 52px); }
+.composer-photo img { display: block; max-width: 100%; max-height: 260px; border-radius: 14px; }
+.composer-photo button { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 50%; background: rgba(12, 14, 10, .7); color: #fff; cursor: pointer; }
+.composer-photo small { display: block; margin-top: 6px; font: 10px var(--font-geist-mono), monospace; color: var(--t-dim); letter-spacing: .08em; }
+.composer-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--t-line); }
+.composer-tool { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 1px solid var(--t-line); border-radius: 999px; background: transparent; color: var(--t-ink); font: 600 13px var(--font-geist-sans), sans-serif; cursor: pointer; }
+.composer-tool:hover:not(:disabled) { border-color: var(--t-ink); }
+.composer-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--t-dim); cursor: pointer; }
+.composer-post { margin-left: auto; min-width: 96px; }
+
+.post { border: 1px solid var(--t-line); border-radius: 18px; background: var(--t-surface); overflow: hidden; }
+.post-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px 12px; }
+.post-who { display: flex; align-items: center; gap: 11px; color: inherit; min-width: 0; }
+.post-who .avatar { flex: none; border-radius: 50%; overflow: hidden; }
+.post-who span { display: flex; flex-direction: column; min-width: 0; }
+.post-who strong { font-size: 14px; font-weight: 600; }
+.post-who small { font-size: 12px; color: var(--t-dim); }
+.post-head time { font: 11px var(--font-geist-mono), monospace; color: var(--t-dim); }
+.post-photo { position: relative; margin: 0; background: #0c0e0a; }
+.post-photo img { display: block; width: 100%; max-height: 640px; object-fit: cover; aspect-ratio: 1; }
+.post-caption { padding: 12px 16px 4px; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.post-actions { display: flex; align-items: center; gap: 14px; padding: 8px 12px 12px; }
+.post-like { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--t-dim); font: 600 13px var(--font-geist-mono), monospace; cursor: pointer; }
+.post-like svg { font-size: 22px; }
+.post-like:hover { background: var(--t-line); color: var(--t-ink); }
+.post-like.is-on { color: #e5484d; }
+.post-card-link { margin-left: auto; font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--t-dim); }
+.post-card-link:hover { color: var(--t-ink); }
+
+/* The results card: its own object, never mistaken for a photo. Dark glass, the profit in the
+   pixel face, and a glow that says at a glance whether it was a good day. */
+.results-card { --glow: #d8f35f; position: relative; display: flex; flex-direction: column; gap: 6px; margin: 4px 16px 6px; padding: 22px 22px 20px; border-radius: 16px; overflow: hidden; color: #eef1e6; background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--glow) 22%, #0b0d08) 0%, #0b0d08 62%); border: 1px solid color-mix(in srgb, var(--glow) 32%, transparent); box-shadow: 0 0 40px -12px color-mix(in srgb, var(--glow) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, .06); }
+.results-card.is-down { --glow: #ff7a59; }
+.results-card::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .03) 0 1px, transparent 1px 4px); mix-blend-mode: overlay; }
+.results-eyebrow { display: inline-flex; align-items: center; gap: 6px; font: 600 10px var(--font-geist-mono), monospace; letter-spacing: .18em; text-transform: uppercase; color: var(--glow); }
+.results-eyebrow svg { font-size: 14px; }
+.results-net { font: 400 56px/1 "Geist Pixel", var(--font-geist-mono), monospace; letter-spacing: .01em; color: var(--glow); text-shadow: 0 0 28px color-mix(in srgb, var(--glow) 45%, transparent); }
+.results-line { font: 500 12px var(--font-geist-mono), monospace; letter-spacing: .08em; color: rgba(238, 241, 230, .66); }
+.results-card.is-overlay { position: absolute; left: 14px; bottom: 14px; right: auto; margin: 0; padding: 14px 18px 13px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: linear-gradient(135deg, rgba(8, 10, 6, .72), rgba(8, 10, 6, .5)); }
+.results-card.is-overlay .results-net { font-size: 38px; }
+@media (max-width: 520px) { .results-net { font-size: 46px; } .results-card.is-overlay .results-net { font-size: 32px; } }

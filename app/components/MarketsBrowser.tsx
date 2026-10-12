@@ -158,13 +158,14 @@ export function MarketsBrowser() {
       <div className="page-top">
       <TickerStrip mode={kind} />
       <header className="terminal-header page-header">
-        <Link href="/" className="terminal-back" aria-label="Home"><ArrowLeft /></Link>
+        <Link href="/feed" className="terminal-back" aria-label="Back to the feed"><ArrowLeft /></Link>
         <Brand />
         <nav className="terminal-nav page-nav" aria-label="Sections">
+          <Link href="/feed">Feed</Link>
           <Link href="/markets" aria-current="page">Markets</Link>
-          <Link href="/portfolio">Portfolio</Link>
+          <Link href="/groups">Groups</Link>
           <Link href="/leaderboard">Leaderboard</Link>
-          <Link href="/fund">Fund</Link>
+          <Link href="/portfolio">Portfolio</Link>
         </nav>
         <ModeSwitch />
         <button className="theme-toggle" type="button" onClick={toggle} aria-label="Toggle theme">

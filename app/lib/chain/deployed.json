@@ -16,7 +16,8 @@
     "TickSports": "0x26f9cDA88c70bd3D5b005a91AF754a5fc5aF0cE3",
     "TickProfiles": "0xaD241b9D273462F6DBf67D74c8aDa2B907D91c59",
     "GasStation": "0x1FAE6A8F254505480678D80835E19ECB8236490A",
-    "TickSocial": "0x26307B3c17A0a1e3Fb381c70D7F9584D933a3129"
+    "TickSocial": "0x26307B3c17A0a1e3Fb381c70D7F9584D933a3129",
+    "TickFeed": "0x390686951bF5a91a17dfE229fdF632ACd7418E6b"
   },
   "settleBountyBps": 5000,
   "maxSettleBountyUsd": 2,

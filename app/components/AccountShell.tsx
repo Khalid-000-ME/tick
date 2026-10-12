@@ -17,7 +17,7 @@ export function AccountShell({
   children,
   strip,
 }: {
-  active: "markets" | "portfolio" | "fund" | "settlers" | "leaderboard" | "profile" | "rooms";
+  active: "feed" | "markets" | "portfolio" | "fund" | "settlers" | "leaderboard" | "profile" | "groups";
   wallet: Wallet;
   children: React.ReactNode;
   /** Overrides the default strip (all markets), e.g. sports on a match page. */
@@ -32,13 +32,14 @@ export function AccountShell({
       <div className="page-top">
       {strip ?? <TickerStrip />}
       <header className="terminal-header page-header">
-        <Link href="/markets" className="terminal-back" aria-label="Back to the markets"><ArrowLeft /></Link>
+        <Link href="/feed" className="terminal-back" aria-label="Back to the feed"><ArrowLeft /></Link>
         <Brand />
         <nav className="terminal-nav page-nav" aria-label="Account">
+          <Link href="/feed" aria-current={active === "feed" ? "page" : undefined}>Feed</Link>
           <Link href="/markets" aria-current={active === "markets" ? "page" : undefined}>Markets</Link>
-          <Link href="/portfolio" aria-current={active === "portfolio" ? "page" : undefined}>Portfolio</Link>
-          <Link href="/rooms" aria-current={active === "rooms" ? "page" : undefined}>Rooms</Link>
+          <Link href="/groups" aria-current={active === "groups" ? "page" : undefined}>Groups</Link>
           <Link href="/leaderboard" aria-current={active === "leaderboard" ? "page" : undefined}>Leaderboard</Link>
+          <Link href="/portfolio" aria-current={active === "portfolio" ? "page" : undefined}>Portfolio</Link>
           <Link href="/fund" aria-current={active === "fund" ? "page" : undefined}>Fund</Link>
         </nav>
         <ModeSwitch />

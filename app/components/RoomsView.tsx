@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Plus } from "@phosphor-icons/react";
 import { Avatar, genAvatar } from "@/components/Avatar";
 import { AccountShell } from "@/components/AccountShell";
+import { openAuth } from "@/lib/authSession";
 import { useSocial } from "@/lib/useSocial";
 import { useTickWallet } from "@/lib/useTickWallet";
 
@@ -37,16 +38,15 @@ export function RoomsView() {
   }
 
   return (
-    <AccountShell active="rooms" wallet={wallet}>
+    <AccountShell active="groups" wallet={wallet}>
       <section className="page-intro">
-        <h1>Rooms</h1>
-        <p>Play the same thirty seconds as everyone else, and settle who was right. Rooms and groups live on chain.</p>
+        <h1>Groups</h1>
+        <p>Your crowds, their chat and their leaderboards. Groups and rooms live on chain.</p>
       </section>
 
-      {!signedIn ? (
-        <div className="page-empty">Log in to join a room.</div>
-      ) : (
+      {(
         <div className="social-grid">
+          {signedIn ? (
           <section className="match-panel">
             <header className="match-panel-head"><h2>Your rooms</h2></header>
             {loading ? (
@@ -83,6 +83,13 @@ export function RoomsView() {
             </div>
             {note && <p className="match-note">{note}</p>}
           </section>
+          ) : (
+            <section className="match-panel">
+              <header className="match-panel-head"><h2>Your rooms</h2></header>
+              <p className="match-meta">Log in to make a room, join one, or chat. Anyone can read a group.</p>
+              <button type="button" className="btn-solid" onClick={() => openAuth("login")}>Log in</button>
+            </section>
+          )}
 
           <section className="match-panel">
             <header className="match-panel-head"><h2>Groups</h2></header>
@@ -97,7 +104,7 @@ export function RoomsView() {
                       <Link href={`/groups/${g.id}`} className="room-row-name">{g.name}</Link>
                       <span>{g.members} in · {g.rooms} rooms</span>
                       {inIt ? <em>Joined</em> : (
-                        <button type="button" className="btn-ghost small" disabled={busy} onClick={() => void run("joinGroup", [BigInt(g.id)], "Joining…")}>Join</button>
+                        <button type="button" className="btn-ghost small" disabled={busy} onClick={() => (signedIn ? void run("joinGroup", [BigInt(g.id)], "Joining…") : openAuth("login"))}>Join</button>
                       )}
                     </div>
                   </li>
@@ -105,12 +112,12 @@ export function RoomsView() {
               })}
               {groups.length === 0 && <li><p className="match-meta">No groups yet. Start the first one.</p></li>}
             </ul>
-            <div className="social-form">
+            {signedIn && <div className="social-form">
               <input value={groupName} maxLength={40} placeholder="Start a group" onChange={(e) => setGroupName(e.target.value)} />
               <button type="button" className="btn-solid" disabled={busy || !groupName.trim()} onClick={() => void run("createGroup", [groupName, genAvatar("rings", groupName)], "Starting the group…").then((r) => r.ok && setGroupName(""))}>
                 <Plus weight="bold" /> Start
               </button>
-            </div>
+            </div>}
           </section>
         </div>
       )}

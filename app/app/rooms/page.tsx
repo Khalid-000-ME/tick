@@ -1,5 +1,6 @@
-import { RoomsView } from "@/components/RoomsView";
+import { redirect } from "next/navigation";
 
+/** Rooms and groups are one place now. */
 export default function RoomsPage() {
-  return <RoomsView />;
+  redirect("/groups");
 }

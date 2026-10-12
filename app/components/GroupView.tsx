@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Copy, PencilSimple, UploadSimple, UsersThree } from "@phosphor-icons/react";
+import { ArrowRight, Check, Copy, PencilSimple, Trophy, UploadSimple, UsersThree } from "@phosphor-icons/react";
 import { AccountShell } from "@/components/AccountShell";
 import { Avatar, AVATAR_STYLES, genAvatar, type AvatarStyle } from "@/components/Avatar";
 import { ChatPanel } from "@/components/ChatPanel";
 import { useAvatarUpload } from "@/lib/useAvatarUpload";
+import { useProfiles } from "@/lib/profiles";
 import { fetchGroup, fetchGroupMembers, fetchRoomsIn, useSocial, type Group, type Room } from "@/lib/useSocial";
 import { useTickWallet } from "@/lib/useTickWallet";
 
@@ -27,6 +28,7 @@ export function GroupView({ id }: { id: number }) {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [board, setBoard] = useState<{ address: string; bets: number; net: number }[]>([]);
 
   const load = useCallback(async () => {
     const found = await fetchGroup(id);
@@ -35,7 +37,16 @@ export function GroupView({ id }: { id: number }) {
     const [m, r] = await Promise.all([fetchGroupMembers(id), fetchRoomsIn(id)]);
     setMembers(m);
     setRooms(r);
+    try {
+      const res = await fetch(`/api/standings?addresses=${m.join(",")}`, { cache: "no-store" });
+      const body = (await res.json()) as { standings: { address: string; bets: number; net: number }[] };
+      setBoard([...body.standings].sort((a, b) => b.net - a.net || b.bets - a.bets));
+    } catch {
+      /* the leaderboard keeps its last reading */
+    }
   }, [id]);
+
+  const profiles = useProfiles(board.map((b) => b.address));
 
   useEffect(() => {
     let off = false;
@@ -55,7 +66,7 @@ export function GroupView({ id }: { id: number }) {
   const mine = !!account && group?.creator.toLowerCase() === account.toLowerCase();
 
   return (
-    <AccountShell active="rooms" wallet={wallet}>
+    <AccountShell active="groups" wallet={wallet}>
       {missing ? (
         <div className="page-empty">No group has that number.</div>
       ) : !group ? (
@@ -117,6 +128,26 @@ export function GroupView({ id }: { id: number }) {
               canPost={joined}
               post={async (text) => send("postToGroup", [BigInt(group.id), text])}
             />
+
+            <section className="match-panel">
+              <header className="match-panel-head"><h2><Trophy weight="bold" /> Leaderboard</h2></header>
+              <ol className="room-board">
+                {board.map((s, i) => {
+                  const p = profiles.get(s.address);
+                  return (
+                    <li key={s.address} className={account && s.address === account.toLowerCase() ? "is-you" : ""}>
+                      <span className="room-rank">{i + 1}</span>
+                      <Avatar avatar={p?.avatar} seed={s.address} name={p?.displayName || p?.username} size={28} />
+                      <span className="room-who">
+                        <strong>{p?.displayName || (p?.username ? `@${p.username}` : `${s.address.slice(0, 6)}…${s.address.slice(-4)}`)}</strong>
+                        <small>{s.bets} calls</small>
+                      </span>
+                      <span className={`room-net ${s.net >= 0 ? "is-up" : "is-down"}`}>{s.net >= 0 ? "+" : "−"}${Math.abs(s.net).toFixed(2)}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
 
             <section className="match-panel">
               <header className="match-panel-head"><h2><UsersThree weight="bold" /> Rooms in this group</h2></header>
