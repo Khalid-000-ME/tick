@@ -2381,14 +2381,16 @@ body.is-resizing { cursor: col-resize; user-select: none; }
   .terminal-shell .terminal-footer { flex-wrap: wrap; }
 }
 
-.landing-badge { display: inline-block; margin: 0 auto 18px; padding: 7px 14px; border: 1px solid #d8f35f66; border-radius: 999px; background: #d8f35f1a; color: #d8f35f; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-@media (max-width: 560px) { .landing-badge { font-size: 10.5px; padding: 6px 11px; } }
+/* The claim sits along the bottom of the hero as a line of type, with nothing drawn around
+   it: a pill above the headline competed with the headline. */
+.landing-claim { position: absolute; left: 0; right: 0; bottom: 52px; z-index: 1; padding: 0 24px; text-align: center; font: 500 11px var(--font-geist-mono), monospace; letter-spacing: .18em; text-transform: uppercase; color: rgba(238, 241, 230, .58); }
+.landing-claim em { font-style: normal; font-weight: 700; color: var(--acid); }
+@media (max-width: 860px) { .landing-claim { bottom: 30px; font-size: 10px; letter-spacing: .14em; } }
+@media (max-width: 480px) { .landing-claim { font-size: 9.5px; letter-spacing: .1em; } }
 
 .profile-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .profile-upload label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .profile-upload small.is-bad { color: #b3392b; }
-
-.landing-badge { font-family: var(--font-geist-mono), monospace; }
 
 /* Onboarding walkthrough, inside the auth dialog's shell. */
 .ob-panel { min-height: 500px; display: flex; flex-direction: column; }
