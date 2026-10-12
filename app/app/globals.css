@@ -2171,3 +2171,6 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   .step-copy { font-size: 15px; }
   .steps-cta { margin-left: 0; padding: 22px; }
 }
+/* The terminal names its market; the board is where you pick one. */
+.asset-select.is-static { cursor: default; pointer-events: none; }
+.asset-select.is-static:hover { background: inherit; }

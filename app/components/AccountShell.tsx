@@ -26,11 +26,10 @@ export function AccountShell({
   return (
     <div className="terminal-shell page-shell">
       <header className="terminal-header page-header">
-        <Link href="/trade" className="terminal-back" aria-label="Back to the market"><ArrowLeft /></Link>
+        <Link href="/markets" className="terminal-back" aria-label="Back to the markets"><ArrowLeft /></Link>
         <Brand />
         <nav className="terminal-nav page-nav" aria-label="Account">
           <Link href="/markets" aria-current={active === "markets" ? "page" : undefined}>Markets</Link>
-          <Link href="/trade">Terminal</Link>
           <Link href="/portfolio" aria-current={active === "portfolio" ? "page" : undefined}>Portfolio</Link>
           <Link href="/leaderboard" aria-current={active === "leaderboard" ? "page" : undefined}>Leaderboard</Link>
           <Link href="/fund" aria-current={active === "fund" ? "page" : undefined}>Fund</Link>

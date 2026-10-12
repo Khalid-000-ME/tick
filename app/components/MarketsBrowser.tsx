@@ -71,7 +71,7 @@ export function MarketsBrowser() {
   const { theme, toggle } = useTheme();
   const [markets, setMarkets] = useState<LiveMarket[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [kind, setKind] = useState<"all" | "crypto" | "equity" | "sports">("all");
+  const [kind, setKind] = useState<"all" | "sports">("all");
   const [sports, setSports] = useState<SportsEvent[] | null>(null);
   const [windowS, setWindowS] = useState<number | "all">("all");
   const [symbol, setSymbol] = useState<string | "all">("all");
@@ -144,11 +144,10 @@ export function MarketsBrowser() {
   const shown = useMemo(() => {
     if (!markets) return [];
     return markets
-      .filter((m) => (kind === "all" ? true : m.kind === kind))
       .filter((m) => (windowS === "all" ? true : m.windows.includes(windowS)))
       .filter((m) => (symbol === "all" ? true : m.symbol === symbol))
       .sort((a, b) => b.volume - a.volume || a.secondsLeft - b.secondsLeft);
-  }, [markets, kind, windowS, symbol]);
+  }, [markets, windowS, symbol]);
 
   const [featured, ...rest] = shown;
 
@@ -159,7 +158,6 @@ export function MarketsBrowser() {
         <Brand />
         <nav className="terminal-nav page-nav" aria-label="Sections">
           <Link href="/markets" aria-current="page">Markets</Link>
-          <Link href="/trade">Terminal</Link>
           <Link href="/portfolio">Portfolio</Link>
           <Link href="/leaderboard">Leaderboard</Link>
           <Link href="/fund">Fund</Link>
@@ -179,7 +177,7 @@ export function MarketsBrowser() {
 
         <div className="board-filters">
           <div className="filter-row board-cats" role="tablist" aria-label="Category">
-            {([["all", "All"], ["crypto", "Crypto"], ["equity", "Equities"], ["sports", "Sports"]] as const).map(([k, l]) => (
+            {([["all", "Markets"], ["sports", "Sports"]] as const).map(([k, l]) => (
               <button key={k} type="button" role="tab" aria-selected={kind === k} className={kind === k ? "is-active" : ""} onClick={() => { setKind(k); setSymbol("all"); }}>{l}</button>
             ))}
           </div>
@@ -196,7 +194,7 @@ export function MarketsBrowser() {
             <button type="button" role="tab" aria-selected={symbol === "all"} className={symbol === "all" ? "is-active" : ""} onClick={() => setSymbol("all")}>
               All assets
             </button>
-            {[...new Set(markets.filter((m) => (kind === "all" ? true : m.kind === kind)).map((m) => m.symbol))].map((sym) => (
+            {[...new Set(markets.map((m) => m.symbol))].map((sym) => (
               <button key={sym} type="button" role="tab" aria-selected={symbol === sym} className={symbol === sym ? "is-active" : ""} onClick={() => setSymbol(sym)}>
                 {sym.replace("/USD", "")}
               </button>

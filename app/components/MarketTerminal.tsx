@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CaretDown, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
+import { ArrowLeft, Check, Info, Moon, Sun, X } from "@phosphor-icons/react";
 import { Brand } from "@/components/Brand";
 import { ASSET_ICONS as ICONS } from "@/components/CardBanner";
 import { AmountPicker } from "@/components/AmountPicker";
@@ -24,7 +24,7 @@ import { useLiveQuote } from "@/lib/useLivePrice";
 import { nextOpenLabel } from "@/lib/marketHours";
 import { usePositions } from "@/lib/usePositions";
 import { useTheme } from "@/lib/useTheme";
-import { FEEDS, type FeedSpec } from "@/lib/pyth";
+import { FEEDS } from "@/lib/pyth";
 import { DURATIONS, WINDOW_S, fmtUsd, toUsd } from "@/lib/chain/config";
 
 /** Seconds left at which the countdown turns red — long enough to still act on. */
@@ -52,12 +52,11 @@ export function MarketTerminal() {
   // Each of these is "what the trader picked here", which falls back to the link, which
   // falls back to the default. Picking on this page therefore always wins, and nothing
   // has to be copied anywhere when the link changes.
-  const [feedPick, setFeedPick] = useState<FeedSpec | null>(null);
   const [windowPick, setWindowPick] = useState<number | null>(null);
   const [strikePick, setStrikePick] = useState<bigint | null>(null);
   const [strikeCleared, setStrikeCleared] = useState(false);
 
-  const feed = feedPick ?? fromUrl.feed ?? FEEDS[0];
+  const feed = fromUrl.feed ?? FEEDS[0];
   const windowS =
     windowPick ??
     fromUrl.windowS ??
@@ -65,13 +64,11 @@ export function MarketTerminal() {
   // A price the trader picked instead of the window's opening one, in feed units.
   const strikeOverride = strikePick ?? (strikeCleared ? null : fromUrl.strike);
 
-  const setFeed = useCallback((next: FeedSpec) => setFeedPick(next), []);
   const setWindowS = useCallback((next: number) => setWindowPick(next), []);
   const setStrikeOverride = useCallback((next: bigint | null) => {
     setStrikePick(next);
     if (next === null) setStrikeCleared(true);
   }, []);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [amount, setAmount] = useState(1);
   // No selected side any more: a side IS the action. `pending` holds the side awaiting
   // confirmation; whether there is one at all is a setting (one tap, confirm or slide).
@@ -214,11 +211,9 @@ export function MarketTerminal() {
       <main className="terminal-main">
         <section className="terminal-chart-panel" aria-label={`${feed.symbol} market chart`}>
           <div className="terminal-toolbar">
-            <div className="asset-select-wrap">
-              <button className="asset-select" type="button" onClick={() => setMenuOpen((value) => !value)} aria-expanded={menuOpen}>
-                <span className="asset-icon"><Image src={ICONS[feed.symbol]} alt="" width={24} height={24} /></span><span><strong>{feed.symbol}</strong><small>{feed.label}</small></span><CaretDown weight="bold" />
-              </button>
-              {menuOpen && <div className="asset-menu">{FEEDS.map((item) => <AssetOption key={item.symbol} item={item} active={item.symbol === feed.symbol} pick={() => { setFeed(item); setStrikeOverride(null); setMenuOpen(false); }} />)}</div>}
+            {/* The market is chosen on the board, so this names it instead of offering a menu. */}
+            <div className="asset-select is-static">
+              <span className="asset-icon"><Image src={ICONS[feed.symbol]} alt="" width={24} height={24} /></span><span><strong>{feed.symbol}</strong><small>{feed.label}</small></span>
             </div>
             <div className="term-durations" role="tablist" aria-label="Window length">
               {DURATIONS.map((d) => (
@@ -310,10 +305,6 @@ export function MarketTerminal() {
       {notice && <div className="terminal-notice" role="status"><Check weight="bold" /><p>{notice}</p><button type="button" aria-label="Dismiss" onClick={() => setNotice(null)}><X /></button></div>}
     </div>
   );
-}
-
-function AssetOption({ item, active, pick }: { item: FeedSpec; active: boolean; pick: () => void }) {
-  return <button type="button" className={active ? "is-active" : ""} onClick={pick}><span className="asset-icon"><Image src={ICONS[item.symbol]} alt="" width={20} height={20} /></span><span><strong>{item.symbol}</strong><small>{item.label}</small></span>{active && <Check weight="bold" />}</button>;
 }
 
 /**
