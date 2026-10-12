@@ -1,22 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, CurrencyDollar, Lightning, ShieldCheck } from "@phosphor-icons/react";
+import { ArrowDown, ArrowUpRight } from "@phosphor-icons/react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { Brand } from "@/components/Brand";
 import DotGrid from "@/components/DotGrid";
 import { TradeStory } from "@/components/TradeStory";
 
-/* A plotted line for the proof panel, crossing the strike mid-way so the ABOVE/BELOW
-   split the panel illustrates is actually visible. Illustrative, not live data — the
-   live chart lives in the terminal, where it plots prices actually read from Pyth. */
-const PROOF_PATH =
-  "M 0 318 L 44 300 L 88 326 L 132 288 L 176 302 L 220 254 L 264 268 L 308 232 L 352 246 L 396 214 L 440 228 L 468 204 L 496 196";
-
-const steps = [
-  [Lightning, "Pick a side.", "Bitcoin, Ether, Solana or Tesla. One tap on green or red and you are in. No order book, no slippage, no counterparty to find."],
-  [CurrencyDollar, "Wait thirty seconds.", "The window closes. Whichever side was right splits the money the other side staked, in proportion to what each person put in."],
-  [ShieldCheck, "Get paid automatically.", "Winnings land in your balance without you clicking anything. You can check the result against Pyth's own published price yourself."],
+/* Where Tick goes from here. Plans, not shipped work: the "Now" column is the only one that
+   describes what exists today, and every later item is phrased as intent. */
+const ROADMAP = [
+  {
+    phase: "Now",
+    title: "Live on Monad testnet",
+    items: ["30-second to 5-minute markets on 10 crypto and equity assets", "Live sport, with markets inside the match", "One tap from $0.10, gas bought with USDC"],
+  },
+  {
+    phase: "Next",
+    title: "Mainnet",
+    items: ["Real USDC on Monad mainnet", "Audited contracts", "Buy USDC with a card, without leaving Tick"],
+  },
+  {
+    phase: "Then",
+    title: "Every market, all week",
+    items: ["Tokenized stocks that trade on weekends", "More leagues and in-play markets", "Leaderboard seasons with prizes"],
+  },
+  {
+    phase: "Later",
+    title: "Where people already are",
+    items: ["Markets inside wallets and apps", "AI agents trading through MCP", "FX and commodities from Pyth"],
+  },
 ] as const;
 
 /* Revenue and valuation arithmetic, shown so a reader can redo it.
@@ -31,7 +44,9 @@ const money = (n: number) => {
   // Below $10M a rounded million hides the arithmetic: $1.83M must not read as $2M when a
   // reader is checking 0.5% x 365 themselves.
   if (n >= 10_000_000) return `$${Math.round(n / 1_000_000)}M`;
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  // Rounded in whole ten-thousands first: toFixed alone turns $1,825,000 into $1.82M because
+  // 1.825 is stored a hair under itself, while the arithmetic (and the pitch deck) says $1.83M.
+  if (n >= 1_000_000) return `$${(Math.round(n / 10_000) / 100).toFixed(2)}M`;
   return `$${Math.round(n / 1000)}k`;
 };
 
@@ -47,7 +62,7 @@ export function LandingExperience() {
       <header className="landing-nav">
         <Brand />
         <nav aria-label="Primary navigation">
-          <a href="#how">How it works</a><a href="#market">Market</a><a href="#trust">Trust</a>
+          <a href="#how">How it works</a><a href="#market">Valuation</a><a href="#roadmap">Roadmap</a>
           <Link href="/markets" className="landing-nav-cta">Start free <ArrowUpRight weight="bold" /></Link>
         </nav>
       </header>
@@ -100,46 +115,15 @@ export function LandingExperience() {
 
         <TradeStory />
 
-        <section className="landing-signal" aria-label="At a glance">
-          <span><i /> A new market every 30 seconds</span><span>2,880 windows a day, per asset</span><span>10 assets plus live sport</span><span>Free testnet USDC</span>
-        </section>
-
-        <section className="landing-mechanism" id="how">
-          <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }}>
-            <p>How it works</p><h2>Three taps.<br />Thirty seconds.</h2>
-          </motion.div>
-          <div className="landing-principles">
-            {steps.map(([Icon, title, copy], index) => (
-              <motion.article key={title} initial={reduceMotion ? false : { opacity: 0, y: 34 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ delay: index * 0.09, duration: 0.55 }}>
-                <div className="landing-principle-icon"><Icon weight="duotone" /></div><span>0{index + 1}</span><h3>{title}</h3><p>{copy}</p>
-              </motion.article>
-            ))}
-          </div>
-        </section>
-
         <section className="landing-market" id="market">
           <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}>
-            <p>The opportunity</p><h2>Prediction markets grew 10x in a year. The money went to the fastest ones.</h2>
+            <p>Future valuation</p><h2>Prediction markets grew 10x in a year. The money went to the fastest ones.</h2>
           </motion.div>
 
           <div className="market-stats">
             <div><strong>$50B</strong><span>Combined monthly volume on Kalshi and Polymarket, July 2026, up from under $5B in September 2025</span></div>
             <div><strong>80%</strong><span>Share of Kalshi&apos;s volume that is sports: short, repeatable events, not year-long questions</span></div>
             <div><strong>$22B</strong><span>Kalshi&apos;s valuation at its May 2026 Series F, on roughly $4B of annualised revenue</span></div>
-          </div>
-
-          <div className="market-wedge">
-            <h3>Our wedge is duration.</h3>
-            <p>
-              The volume already sits in fast, repeatable markets. But even a sports market needs a fixture list,
-              a referee and hours of waiting. A crypto price resolves continuously, which means a market can open
-              and settle every thirty seconds, forever, with no event calendar and nobody to adjudicate it.
-            </p>
-            <p>
-              That is <strong>2,880 markets a day per asset</strong> instead of a handful a week. It turns
-              prediction from something you check back on into something you do: the difference between a betting
-              slip and a game.
-            </p>
           </div>
 
           <div className="landing-revenue">
@@ -183,46 +167,34 @@ export function LandingExperience() {
           </div>
         </section>
 
-        <section className="landing-proof" id="trust">
-          <motion.div className="landing-proof-visual" initial={reduceMotion ? false : { opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.35 }}>
-            <div className="proof-window">
-              <div className="proof-window-head"><span>BTC / USD</span><span>30s WINDOW</span></div>
-              <svg viewBox="0 0 520 490" preserveAspectRatio="none" aria-hidden="true">
-                <defs>
-                  <linearGradient id="proofFade" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor="#d8f35f" stopOpacity="0.2" />
-                    <stop offset="1" stopColor="#d8f35f" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path className="proof-fill" d={`${PROOF_PATH} L 520 490 L 0 490 Z`} />
-                <path className="proof-stroke" d={PROOF_PATH} />
-                <circle className="proof-dot" cx="496" cy="196" r="5" />
-              </svg>
-              <div className="proof-line"><span>STRIKE</span><strong>on the grid</strong></div>
-              <div className="proof-cutoff"><span /> ACCEPTING WHILE THE PRICE IS FRESH</div>
-            </div>
+        <section className="landing-roadmap" id="roadmap">
+          <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}>
+            <p>How we expand</p><h2>From thirty seconds on testnet to every market, everywhere.</h2>
           </motion.div>
-          <motion.div className="landing-proof-copy" initial={reduceMotion ? false : { opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.35 }}>
-            <p className="landing-proof-label">Why you can trust the result</p><h2>Nobody can decide you lost.</h2>
-            <p>
-              The outcome is a comparison between Pyth&apos;s published price at the close and the strike. No reporter
-              files it, no admin confirms it, and there is no dispute window, because there is no judgement to
-              dispute. Every settled bet has a Verify button that recomputes the result from Pyth in your own
-              browser, so you never have to take our word for it.
-            </p>
-            <dl>
-              <div><dt>Price source</dt><dd>Pyth, read live</dd></div>
-              <div><dt>Who settles</dt><dd>Anyone, for a fee share</dd></div>
-              <div><dt>Payouts</dt><dd>Automatic, no claim step</dd></div>
-            </dl>
-            <Link href="/markets" className="landing-text-cta">Open the markets board <ArrowUpRight /></Link>
-          </motion.div>
+          <ol className="roadmap-track">
+            {ROADMAP.map((step, index) => (
+              <motion.li
+                key={step.phase}
+                className={index === 0 ? "is-now" : ""}
+                initial={reduceMotion ? false : { opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ delay: index * 0.1, duration: 0.55 }}
+              >
+                <span className="roadmap-phase">{step.phase}</span>
+                <h3>{step.title}</h3>
+                <ul>
+                  {step.items.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </motion.li>
+            ))}
+          </ol>
         </section>
 
         <section className="landing-close">
           <p>Crypto. Equities. Sport.</p>
           <h2>One line.<br />Two sides.<br /><em>Thirty seconds.</em></h2>
-          <Link href="/markets" className="landing-primary">Make your call <ArrowUpRight weight="bold" /></Link>
+          <Link href="/markets" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
         </section>
       </main>
       <footer className="landing-footer"><Brand /><span>Built on Monad</span><span>Testnet USDC. No real-money wagering.</span></footer>

@@ -185,7 +185,7 @@ export function TradeStory() {
   const wonScale = useTransform(p, [0.64, 0.7], [0.8, 1]);
 
   return (
-    <section ref={ref} className="story" aria-label="How a trade plays out">
+    <section ref={ref} id="how" className="story" aria-label="How a trade plays out">
       <div className="story-sticky">
         <div className="story-copy">
           <p className="story-eyebrow">One trade, start to finish</p>
