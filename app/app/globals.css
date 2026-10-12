@@ -3086,8 +3086,10 @@ button.landing-nav-cta { font-size: 13px; }
 .rs-picker span { position: relative; padding: 7px 14px; border: 1px solid #2d3627; border-radius: 999px; font-size: 13px; font-weight: 650; }
 .rs-picker .is-on i { position: absolute; inset: -1px; border-radius: 999px; background: #d8f35f; }
 .rs-picker .is-on > b { position: relative; font-weight: 650; }
-.rs-cursor { position: absolute; right: 8px; bottom: -10px; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .5)); pointer-events: none; z-index: 3; }
-.rs-cursor.is-tap { right: 70px; bottom: -8px; }
+/* The cursor's tip is its top-left corner, so each one is anchored to the thing it clicks and pulled
+   back by the tip's own offset: the middle chip (ETH) in the picker, and the left button (Above). */
+.rs-cursor { position: absolute; left: 50%; margin-left: -5px; bottom: -12px; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .5)); pointer-events: none; z-index: 3; }
+.rs-cursor.is-tap { left: 25%; bottom: -6px; }
 .rs-settled { position: absolute; left: 12px; top: 10px; padding: 5px 12px; border-radius: 999px; background: #d8f35f; color: #10120f; font-size: 12px; font-weight: 800; }
 .rs-dock { margin-top: 12px; }
 .rs-pool { height: 7px; border-radius: 7px; background: rgba(239, 68, 68, .7); overflow: hidden; }

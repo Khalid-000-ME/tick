@@ -140,8 +140,11 @@ export function RoomStory() {
   const pickCursorOp = useTransform(p, [0.16, 0.175, 0.23, 0.245], [0, 1, 1, 0]);
   const chartIn = useTransform(p, [0.225, 0.28], [0, 1]);
   // The market has no name and no clock until the owner's pick lands, or the room looks already set up.
-  const named = useTransform(p, [0.2, 0.218], [0, 1]);
-  const unnamed = useTransform(p, [0.2, 0.218], [1, 0]);
+  const named = useTransform(p, [0.206, 0.216], [0, 1]);
+  const unnamed = useTransform(p, [0.206, 0.214], [1, 0]);
+  // They share one spot, so they also slide: a swap rather than two labels printed over each other.
+  const namedY = useTransform(p, [0.206, 0.216], [10, 0]);
+  const unnamedY = useTransform(p, [0.206, 0.214], [0, -10]);
   const strikeX = useTransform(p, [0.24, 0.285], [16, W - 8]);
   const strikeTag = useTransform(p, [0.27, 0.29], [0, 1]);
   const price = useTransform(p, PRICE_STOPS, PRICE_VALUES);
@@ -215,8 +218,8 @@ export function RoomStory() {
               <div className="rs-market">
                 <div className="rs-market-top">
                   <div className="rs-name">
-                    <motion.span className="rs-unset" style={{ opacity: unnamed }}><strong>No market yet</strong><small>the owner picks it</small></motion.span>
-                    <motion.span style={{ opacity: named }}><strong>ETH/USD</strong><small>30s window</small></motion.span>
+                    <motion.span className="rs-unset" style={{ opacity: unnamed, y: unnamedY }}><strong>No market yet</strong><small>the owner picks it</small></motion.span>
+                    <motion.span style={{ opacity: named, y: namedY }}><strong>ETH/USD</strong><small>30s window</small></motion.span>
                   </div>
                   <motion.span className="rs-price" style={{ opacity: chartIn }}>{priceText}</motion.span>
                   <motion.div className="rs-clock" style={{ opacity: named }} role="timer" aria-label="Seconds left in the window">
