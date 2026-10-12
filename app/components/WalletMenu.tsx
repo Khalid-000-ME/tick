@@ -11,8 +11,12 @@ import type { useTickWallet } from "@/lib/useTickWallet";
 type Wallet_ = ReturnType<typeof useTickWallet>;
 
 /**
- * The header wallet control. Disconnected it connects, on the wrong network it switches,
- * and once connected it opens a small menu with the full address and a Disconnect action.
+ * The header wallet control. Signed out it offers Log in and Sign up; signed in it opens a
+ * small menu with the profile, the address and Log out.
+ *
+ * The button always opens the menu. It used to switch networks instead whenever the wallet
+ * reported another chain, which left no way to reach the profile from a page whose header is
+ * this button: the switch is an item inside the menu now.
  */
 export function WalletMenu({ wallet, onCopied }: { wallet: Wallet_; onCopied?: (address: string) => void }) {
   const { status, account, connect, disconnect, switchChain, walletClient } = wallet;
@@ -66,17 +70,20 @@ export function WalletMenu({ wallet, onCopied }: { wallet: Wallet_; onCopied?: (
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => (status === "wrong-chain" ? void switchChain() : setOpen((v) => !v))}
+        onClick={() => setOpen((v) => !v)}
       >
-        {status === "wrong-chain" ? (
-          <><Wallet weight="bold" />Switch to Monad</>
-        ) : (
-          <><Avatar avatar={profile?.avatar} seed={account} name={profile?.displayName || profile?.username} size={22} />{shown}</>
-        )}
+        <Avatar avatar={profile?.avatar} seed={account} name={profile?.displayName || profile?.username} size={22} />
+        {shown}
+        {status === "wrong-chain" && <i className="wallet-warn" aria-label="Wrong network" />}
       </button>
       {open && (
         <div className="wallet-pop" role="menu">
           {profile?.username && <strong className="wallet-pop-name">@{profile.username}</strong>}
+          {status === "wrong-chain" && (
+            <button type="button" role="menuitem" className="is-warn" onClick={() => { setOpen(false); void switchChain(); }}>
+              <Wallet weight="bold" />Switch to Monad testnet
+            </button>
+          )}
           <code>{account}</code>
           <Link href="/profile" role="menuitem" className="wallet-pop-link" onClick={() => setOpen(false)}>
             <UserCircle weight="bold" />
@@ -104,7 +111,7 @@ export function WalletMenu({ wallet, onCopied }: { wallet: Wallet_; onCopied?: (
               void disconnect();
             }}
           >
-            <SignOut weight="bold" />Disconnect
+            <SignOut weight="bold" />Log out
           </button>
         </div>
       )}

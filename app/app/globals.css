@@ -2452,3 +2452,9 @@ body.is-resizing { cursor: col-resize; user-select: none; }
   .terminal-shell.is-flat .terminal-header .mode-switch { order: 5; margin-left: auto; }
   .terminal-shell.is-flat .terminal-header .theme-toggle { order: 6; }
 }
+
+.wallet-warn { width: 7px; height: 7px; margin-left: 2px; border-radius: 50%; background: #e0803f; box-shadow: 0 0 7px #e0803f; }
+.wallet-pop button.is-warn { color: #c2691f; }
+/* The header owns a stacking context above the panels, so its menu can never slide behind
+   the chart or the ticket. */
+.terminal-shell .terminal-header { position: relative; z-index: 30; }

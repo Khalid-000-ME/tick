@@ -208,8 +208,12 @@ export function PortfolioView() {
                       <span className="mono pnl">
                         {s === "refunded"
                           ? p.claimed ? "returned" : "pending"
+                          // A loss is the stake, whether or not the payout has been read back
+                          // yet: there is nothing to read, and a blank cell reads as a bug.
+                          : s === "lost" ? `−${p.amount.toFixed(2)}`
                           : pnl === null ? "" : `${pnl >= 0 ? "+" : "−"}${Math.abs(pnl).toFixed(2)}`}
                         {s === "won" && p.payout !== null && <small>{p.payout.toFixed(2)} back, profit after the 2% fee</small>}
+                        {s === "lost" && <small>your {p.amount.toFixed(2)} stake went to the other side</small>}
                       </span>
                     </span>
                     <span className="stake-actions">
