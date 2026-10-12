@@ -11,7 +11,7 @@ import { useTickWallet } from "@/lib/useTickWallet";
  * Where the social side lives: the groups you can be part of, and the rooms you compete in.
  *
  * A room does not need a group. It can belong to one, or exist on its own behind its invite
- * code, so sharing a contest with four friends never means founding a community first.
+ * link, so sharing a contest with four friends never means founding a community first.
  */
 export function RoomsView() {
   const wallet = useTickWallet();
@@ -51,7 +51,7 @@ export function RoomsView() {
             {loading ? (
               <p className="match-meta">Loading…</p>
             ) : mine.length === 0 ? (
-              <p className="match-meta">No rooms yet. Make one below, or join with a code a friend sent you.</p>
+              <p className="match-meta">No rooms yet. Make one below, or join with the link or number a friend sent you.</p>
             ) : (
               <ul className="room-list">
                 {mine.map((r) => (
