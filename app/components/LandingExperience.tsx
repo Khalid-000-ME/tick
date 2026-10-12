@@ -19,9 +19,9 @@ const STEPS = [
   },
   {
     Icon: CurrencyDollar,
-    kicker: "Dollars, not tokens",
-    title: "Add dollars.",
-    copy: "Your balance is USDC. Fees come out of it too.",
+    kicker: "Stable, not volatile",
+    title: "Add stablecoins.",
+    copy: "Your balance is USDC, so a dollar stays a dollar. Fees come out of it too.",
     tag: "Card checkout coming",
   },
   {
@@ -96,7 +96,7 @@ export function LandingExperience() {
           <motion.div className="landing-hero-content" initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>
             <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
             <p className="landing-lede">
-              Ten times faster than Polymarket. Paid in dollars.
+              Ten times faster than Polymarket. Paid in stablecoins.
             </p>
             <div className="landing-actions">
               <Link href="/markets" className="landing-primary">Browse live markets <ArrowUpRight weight="bold" /></Link>
