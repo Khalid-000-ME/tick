@@ -7,3 +7,4 @@ broadcast/
 .env.local
 *.tsbuildinfo
 app/.data/
+.DS_Store
