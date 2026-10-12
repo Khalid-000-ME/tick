@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, IdentificationCard } from "@phosphor-icons/react";
 import { Avatar } from "@/components/Avatar";
-import { CARD_TAG } from "@/components/ChatPanel";
+import { CARD_TAG, isMarketNotice, parseMarket } from "@/lib/chatTags";
 import { ResultsCard } from "@/components/PostCard";
 import { clock, dayKey, dayLabel } from "@/components/groups/format";
 import { useProfiles } from "@/lib/profiles";
@@ -29,21 +29,34 @@ type Row = { kind: "day"; key: string; label: string } | { kind: "msg"; key: str
  */
 export function ChatThread({
   groupId,
+  kind = "group",
   account,
   canPost,
   post,
   onJoin,
   onSeen,
+  owner,
+  external,
+  onReload,
 }: {
+  /** The group's or the room's number. */
   groupId: number;
+  kind?: "group" | "room";
   account: string | null;
   canPost: boolean;
   post: (text: string) => Promise<{ ok: boolean; message: string }>;
   onJoin: () => void;
   /** Called with the number of messages the reader has now seen, to clear an unread badge. */
-  onSeen: (count: number) => void;
+  onSeen?: (count: number) => void;
+  /** A room's owner: their market messages are drawn as notices rather than bubbles. */
+  owner?: string;
+  /** Messages the parent already polls (a room needs them for its market too), so this does not poll again. */
+  external?: Post[] | null;
+  onReload?: () => Promise<void> | void;
 }) {
-  const [posts, setPosts] = useState<Post[] | null>(null);
+  const [own, setOwn] = useState<Post[] | null>(null);
+  const posts = external !== undefined ? external : own;
+  const setPosts = setOwn;
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -52,15 +65,17 @@ export function ChatThread({
   const stick = useRef(true);
 
   const load = useCallback(async () => {
+    if (onReload) return void (await onReload());
     try {
-      const next = await fetchChat("group", groupId, 120);
+      const next = await fetchChat(kind, groupId, 120);
       setPosts(next);
     } catch {
       /* the thread stays as it was until the next pass */
     }
-  }, [groupId]);
+  }, [groupId, kind, onReload, setPosts]);
 
   useEffect(() => {
+    if (external !== undefined) return;
     let off = false;
     const poll = async () => {
       if (off) return;
@@ -72,14 +87,14 @@ export function ChatThread({
       off = true;
       clearInterval(t);
     };
-  }, [load]);
+  }, [load, external]);
 
   // Opening a chat puts you at the newest message; after that new ones only pull you down if
   // you were already at the bottom, so scrolling back through history is not undone.
   useEffect(() => {
     const el = list.current;
     if (el && stick.current) el.scrollTop = el.scrollHeight;
-    if (posts) onSeen(posts.length);
+    if (posts) onSeen?.(posts.length);
   }, [posts, onSeen]);
 
   const profiles = useProfiles(posts?.map((p) => p.from) ?? []);
@@ -140,6 +155,10 @@ export function ChatThread({
           rows.map((row) => {
             if (row.kind === "day") return <div key={row.key} className="thread-day"><span>{row.label}</span></div>;
             const p = row.post;
+            if (isMarketNotice(p, owner)) {
+              const m = parseMarket(p.text)!;
+              return <div key={row.key} className="thread-notice"><span>The owner set the market to <b>{m.feed.symbol}</b> · {m.windowS < 60 ? `${m.windowS}s` : `${m.windowS / 60}m`}. A new round begins.</span></div>;
+            }
             const mine = !!account && p.from === account.toLowerCase();
             const profile = profiles.get(p.from);
             const isCard = p.text.startsWith(CARD_TAG);
@@ -172,7 +191,7 @@ export function ChatThread({
         </form>
       ) : (
         <div className="thread-join">
-          {account ? <><span>Join to write here. Anyone can read.</span><button type="button" className="btn-solid small" onClick={onJoin}>Join group</button></> : <><span>Log in to join this group and chat.</span><button type="button" className="btn-solid small" onClick={onJoin}>Log in</button></>}
+          {account ? <><span>Join to write here. Anyone can read.</span><button type="button" className="btn-solid small" onClick={onJoin}>Join group</button></> : <><span>Log in to join this {kind} and chat.</span><button type="button" className="btn-solid small" onClick={onJoin}>Log in</button></>}
         </div>
       )}
       {note && <p className="thread-note">{note}</p>}

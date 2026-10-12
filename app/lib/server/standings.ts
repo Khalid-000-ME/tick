@@ -173,3 +173,105 @@ export function standingOf(rows: Map<string, Standing>, address: string): Standi
 
 export const byNet = (a: Standing, b: Standing) => b.net - a.net || b.bets - a.bets;
 
+
+/**
+ * A room's scoreboard: how each member is doing on ONE market since the owner picked it.
+ *
+ * It is the same arithmetic as the global standings (settled positions paid by the contract's own
+ * formula, collected or not, with stakes still open shown separately), narrowed to the room's
+ * members, the room's feed, and the moment the round began. It also says which side each member
+ * currently has money on, which is what makes a room worth watching while a window runs.
+ */
+export interface RoomRow {
+  address: string;
+  bets: number;
+  open: number;
+  returned: number;
+  net: number;
+  /** Their live pick in a window that has not settled: one side, both, or none. */
+  pick: "ABOVE" | "BELOW" | "BOTH" | null;
+  lastStakeAt: number;
+}
+
+const ROOM_QUERY = `query R($users: [String!]!, $feed: String!, $since: Int!) {
+  Stake(
+    where: { user: { _in: $users }, stakedAt: { _gte: $since }, market: { feedId: { _eq: $feed } } }
+    limit: 5000
+    order_by: { stakedAt: asc }
+  ) {
+    user amount above stakedAt
+    market { id feedId outcome totalAbove totalBelow bounty }
+  }
+}`;
+
+const roomCache = new Map<string, { at: number; rows: RoomRow[] }>();
+const ROOM_TTL_MS = 2500;
+
+export async function roomStandings(users: string[], feedId: string, since: number): Promise<RoomRow[]> {
+  const key = `${feedId}|${since}|${[...users].sort().join(",")}`;
+  const hit = roomCache.get(key);
+  if (hit && Date.now() - hit.at < ROOM_TTL_MS) return hit.rows;
+
+  const url = process.env.NEXT_PUBLIC_INDEXER_URL;
+  if (!url) throw new Error("no index configured");
+  const lower = users.map((u) => u.toLowerCase());
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: ROOM_QUERY, variables: { users: lower, feed: feedId, since } }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(8000),
+  });
+  const json = (await res.json()) as { data?: { Stake: (Row & { stakedAt: number })[] } };
+  if (!json.data) throw new Error("the index returned no data");
+
+  const base = (await baseFees([feedId])).get(feedId) ?? FALLBACK_FEE;
+  const positions = new Map<string, { user: string; above: boolean; mine: bigint; market: Row["market"] }>();
+  const acc = new Map<string, { bets: number; open: bigint; sides: Set<string>; last: number }>();
+  for (const u of lower) acc.set(u, { bets: 0, open: 0n, sides: new Set(), last: 0 });
+
+  for (const s of json.data.Stake) {
+    const user = s.user.toLowerCase();
+    const a = acc.get(user) ?? { bets: 0, open: 0n, sides: new Set<string>(), last: 0 };
+    acc.set(user, a);
+    const amount = BigInt(s.amount);
+    a.bets += 1;
+    a.last = Math.max(a.last, s.stakedAt);
+    if (s.market.outcome === OUTCOME.unresolved) {
+      a.open += amount;
+      a.sides.add(s.above ? "ABOVE" : "BELOW");
+    }
+    const k = `${user}|${s.market.id}|${s.above}`;
+    const p = positions.get(k);
+    if (p) p.mine += amount;
+    else positions.set(k, { user, above: s.above, mine: amount, market: s.market });
+  }
+
+  const paid = new Map<string, { returned: bigint; settled: bigint }>();
+  for (const p of positions.values()) {
+    const m = p.market;
+    if (m.outcome === OUTCOME.unresolved || m.totalAbove === null || m.totalBelow === null) continue;
+    const t = settledTerms(m.outcome, BigInt(m.totalAbove), BigInt(m.totalBelow), BigInt(m.bounty ?? "0"), base);
+    const payout = payoutForSide(m.outcome, t.feeBps, t.above, t.below, p.above ? "ABOVE" : "BELOW", p.mine);
+    const r = paid.get(p.user) ?? { returned: 0n, settled: 0n };
+    r.returned += payout;
+    r.settled += p.mine;
+    paid.set(p.user, r);
+  }
+
+  const rows: RoomRow[] = [...acc.entries()].map(([address, a]) => {
+    const r = paid.get(address) ?? { returned: 0n, settled: 0n };
+    return {
+      address,
+      bets: a.bets,
+      open: toUsd(a.open),
+      returned: toUsd(r.returned),
+      net: toUsd(r.returned - r.settled),
+      pick: a.sides.size === 0 ? null : a.sides.size === 2 ? "BOTH" : ([...a.sides][0] as "ABOVE" | "BELOW"),
+      lastStakeAt: a.last,
+    };
+  });
+  rows.sort((x, y) => y.net - x.net || y.bets - x.bets || y.open - x.open);
+  roomCache.set(key, { at: Date.now(), rows });
+  return rows;
+}

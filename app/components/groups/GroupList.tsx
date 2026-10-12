@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { Avatar, genAvatar } from "@/components/Avatar";
-import { CARD_TAG } from "@/components/ChatPanel";
+import { CARD_TAG } from "@/lib/chatTags";
 import { listTime } from "@/components/groups/format";
 import type { Group, Post } from "@/lib/useSocial";
 
