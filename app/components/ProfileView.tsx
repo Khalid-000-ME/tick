@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
-import { Check, DiceFive, EnvelopeSimple, Fingerprint, GoogleLogo, Wallet, XLogo } from "@phosphor-icons/react";
+import { Check, DiceFive } from "@phosphor-icons/react";
 import { AmountPicker } from "@/components/AmountPicker";
 import { AccountShell } from "@/components/AccountShell";
 import { AVATAR_STYLES, Avatar, genAvatar, isAllowedAvatarUrl, type AvatarStyle } from "@/components/Avatar";
@@ -13,12 +12,11 @@ import { useTheme } from "@/lib/useTheme";
 import { useTickWallet } from "@/lib/useTickWallet";
 
 /**
- * Who you are on Tick, how you sign in, and how the site behaves for you.
+ * Who you are on Tick, and how the site behaves for you.
  *
  * The profile (username, display name, avatar) is saved on chain: one transaction, unique
- * usernames enforced by the contract, readable anywhere your address appears. Sign-in
- * methods are Privy's, and linking several makes them one account. Settings stay on this
- * device and apply instantly.
+ * usernames enforced by the contract, readable anywhere your address appears. Settings stay
+ * on this device and apply instantly.
  */
 const MODES: { id: StakeMode; title: string; detail: string }[] = [
   { id: "tap", title: "One tap", detail: "Tap a side. You are in." },
@@ -67,8 +65,6 @@ export function ProfileView() {
         )}
 
         <div className="profile-col">
-          <SignInMethods onNote={setNote} />
-
           <section className="match-panel">
             <header className="match-panel-head"><h2>Staking</h2></header>
             <div className="profile-modes">
@@ -198,60 +194,6 @@ function IdentityForm({
         {saving ? "Saving..." : "Save profile"}
       </button>
       {note && <p className="match-note">{note}</p>}
-    </section>
-  );
-}
-
-/** Privy's linked accounts, with a button to add any method not yet linked. */
-function SignInMethods({ onNote }: { onNote: (m: string) => void }) {
-  const { user, linkGoogle, linkPasskey, linkEmail, linkTwitter, linkWallet } = usePrivy();
-  const linked = user?.linkedAccounts ?? [];
-  const has = (type: string) => linked.some((a) => a.type === type);
-  const google = linked.find((a) => a.type === "google_oauth") as { email?: string } | undefined;
-  const email = linked.find((a) => a.type === "email") as { address?: string } | undefined;
-  const x = linked.find((a) => a.type === "twitter_oauth") as { username?: string | null } | undefined;
-  const wallets = linked.filter((a) => a.type === "wallet") as { address: string; walletClientType?: string }[];
-
-  const rows = [
-    { key: "google", icon: <GoogleLogo weight="bold" />, label: "Google", value: google?.email, linked: has("google_oauth"), link: linkGoogle },
-    { key: "passkey", icon: <Fingerprint weight="bold" />, label: "Passkey", value: has("passkey") ? "This device or a synced key" : undefined, linked: has("passkey"), link: linkPasskey },
-    { key: "email", icon: <EnvelopeSimple weight="bold" />, label: "Email", value: email?.address, linked: has("email"), link: linkEmail },
-    { key: "x", icon: <XLogo weight="bold" />, label: "X", value: x?.username ? `@${x.username}` : undefined, linked: has("twitter_oauth"), link: linkTwitter },
-    {
-      key: "wallet", icon: <Wallet weight="bold" />, label: "Wallet",
-      value: wallets.map((w) => `${w.address.slice(0, 6)}...${w.address.slice(-4)}${w.walletClientType === "privy" ? " (Tick wallet)" : ""}`).join(", "),
-      linked: wallets.length > 0, link: () => linkWallet(),
-    },
-  ];
-
-  return (
-    <section className="match-panel">
-      <header className="match-panel-head"><h2>Sign-in methods</h2></header>
-      <ul className="profile-methods">
-        {rows.map((r) => (
-          <li key={r.key}>
-            <span className="profile-method-icon">{r.icon}</span>
-            <span className="profile-method-label">
-              <strong>{r.label}</strong>
-              {r.value && <small>{r.value}</small>}
-            </span>
-            {r.linked ? (
-              <span className="profile-linked"><Check weight="bold" /> Linked</span>
-            ) : (
-              <button
-                type="button"
-                className="btn-ghost small"
-                onClick={() => {
-                  try { r.link(); } catch (e) { onNote((e as Error).message); }
-                }}
-              >
-                Link
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-      <p className="match-note">Any of these signs you into the same account.</p>
     </section>
   );
 }
