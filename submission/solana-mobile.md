@@ -46,21 +46,21 @@ changes hands.
 
 **App Website**
 ```
-https://tick-predict.vercel.app
+https://tick-predict.xyz
 ```
 
 **Terms of Use**
 ```
-https://tick-predict.vercel.app/terms
+https://tick-predict.xyz/terms
 ```
 
 **Privacy Policy**
 ```
-https://tick-predict.vercel.app/privacy
+https://tick-predict.xyz/privacy
 ```
 
 **Support Email / Contact Email** — yours. The legal pages currently print
-`support@tick-predict.app`; change that in `app/app/terms/page.tsx` and `app/app/privacy/page.tsx` to
+`support@tick-predict.xyz`; change that in `app/app/terms/page.tsx` and `app/app/privacy/page.tsx` to
 whatever address you will actually read, or point it at your own mailbox.
 
 **Your Solana Wallet** — the address you already pasted in the form. It only ties the listing to you.

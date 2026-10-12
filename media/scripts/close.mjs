@@ -13,7 +13,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
   </g>
   <text x="${W / 2}" y="${H / 2 + 92}" text-anchor="middle" font-family="Helvetica,Arial" font-size="104" font-weight="700" fill="#f4f6ec" letter-spacing="-5">tick<tspan fill="#d8f35f">.</tspan></text>
   <text x="${W / 2}" y="${H / 2 + 164}" text-anchor="middle" font-family="Helvetica,Arial" font-size="34" fill="#aab1a0">Compete in groups. Flex your profits.</text>
-  <text x="${W / 2}" y="${H - 96}" text-anchor="middle" font-family="Helvetica,Arial" font-size="26" fill="#6f7768">tick-predict.vercel.app</text>
+  <text x="${W / 2}" y="${H - 96}" text-anchor="middle" font-family="Helvetica,Arial" font-size="26" fill="#6f7768">tick-predict.xyz</text>
 </svg>`;
 await sharp(Buffer.from(svg)).png().toFile("../build/close.png");
 console.log("close card");

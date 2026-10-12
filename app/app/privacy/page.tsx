@@ -47,7 +47,7 @@ export default function Privacy() {
       <h2>Your choices</h2>
       <p>
         You can stop using the app and log out at any time, and you can ask us to remove a profile photo you uploaded.
-        To ask about your data, write to <a href="mailto:support@tick-predict.app">support@tick-predict.app</a>. We cannot
+        To ask about your data, write to <a href="mailto:support@tick-predict.xyz">support@tick-predict.xyz</a>. We cannot
         delete anything that is already on the blockchain.
       </p>
 

@@ -2,4 +2,4 @@ Thirty-second prediction markets you play with your group.
 
 Start a room, everyone calls the same window, and the scoreboard re-sorts the second it settles. Win, and the card proving it is read straight off the chain, so nobody can fake the number.
 
-tick-predict.vercel.app
+tick-predict.xyz

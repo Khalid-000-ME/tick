@@ -53,7 +53,7 @@ export default function Terms() {
       </p>
 
       <h2>Contact</h2>
-      <p>Questions about these terms: <a href="mailto:support@tick-predict.app">support@tick-predict.app</a>.</p>
+      <p>Questions about these terms: <a href="mailto:support@tick-predict.xyz">support@tick-predict.xyz</a>.</p>
     </main>
   );
 }
