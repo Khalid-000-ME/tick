@@ -5,6 +5,7 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, type WalletClient } from "viem";
 import { monadTestnet } from "@/lib/chain/config";
 import { clearMarks, openAuth } from "@/lib/authSession";
+import { pickWallet } from "@/lib/pickWallet";
 import { useWallet, type WalletStatus, readableError } from "@/lib/useWallet";
 
 /**
@@ -30,7 +31,7 @@ function usePrivyBackedWallet() {
   // Prefer an embedded wallet; fall back to whatever the user connected (their own
   // MetaMask, etc.) so "sign in with an existing wallet" still works through Privy.
   const active = useMemo(
-    () => wallets.find((w) => w.walletClientType === "privy") ?? wallets[0],
+    () => pickWallet(wallets),
     [wallets]
   );
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { pickWallet } from "@/lib/pickWallet";
 import { Gift, X } from "@phosphor-icons/react";
 
 /**
@@ -15,7 +16,7 @@ import { Gift, X } from "@phosphor-icons/react";
 export function WelcomeGift() {
   const { ready, authenticated, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
-  const address = (wallets.find((w) => w.walletClientType === "privy") ?? wallets[0])?.address ?? null;
+  const address = pickWallet(wallets)?.address ?? null;
   const [note, setNote] = useState<string | null>(null);
   const asked = useRef(new Set<string>());
 
