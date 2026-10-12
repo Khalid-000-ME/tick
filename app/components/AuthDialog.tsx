@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLoginWithEmail, useLoginWithOAuth, useLoginWithPasskey, usePrivy, useSignupWithPasskey, useWallets } from "@privy-io/react-auth";
+import { useCreateWallet, useLoginWithEmail, useLoginWithOAuth, useLoginWithPasskey, usePrivy, useSignupWithPasskey, useWallets } from "@privy-io/react-auth";
 import { ArrowLeft, EnvelopeSimple, Fingerprint, GoogleLogo, Wallet, X, XLogo } from "@phosphor-icons/react";
 import { pickWallet } from "@/lib/pickWallet";
 import { clearMarks, markOnboarding, markSignIn, onAuthOpen, type AuthMode } from "@/lib/authSession";
@@ -34,6 +34,7 @@ export function AuthDialog() {
     stuckRef.current = stuck;
   }, [stuck]);
   const { initOAuth } = useLoginWithOAuth();
+  const { createWallet } = useCreateWallet();
   const { sendCode, loginWithCode } = useLoginWithEmail();
   const { loginWithPasskey } = useLoginWithPasskey();
   const { signupWithPasskey } = useSignupWithPasskey();
@@ -52,12 +53,14 @@ export function AuthDialog() {
   useEffect(
     () =>
       onAuthOpen((m) => {
-        // Signed in without a wallet (a sign-in that did not finish): this dialog would never
-        // show for an authenticated user and the button would do nothing. Clear that sign-in
-        // so the dialog can open on a clean slate.
+        // Signed in without a wallet: this dialog never shows for an authenticated user, so
+        // the button would do nothing. Make the missing wallet; only if that fails is the
+        // session cleared, so the dialog can open on a clean slate.
         if (stuckRef.current) {
-          clearMarks();
-          void logout().catch(() => {});
+          void createWallet().catch(() => {
+            clearMarks();
+            return logout().catch(() => {});
+          });
         }
         setMode(m);
         setStep("choose");
@@ -67,7 +70,7 @@ export function AuthDialog() {
         setBusy(null);
         setOpen(true);
       }),
-    [logout]
+    [logout, createWallet]
   );
 
   // Signing in closes the dialog. Adjusted during render so a later sign-out cannot find it
