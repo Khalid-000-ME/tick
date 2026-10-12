@@ -1,0 +1,8 @@
+node_modules
+raw/
+build/
+out/
+voice/*.onnx
+voice/*.onnx.json
+voice/out/
+voice/*.wav

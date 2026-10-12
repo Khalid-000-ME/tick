@@ -1,0 +1,18 @@
+[
+  { "id": "landing", "caption": "Thirty second prediction markets",
+    "say": "Prediction markets are slow. The quickest one you can name takes five minutes to settle. Tick settles in thirty seconds." },
+  { "id": "feed",    "caption": "Opens on a feed, not a trading screen",
+    "say": "And it doesn't open on a trading screen. It opens on a feed, where the thing people post is their profit." },
+  { "id": "markets", "caption": "One question per market",
+    "say": "Every market is one question. Will this price be higher, thirty seconds from now." },
+  { "id": "trade",   "caption": "Live chart, two sides, from ten cents",
+    "say": "You get the live chart, the strike, and two sides. Ten cents is enough to take one. It settles on Pyth, on chain. Nobody referees it." },
+  { "id": "groups",  "caption": "Groups and rooms, on chain",
+    "say": "The part that makes it stick is the group. Rooms, chat, and a leaderboard, all of it on chain." },
+  { "id": "room",    "caption": "The room races a live scoreboard",
+    "say": "The owner picks a market. Everyone calls the same thirty seconds, and the table re-sorts as each window settles." },
+  { "id": "card",    "caption": "Every win becomes a verified card",
+    "say": "Win, and Tick draws your card from your real record. Verified on chain, so the number can't be faked." },
+  { "id": "close",   "caption": "Tick. Compete in groups. Flex your profits.",
+    "say": "Thirty second markets, for people who'd rather trade with their friends. Tick." }
+]
