@@ -107,7 +107,7 @@ export function LandingExperience() {
             <p className="landing-badge">The world's first 30-second prediction market</p>
             <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
             <p className="landing-lede">
-              Record-breaking speed, ten times faster than Polymarket. Paid in stablecoins.
+              A record time, ten times faster than Polymarket. Paid in stablecoins.
             </p>
             <div className="landing-actions">
               <Link href="/markets" className="landing-primary">Browse live markets <ArrowUpRight weight="bold" /></Link>
