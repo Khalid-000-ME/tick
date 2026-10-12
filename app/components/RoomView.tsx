@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, Copy, Trophy } from "@phosphor-icons/react";
 import { AccountShell } from "@/components/AccountShell";
 import { Avatar } from "@/components/Avatar";
+import { ChatPanel } from "@/components/ChatPanel";
 import { ShareActions } from "@/components/ShareActions";
 import { useProfiles } from "@/lib/profiles";
 import { fetchRoom, useSocial, type Group, type Room, type Standing } from "@/lib/useSocial";
@@ -69,7 +70,7 @@ export function RoomView({ id }: { id: number }) {
           <section className="page-intro">
             <h1>{room.room.name}</h1>
             <p>
-              {room.group ? <>In {room.group.name} · </> : null}
+              {room.group ? <><Link href={`/groups/${room.group.id}`}>{room.group.name}</Link> · </> : null}
               {room.members.length} playing · room {room.room.id}
             </p>
           </section>
@@ -105,6 +106,7 @@ export function RoomView({ id }: { id: number }) {
             {me && <ShareActions address={me.address} net={me.net} compact />}
           </div>
 
+          <div className="social-grid">
           <section className="match-panel">
             <header className="match-panel-head"><h2><Trophy weight="bold" /> Standings</h2></header>
             <ol className="room-board">
@@ -126,6 +128,14 @@ export function RoomView({ id }: { id: number }) {
               })}
             </ol>
           </section>
+          <ChatPanel
+            kind="room"
+            id={room.room.id}
+            account={account}
+            canPost={inRoom}
+            post={async (text) => send("postToRoom", [BigInt(room.room.id), text])}
+          />
+          </div>
         </>
       )}
     </AccountShell>

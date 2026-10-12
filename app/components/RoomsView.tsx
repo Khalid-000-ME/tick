@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Plus, UsersThree } from "@phosphor-icons/react";
+import { ArrowRight, Plus } from "@phosphor-icons/react";
+import { Avatar, genAvatar } from "@/components/Avatar";
 import { AccountShell } from "@/components/AccountShell";
 import { useSocial } from "@/lib/useSocial";
 import { useTickWallet } from "@/lib/useTickWallet";
@@ -85,15 +86,15 @@ export function RoomsView() {
 
           <section className="match-panel">
             <header className="match-panel-head"><h2>Groups</h2></header>
-            <p className="match-meta">A group is a standing crowd. Rooms inside it are the contests.</p>
+            <p className="match-meta">A group is a standing crowd with its own picture and chat. Rooms inside it are the contests.</p>
             <ul className="room-list">
               {groups.map((g) => {
                 const inIt = myGroups.includes(g.id);
                 return (
                   <li key={g.id}>
                     <div className="room-row">
-                      <UsersThree weight="bold" />
-                      <strong>{g.name}</strong>
+                      <Avatar avatar={g.avatar} seed={`group-${g.id}`} name={g.name} size={28} />
+                      <Link href={`/groups/${g.id}`} className="room-row-name">{g.name}</Link>
                       <span>{g.members} in · {g.rooms} rooms</span>
                       {inIt ? <em>Joined</em> : (
                         <button type="button" className="btn-ghost small" disabled={busy} onClick={() => void run("joinGroup", [BigInt(g.id)], "Joining…")}>Join</button>
@@ -106,7 +107,7 @@ export function RoomsView() {
             </ul>
             <div className="social-form">
               <input value={groupName} maxLength={40} placeholder="Start a group" onChange={(e) => setGroupName(e.target.value)} />
-              <button type="button" className="btn-solid" disabled={busy || !groupName.trim()} onClick={() => void run("createGroup", [groupName], "Starting the group…").then((r) => r.ok && setGroupName(""))}>
+              <button type="button" className="btn-solid" disabled={busy || !groupName.trim()} onClick={() => void run("createGroup", [groupName, genAvatar("rings", groupName)], "Starting the group…").then((r) => r.ok && setGroupName(""))}>
                 <Plus weight="bold" /> Start
               </button>
             </div>

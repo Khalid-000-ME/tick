@@ -2518,3 +2518,27 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .card-cta { font: 600 14px var(--font-geist-sans), sans-serif; color: #d8f35f; }
 .portfolio-share { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 14px 0 4px; }
 .portfolio-share small { color: var(--t-dim); font-size: 12px; }
+
+/* Group pages and the on-chain chat. */
+.group-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.group-head .avatar { border-radius: 18px; overflow: hidden; flex: none; }
+.group-head h1 { font-size: 30px; letter-spacing: -.03em; }
+.group-head p { margin-top: 4px; color: var(--t-dim); font-size: 13px; }
+.group-head-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.group-editor { margin-bottom: 18px; }
+.room-row-name { font-size: 14px; font-weight: 600; color: inherit; }
+.room-row-name:hover { text-decoration: underline; }
+
+.chat-panel { display: flex; flex-direction: column; }
+.chat-note { margin-left: auto; font: 600 10px var(--font-geist-mono), monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--t-dim); }
+.chat-list { flex: 1; min-height: 220px; max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 6px 2px 10px; }
+.chat-msg { display: flex; gap: 10px; align-items: flex-start; }
+.chat-msg .avatar { flex: none; border-radius: 50%; overflow: hidden; }
+.chat-who { display: flex; align-items: baseline; gap: 8px; }
+.chat-who strong { font-size: 13px; font-weight: 600; }
+.chat-who time { font: 10px var(--font-geist-mono), monospace; color: var(--t-dim); }
+.chat-text { margin-top: 2px; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.chat-msg.is-mine .chat-who strong { color: var(--t-up); }
+.chat-form { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--t-line); }
+.chat-form input { flex: 1; min-height: 42px; padding: 0 12px; border: 1px solid var(--t-line); border-radius: 10px; background: transparent; color: var(--t-ink); font-size: 14px; }
+.chat-form button { display: inline-flex; align-items: center; gap: 6px; flex: none; }

@@ -16,8 +16,22 @@ import { requestGas } from "@/lib/requestGas";
  */
 const pub = createPublicClient({ chain: monadTestnet, transport: http(), pollingInterval: 400 });
 
-export interface Group { id: number; name: string; creator: string; createdAt: number; members: number; rooms: number }
-export interface Room { id: number; name: string; creator: string; groupId: number; createdAt: number; members: number }
+export interface Group { id: number; name: string; avatar: string; creator: string; createdAt: number; members: number; rooms: number; messages: number }
+export interface Room { id: number; name: string; creator: string; groupId: number; createdAt: number; members: number; messages: number }
+export interface Post { from: string; at: number; text: string }
+
+type RawGroup = { name: string; avatar: string; creator: string; createdAt: bigint };
+type RawRoom = { name: string; creator: string; groupId: bigint; createdAt: bigint };
+
+const toGroup = (id: number, g: RawGroup, members: bigint, rooms: bigint, messages: bigint): Group => ({
+  id, name: g.name, avatar: g.avatar, creator: g.creator, createdAt: Number(g.createdAt),
+  members: Number(members), rooms: Number(rooms), messages: Number(messages),
+});
+
+const toRoom = (id: number, r: RawRoom, members: bigint, messages: bigint): Room => ({
+  id, name: r.name, creator: r.creator, groupId: Number(r.groupId), createdAt: Number(r.createdAt),
+  members: Number(members), messages: Number(messages),
+});
 export interface Standing { address: string; bets: number; staked: number; returned: number; net: number }
 
 // One helper for every view, so the call sites read as questions rather than as viem calls.
@@ -35,8 +49,8 @@ export async function fetchGroups(): Promise<Group[]> {
   });
   return res.flatMap((r, i) => {
     if (r.status !== "success") return [];
-    const [name, creator, createdAt, members, rooms] = r.result as readonly [string, string, bigint, bigint, bigint];
-    return [{ id: i + 1, name, creator, createdAt: Number(createdAt), members: Number(members), rooms: Number(rooms) }];
+    const [group, members, rooms, messages] = r.result as readonly [RawGroup, bigint, bigint, bigint];
+    return [toGroup(i + 1, group, members, rooms, messages)];
   });
 }
 
@@ -48,8 +62,8 @@ export async function fetchRooms(ids: readonly number[]): Promise<Room[]> {
   });
   return res.flatMap((r, i) => {
     if (r.status !== "success") return [];
-    const [name, creator, groupId, createdAt, members] = r.result as readonly [string, string, bigint, bigint, bigint];
-    return [{ id: ids[i], name, creator, groupId: Number(groupId), createdAt: Number(createdAt), members: Number(members) }];
+    const [room, members, messages] = r.result as readonly [RawRoom, bigint, bigint];
+    return [toRoom(ids[i], room, members, messages)];
   });
 }
 
@@ -59,11 +73,32 @@ export async function fetchRoom(id: number): Promise<{ room: Room; group: Group 
   const room = rooms[0];
   const members = (await read<readonly string[]>("roomMembers", [BigInt(id)])).map((m) => m.toLowerCase());
   let group: Group | null = null;
-  if (room.groupId !== 0) {
-    const [name, creator, createdAt, count, roomCount] = await read<readonly [string, string, bigint, bigint, bigint]>("groupInfo", [BigInt(room.groupId)]);
-    group = { id: room.groupId, name, creator, createdAt: Number(createdAt), members: Number(count), rooms: Number(roomCount) };
-  }
+  if (room.groupId !== 0) group = await fetchGroup(room.groupId);
   return { room, group, members };
+}
+
+export async function fetchGroup(id: number): Promise<Group | null> {
+  try {
+    const [group, members, rooms, messages] = await read<readonly [RawGroup, bigint, bigint, bigint]>("groupInfo", [BigInt(id)]);
+    return toGroup(id, group, members, rooms, messages);
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchGroupMembers(id: number): Promise<string[]> {
+  return (await read<readonly string[]>("groupMembers", [BigInt(id)])).map((m) => m.toLowerCase());
+}
+
+export async function fetchRoomsIn(id: number): Promise<Room[]> {
+  const ids = await read<readonly bigint[]>("roomsInGroup", [BigInt(id)]);
+  return fetchRooms(ids.map(Number));
+}
+
+/** The last `count` messages of a chat, oldest first, straight from the contract. */
+export async function fetchChat(kind: "group" | "room", id: number, count = 60): Promise<Post[]> {
+  const posts = await read<readonly { from: string; at: bigint; text: string }[]>(kind === "group" ? "groupChat" : "roomChat", [BigInt(id), BigInt(count)]);
+  return posts.map((p) => ({ from: p.from.toLowerCase(), at: Number(p.at), text: p.text }));
 }
 
 export function useSocial(account: `0x${string}` | null, walletClient: WalletClient | null) {
@@ -103,7 +138,10 @@ export function useSocial(account: `0x${string}` | null, walletClient: WalletCli
 
   /** One write, with the starter gas a new wallet needs to send it. */
   const send = useCallback(
-    async (functionName: "createGroup" | "joinGroup" | "createRoom" | "joinRoom", args: readonly unknown[]): Promise<{ ok: boolean; message: string }> => {
+    async (
+      functionName: "createGroup" | "joinGroup" | "createRoom" | "joinRoom" | "setGroup" | "postToGroup" | "postToRoom",
+      args: readonly unknown[]
+    ): Promise<{ ok: boolean; message: string }> => {
       if (!walletClient || !account) return { ok: false, message: "Log in first." };
       try {
         await requestGas(account);
@@ -118,6 +156,10 @@ export function useSocial(account: `0x${string}` | null, walletClient: WalletCli
       } catch (e) {
         const name = (e as { cause?: { data?: { errorName?: string } } }).cause?.data?.errorName;
         if (name === "AlreadyIn") return { ok: false, message: "You are already in that one." };
+        if (name === "NotMember") return { ok: false, message: "Join first, then you can post." };
+        if (name === "NotCreator") return { ok: false, message: "Only whoever started the group can change it." };
+        if (name === "BadText") return { ok: false, message: "A message is 1 to 280 characters." };
+        if (name === "BadAvatar") return { ok: false, message: "That picture reference is too long." };
         if (name === "BadName") return { ok: false, message: "Names are 1 to 40 characters." };
         if (name === "NoGroup" || name === "NoRoom") return { ok: false, message: "That does not exist." };
         const msg = (e as { shortMessage?: string }).shortMessage ?? (e as Error).message;
