@@ -2065,28 +2065,28 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 
 /* The window: paper white with a hairline edge, the weight carried by light and shadow
    rather than a drawn-on frame. */
-.story-card { position: relative; width: 100%; padding: 26px; border-radius: 18px; background: #fffefc; border: 1px solid rgba(16, 18, 15, .10); color: #10120f; overflow: hidden; font-family: var(--font-geist-mono), monospace; text-transform: uppercase; letter-spacing: .05em; will-change: transform; }
+.story-card { position: relative; width: 100%; padding: 24px 26px 26px; border-radius: 18px; background: #fffefc; border: 1px solid rgba(16, 18, 15, .09); color: #10120f; overflow: hidden; font-family: var(--font-geist-sans), system-ui, sans-serif; will-change: transform; }
 .story-card-head { display: flex; align-items: center; gap: 12px; }
-.story-card-head img { border-radius: 50%; }
-.story-card-head strong { display: block; font-size: 16px; font-weight: 600; letter-spacing: .08em; }
-.story-card-head span { font: 11px var(--font-geist-mono), monospace; letter-spacing: .08em; color: #686b64; }
-.story-count { margin-left: auto; font: 600 34px var(--font-geist-mono), monospace; font-style: normal; letter-spacing: -.04em; color: #10120f; font-variant-numeric: tabular-nums; }
-.story-bar { height: 2px; margin: 16px -26px 0; background: #ebe9e0; }
-.story-bar span { display: block; height: 100%; background: #173f31; }
+.story-card-head img { width: 32px; height: 32px; border-radius: 50%; box-shadow: 0 1px 3px rgba(16, 18, 15, .18); }
+.story-card-head strong { display: block; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.story-card-head span { display: block; margin-top: 2px; font: 500 10px var(--font-geist-mono), monospace; letter-spacing: .14em; text-transform: uppercase; color: #9a9d93; }
+.story-count { margin-left: auto; font: 500 20px var(--font-geist-mono), monospace; font-style: normal; letter-spacing: -.01em; color: #5f635a; font-variant-numeric: tabular-nums; }
+.story-bar { height: 2px; margin: 18px 0 0; border-radius: 2px; background: #f0eee7; overflow: hidden; }
+.story-bar span { display: block; height: 100%; border-radius: 2px; background: #45936c; }
 .story-price-row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 18px; }
-.story-price-row strong { font: 600 30px var(--font-geist-mono), monospace; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
-.story-price-row span { font: 12px var(--font-geist-mono), monospace; letter-spacing: .08em; color: #686b64; }
+.story-price-row strong { font: 600 28px var(--font-geist-mono), monospace; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.story-price-row span { font: 500 11px var(--font-geist-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: #9a9d93; }
 .story-chart { display: block; width: 100%; height: auto; margin: 14px 0 18px; overflow: visible; }
 .story-chart text { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 .story-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .story-side { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 15px 16px; border-radius: 12px; border: 1px solid; }
-.story-side span { font-size: 15px; font-weight: 600; letter-spacing: .08em; }
-.story-side small { font: 11px var(--font-geist-mono), monospace; letter-spacing: .08em; opacity: .8; }
+.story-side span { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.story-side small { font: 500 10px var(--font-geist-mono), monospace; letter-spacing: .12em; text-transform: uppercase; opacity: .75; }
 .story-side.is-up { border-color: rgba(22, 163, 74, .32); transform-origin: center; }
 .story-side.is-down { border-color: rgba(220, 38, 38, .26); color: #b42318; background: rgba(220, 38, 38, .04); }
 .story-ripple { position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; background: rgba(255, 255, 255, .8); pointer-events: none; }
 .story-cursor { position: absolute; left: 50%; top: 50%; pointer-events: none; filter: drop-shadow(0 6px 8px rgba(16, 18, 15, .35)); z-index: 2; }
-.story-status { position: relative; height: 18px; margin-top: 14px; font: 12px var(--font-geist-mono), monospace; letter-spacing: .08em; color: #686b64; }
+.story-status { position: relative; height: 18px; margin-top: 14px; font: 500 10px var(--font-geist-mono), monospace; letter-spacing: .14em; text-transform: uppercase; color: #9a9d93; }
 .story-status span { position: absolute; inset: 0; }
 
 /* The win: the window washes to paper, with the payout in Geist Pixel. */
@@ -2114,7 +2114,7 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   .story-caption h2 { font-size: 30px; }
   .story-caption p { margin-top: 10px; font-size: 14px; }
   .story-stage .story-card { width: 90%; padding: 18px; }
-  .story-bar { margin: 12px -18px 0; }
+  .story-bar { margin: 14px 0 0; }
   .story-won-inner strong { font-size: 68px; }
   .story-toast { bottom: 128px; font-size: 12px; padding: 10px 16px; }
 }
@@ -2461,8 +2461,8 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .terminal-shell .terminal-header { position: relative; z-index: 30; }
 
 /* The logo above the headline: a rounded tile with a soft bloom behind it. */
-.hero-logo { position: relative; display: grid; place-items: center; width: 74px; height: 74px; margin: 0 auto 26px; border-radius: 22px; border: 1px solid rgba(216, 243, 95, .3); background: linear-gradient(160deg, #222a1b, #0c0f09); box-shadow: 0 16px 38px rgba(0, 0, 0, .5), 0 0 22px rgba(216, 243, 95, .16), inset 0 1px 0 rgba(255, 255, 255, .08); }
-.hero-logo::before { content: ""; position: absolute; inset: -26px; z-index: -1; border-radius: 40px; background: radial-gradient(closest-side, rgba(216, 243, 95, .55), rgba(216, 243, 95, 0) 70%); filter: blur(16px); }
+.hero-logo { position: relative; display: grid; place-items: center; width: 74px; height: 74px; margin: 0 auto 26px; border-radius: 22px; background: #070906; }
+.hero-logo::before { content: ""; position: absolute; inset: -22px; z-index: -1; border-radius: 44px; background: radial-gradient(closest-side, rgba(216, 243, 95, .5), rgba(216, 243, 95, 0) 72%); filter: blur(18px); }
 .landing-shell .hero-logo .brand-mark { margin: 0; transform: skew(-17deg) scale(1.2); }
 .landing-shell .hero-logo .brand-mark i { background: var(--acid); }
 @media (max-width: 560px) { .hero-logo { width: 62px; height: 62px; border-radius: 18px; margin-bottom: 20px; } }
