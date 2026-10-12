@@ -7,45 +7,88 @@ import { motion, useScroll, useTransform, type MotionValue } from "motion/react"
  * One whole trade, played by scrolling.
  *
  * The panel pins to the screen while the section scrolls past, and scroll position is the
- * clock: a market opens with its strike, a cursor taps Above, thirty seconds run down while
- * the price climbs past the strike, and the result lands. Every beat is tied to scroll, so
- * the reader sets the pace and can scrub back. The numbers are illustrative, not live.
+ * clock: a market opens with its strike, a cursor taps Above, the thirty-second window runs
+ * (compressed, so it does not take a long scroll) while candles print past the strike, and
+ * the result lands. Every beat is tied to scroll, so the reader sets the pace and can scrub
+ * back. The chart is drawn the way the terminal draws it: candles, a volume pane, a dashed
+ * strike, a price axis and a live price tag. The numbers are illustrative, not live.
  *
  * Beats, as fractions of the section's scroll:
- *   0.00 to 0.18  the market opens, history draws, the strike line appears
- *   0.18 to 0.38  the cursor moves in and taps Above
- *   0.38 to 0.80  the 30-second window: countdown, price line, live price
- *   0.80 to 1.00  the win
+ *   0.00 to 0.16  the market opens: history candles print, the strike line appears
+ *   0.16 to 0.34  the cursor moves in and taps Above
+ *   0.34 to 0.58  the 30-second window: countdown, candles climb, live price tag
+ *   0.60 to 1.00  the win
  */
-const STRIKE = 83621;
-const W = 600;
-const STRIKE_Y = 170;
-const PX_PER_USD = 2.2;
-const yOf = (price: number) => STRIKE_Y - (price - STRIKE) * PX_PER_USD;
 
-// Before the stake: a little drift around the strike.
-const HISTORY = Array.from({ length: 11 }, (_, i) => ({
-  x: i * 12,
-  price: STRIKE + Math.sin(i * 1.3) * 4 - (i === 10 ? Math.sin(13) * 4 : 0),
-}));
-// The window: chop early, then a climb that finishes well above the strike.
-const N = 26;
-const TRADE = Array.from({ length: N }, (_, i) => {
-  const t = i / (N - 1);
-  return { x: 120 + t * (W - 120), price: STRIKE + Math.pow(t, 1.6) * 47 + Math.sin(i * 1.7) * 4 * (1 - t) };
+// ---- the price series ----------------------------------------------------------------
+// Four ticks per candle. Eight candles of history drift around the opening price; fourteen
+// candles of window chop early, then climb well clear of the strike.
+const TICKS_PER = 4;
+const HISTORY_CANDLES = 8;
+const WINDOW_CANDLES = 14;
+const SERIES = (() => {
+  const s: number[] = [];
+  const total = (HISTORY_CANDLES + WINDOW_CANDLES) * TICKS_PER;
+  for (let i = 0; i <= total; i++) {
+    if (i <= HISTORY_CANDLES * TICKS_PER) {
+      s.push(83621 + Math.sin(i * 0.9) * 5 + Math.sin(i * 0.37) * 3);
+    } else {
+      const open = s[HISTORY_CANDLES * TICKS_PER];
+      const u = (i - HISTORY_CANDLES * TICKS_PER) / (total - HISTORY_CANDLES * TICKS_PER);
+      s.push(open + Math.pow(u, 1.5) * 46 + Math.sin(i * 1.1) * 5 * (1 - u * 0.6) + Math.sin(i * 2.3) * 2);
+    }
+  }
+  return s;
+})();
+/** The strike is the price at the instant the window opens: the last history close. */
+const STRIKE = SERIES[HISTORY_CANDLES * TICKS_PER];
+
+interface Candle { x: number; open: number; close: number; high: number; low: number; vol: number }
+const PLOT_W = 520;
+const STEP = PLOT_W / (HISTORY_CANDLES + WINDOW_CANDLES + 1);
+const CANDLES: Candle[] = Array.from({ length: HISTORY_CANDLES + WINDOW_CANDLES }, (_, k) => {
+  const slice = SERIES.slice(k * TICKS_PER, k * TICKS_PER + TICKS_PER + 1);
+  const window = k >= HISTORY_CANDLES;
+  return {
+    x: 14 + k * STEP,
+    open: slice[0],
+    close: slice[slice.length - 1],
+    high: Math.max(...slice) + 0.9,
+    low: Math.min(...slice) - 0.9,
+    // Volume picks up once the window opens and people are staking.
+    vol: (window ? 18 : 8) + Math.abs(Math.sin(k * 2.7)) * (window ? 26 : 12),
+  };
 });
-const pathOf = (pts: { x: number; price: number }[]) =>
-  pts.map((p, i) => `${i ? "L" : "M"} ${p.x.toFixed(1)} ${yOf(p.price).toFixed(1)}`).join(" ");
 
-const WINDOW: [number, number] = [0.38, 0.8];
-const STOPS = TRADE.map((_, i) => WINDOW[0] + (i / (N - 1)) * (WINDOW[1] - WINDOW[0]));
+// ---- geometry ------------------------------------------------------------------------
+const LO = 83598;
+const HI = 83690;
+const PANE_TOP = 12;
+const PANE_BOTTOM = 236;
+const yOf = (price: number) => PANE_BOTTOM - ((price - LO) / (HI - LO)) * (PANE_BOTTOM - PANE_TOP);
+const STRIKE_Y = yOf(STRIKE);
+const VOL_BOTTOM = 298;
+const TICKS = [83600, 83620, 83640, 83660, 83680];
+const BODY_W = 12;
+
+// ---- timeline -------------------------------------------------------------------------
+const WINDOW: [number, number] = [0.34, 0.58];
+const slot = (j: number) => {
+  const len = (WINDOW[1] - WINDOW[0]) / WINDOW_CANDLES;
+  return [WINDOW[0] + j * len, WINDOW[0] + (j + 1) * len] as const;
+};
+// The live price: the strike at the open, then each window candle's close as it completes.
+const PRICE_STOPS = [WINDOW[0], ...Array.from({ length: WINDOW_CANDLES }, (_, j) => slot(j)[1])];
+const PRICE_VALUES = [STRIKE, ...CANDLES.slice(HISTORY_CANDLES).map((c) => c.close)];
+
 const usd = (v: number) => `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const plain = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const CAPTIONS = [
-  { range: [0, 0.18], title: "A market opens every 30 seconds.", body: `The strike is Bitcoin's price right now: ${usd(STRIKE)}.` },
-  { range: [0.18, 0.38], title: "Think it ends higher? Tap Above.", body: "One tap. $1 staked. No order book to fill." },
-  { range: [0.38, 0.8], title: "Thirty seconds. That's it.", body: "The price runs against the strike, live from Pyth." },
-  { range: [0.8, 1], title: "You won.", body: "Paid to your balance automatically. The next market is already open." },
+  { range: [0, 0.16], title: "A market opens every 30 seconds.", body: `The strike is Bitcoin's price right now: ${usd(STRIKE)}.` },
+  { range: [0.16, 0.34], title: "Think it ends higher? Tap Above.", body: "One tap. $1 staked. No order book to fill." },
+  { range: [0.34, 0.6], title: "Thirty seconds. That's it.", body: "The price runs against the strike, live from Pyth." },
+  { range: [0.6, 1], title: "You won.", body: "Paid to your balance automatically. The next market is already open." },
 ] as const;
 
 export function TradeStory() {
@@ -55,39 +98,37 @@ export function TradeStory() {
   // Opening
   const cardIn = useTransform(p, [0, 0.06], [0.92, 1]);
   const cardOpacity = useTransform(p, [0, 0.05], [0.4, 1]);
-  const historyLen = useTransform(p, [0.02, 0.14], [0, 1]);
-  const historyOpacity = useTransform(p, [0.02, 0.03], [0, 1]);
-  const strikeLen = useTransform(p, [0.08, 0.17], [0, 1]);
-  const strikeLabel = useTransform(p, [0.14, 0.18], [0, 1]);
+  const strikeLen = useTransform(p, [0.08, 0.15], [0, 1]);
+  const strikeTags = useTransform(p, [0.13, 0.16], [0, 1]);
 
   // The tap
-  const cursorX = useTransform(p, [0.18, 0.31], [260, 0]);
-  const cursorY = useTransform(p, [0.18, 0.31], [150, 0]);
-  const cursorOpacity = useTransform(p, [0.18, 0.22, 0.42, 0.46], [0, 1, 1, 0]);
-  const cursorPress = useTransform(p, [0.31, 0.33, 0.35], [1, 0.82, 1]);
-  const ripple = useTransform(p, [0.33, 0.4], [0, 2.6]);
-  const rippleOpacity = useTransform(p, [0.33, 0.4], [0.7, 0]);
-  const aboveFill = useTransform(p, [0.32, 0.34], ["rgba(34,197,94,0.08)", "rgba(34,197,94,1)"]);
-  const aboveText = useTransform(p, [0.32, 0.34], ["#4ade80", "#06120a"]);
-  const belowDim = useTransform(p, [0.32, 0.36], [1, 0.35]);
-  const tapHint = useTransform(p, [0.3, 0.34], [1, 0]);
-  const stakedNote = useTransform(p, [0.34, 0.38], [0, 1]);
+  const cursorX = useTransform(p, [0.16, 0.27], [260, 0]);
+  const cursorY = useTransform(p, [0.16, 0.27], [150, 0]);
+  const cursorOpacity = useTransform(p, [0.16, 0.2, 0.38, 0.42], [0, 1, 1, 0]);
+  const cursorPress = useTransform(p, [0.27, 0.29, 0.31], [1, 0.82, 1]);
+  const ripple = useTransform(p, [0.29, 0.36], [0, 2.6]);
+  const rippleOpacity = useTransform(p, [0.29, 0.36], [0.7, 0]);
+  const aboveFill = useTransform(p, [0.28, 0.3], ["rgba(34,197,94,0.08)", "rgba(34,197,94,1)"]);
+  const aboveText = useTransform(p, [0.28, 0.3], ["#4ade80", "#06120a"]);
+  const belowDim = useTransform(p, [0.28, 0.32], [1, 0.35]);
+  const tapHint = useTransform(p, [0.26, 0.3], [1, 0]);
+  const stakedNote = useTransform(p, [0.3, 0.34], [0, 1]);
 
-  // The window
-  const tradeLen = useTransform(p, WINDOW, [0, 1]);
-  const dotX = useTransform(p, STOPS, TRADE.map((t) => t.x));
-  const dotY = useTransform(p, STOPS, TRADE.map((t) => yOf(t.price)));
-  const dotOpacity = useTransform(p, [0.37, 0.39], [0, 1]);
-  const price = useTransform(p, STOPS, TRADE.map((t) => t.price));
+  // The window, compressed: the countdown still reads 30 to 0, just over a shorter scroll.
+  const price = useTransform(p, PRICE_STOPS, PRICE_VALUES);
   const priceText = useTransform(price, usd);
+  const tagText = useTransform(price, plain);
+  const tagY = useTransform(price, (v) => yOf(v) - 11);
+  const tagFill = useTransform(p, [0.33, 0.35], ["#8b927f", "#22c55e"]);
+  const tagOpacity = useTransform(p, [0.1, 0.13], [0, 1]);
   const countdown = useTransform(p, WINDOW, [30, 0]);
   const countdownText = useTransform(countdown, (v) => `${Math.ceil(v)}s`);
   const barWidth = useTransform(p, WINDOW, ["100%", "0%"]);
-  const aboveZone = useTransform(p, [0.55, 0.7], [0, 1]);
+  const aboveZone = useTransform(p, [0.44, 0.54], [0, 1]);
 
   // The win
-  const wonOpacity = useTransform(p, [0.8, 0.85], [0, 1]);
-  const wonScale = useTransform(p, [0.8, 0.86], [0.8, 1]);
+  const wonOpacity = useTransform(p, [0.6, 0.65], [0, 1]);
+  const wonScale = useTransform(p, [0.6, 0.66], [0.8, 1]);
 
   return (
     <section ref={ref} className="story" aria-label="How a trade plays out">
@@ -123,23 +164,44 @@ export function TradeStory() {
             <span>Strike {usd(STRIKE)}</span>
           </div>
 
-          <svg className="story-chart" viewBox={`0 0 ${W} 260`} aria-hidden="true">
+          <svg className="story-chart" viewBox="0 0 600 300" aria-hidden="true">
             <defs>
               <linearGradient id="story-up" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22c55e" stopOpacity="0.28" />
+                <stop offset="0%" stopColor="#22c55e" stopOpacity="0.22" />
                 <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
               </linearGradient>
             </defs>
-            <motion.rect x="0" y="0" width={W} height={STRIKE_Y} fill="url(#story-up)" style={{ opacity: aboveZone }} />
-            <motion.line x1="0" y1={STRIKE_Y} x2={W} y2={STRIKE_Y} stroke="#e8ecd9" strokeWidth="1.5" strokeDasharray="6 6" style={{ scaleX: strikeLen, originX: 0, transformBox: "fill-box" }} />
-            <motion.g style={{ opacity: strikeLabel }}>
-              <rect x={W - 92} y={STRIKE_Y - 13} width="92" height="26" rx="6" fill="#e8ecd9" />
-              <text x={W - 46} y={STRIKE_Y + 5} textAnchor="middle" fontSize="13" fontFamily="ui-monospace, monospace" fill="#0b0f09">STRIKE</text>
+
+            {/* Grid and price axis, as on the terminal */}
+            {TICKS.map((t) => (
+              <g key={t}>
+                <line x1="0" x2={PLOT_W} y1={yOf(t)} y2={yOf(t)} stroke="#1c2318" strokeWidth="1" />
+                <text x={PLOT_W + 10} y={yOf(t) + 4} fontSize="12" fontFamily="ui-monospace, monospace" fill="#6b7363">{t.toLocaleString("en-US")}</text>
+              </g>
+            ))}
+            <line x1={PLOT_W} x2={PLOT_W} y1="0" y2={VOL_BOTTOM} stroke="#232b1e" strokeWidth="1" />
+            <line x1="0" x2={PLOT_W} y1={PANE_BOTTOM + 8} y2={PANE_BOTTOM + 8} stroke="#232b1e" strokeWidth="1" />
+
+            <motion.rect x="0" y={PANE_TOP} width={PLOT_W} height={STRIKE_Y - PANE_TOP} fill="url(#story-up)" style={{ opacity: aboveZone }} />
+
+            {CANDLES.map((c, k) => (
+              <CandleMark key={k} p={p} c={c} range={k < HISTORY_CANDLES ? [0.02 + k * 0.0125, 0.02 + (k + 1) * 0.0125] : slot(k - HISTORY_CANDLES)} />
+            ))}
+
+            {/* Strike: dashed line, a "Strike" tag and its value on the axis */}
+            <motion.line x1="0" y1={STRIKE_Y} x2={PLOT_W} y2={STRIKE_Y} stroke="#e8ecd9" strokeWidth="1.2" strokeDasharray="5 5" style={{ scaleX: strikeLen, originX: 0, transformBox: "fill-box" }} />
+            <motion.g style={{ opacity: strikeTags }}>
+              <rect x={PLOT_W - 62} y={STRIKE_Y + 4} width="56" height="20" rx="3" fill="#e8ecd9" />
+              <text x={PLOT_W - 34} y={STRIKE_Y + 18} textAnchor="middle" fontSize="12" fontFamily="ui-sans-serif, system-ui" fill="#0b0f09">Strike</text>
+              <rect x={PLOT_W + 2} y={STRIKE_Y - 10} width="76" height="20" rx="3" fill="#0b0f09" stroke="#e8ecd9" strokeWidth="1" />
+              <text x={PLOT_W + 40} y={STRIKE_Y + 4} textAnchor="middle" fontSize="11" fontFamily="ui-monospace, monospace" fill="#e8ecd9">{plain(STRIKE)}</text>
             </motion.g>
-            <motion.path d={pathOf(HISTORY)} fill="none" stroke="#8b927f" strokeWidth="3" strokeLinecap="round" style={{ pathLength: historyLen, opacity: historyOpacity }} />
-            <motion.path d={pathOf(TRADE)} fill="none" stroke="#4ade80" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{ pathLength: tradeLen, opacity: dotOpacity }} />
-            <motion.circle r="7" fill="#4ade80" style={{ cx: dotX, cy: dotY, opacity: dotOpacity }} />
-            <motion.circle r="16" fill="#4ade80" fillOpacity="0.25" style={{ cx: dotX, cy: dotY, opacity: dotOpacity }} />
+
+            {/* Live price tag on the axis, following the last close */}
+            <motion.g style={{ opacity: tagOpacity, y: tagY }}>
+              <motion.rect x={PLOT_W + 2} y="0" width="76" height="22" rx="3" style={{ fill: tagFill }} />
+              <motion.text x={PLOT_W + 40} y="15" textAnchor="middle" fontSize="11" fontWeight="600" fontFamily="ui-monospace, monospace" fill="#06120a">{tagText}</motion.text>
+            </motion.g>
           </svg>
 
           <div className="story-sides">
@@ -179,6 +241,35 @@ export function TradeStory() {
   );
 }
 
+/**
+ * One candle and its volume bar. It prints across its own slot of the timeline: it fades
+ * in, and the body grows out from the open toward the close, as a live candle does.
+ */
+function CandleMark({ p, c, range }: { p: MotionValue<number>; c: Candle; range: readonly [number, number] }) {
+  const [a, b] = range;
+  const opacity = useTransform(p, [a, a + (b - a) * 0.25], [0, 1]);
+  const grow = useTransform(p, [a, b], [0.15, 1]);
+  const up = c.close >= c.open;
+  const color = up ? "#22c55e" : "#ef4444";
+  const top = yOf(Math.max(c.open, c.close));
+  const bodyH = Math.max(2, Math.abs(yOf(c.open) - yOf(c.close)));
+  const volH = c.vol;
+  return (
+    <motion.g style={{ opacity }}>
+      <line x1={c.x} x2={c.x} y1={yOf(c.high)} y2={yOf(c.low)} stroke={color} strokeWidth="1.5" />
+      <motion.rect
+        x={c.x - BODY_W / 2}
+        y={top}
+        width={BODY_W}
+        height={bodyH}
+        fill={color}
+        style={{ scaleY: grow, originY: up ? 1 : 0, transformBox: "fill-box" }}
+      />
+      <rect x={c.x - BODY_W / 2} y={VOL_BOTTOM - volH} width={BODY_W} height={volH} fill={color} fillOpacity="0.35" />
+    </motion.g>
+  );
+}
+
 /** A caption fades up in its beat and out at the next; the first is visible on arrival, the last stays. */
 function Caption({ p, range, first, last, title, body }: { p: MotionValue<number>; range: readonly [number, number]; first: boolean; last: boolean; title: string; body: string }) {
   const [a, b] = range;
@@ -199,9 +290,9 @@ function Step({ p, range }: { p: MotionValue<number>; range: readonly [number, n
 
 /** Sparks thrown out from the win. */
 function Spark({ p, angle }: { p: MotionValue<number>; angle: number }) {
-  const dist = useTransform(p, [0.8, 0.92], [0, 170]);
+  const dist = useTransform(p, [0.6, 0.72], [0, 170]);
   const x = useTransform(dist, (d) => Math.cos(angle) * d);
   const y = useTransform(dist, (d) => Math.sin(angle) * d);
-  const opacity = useTransform(p, [0.8, 0.84, 0.92, 0.96], [0, 1, 1, 0]);
+  const opacity = useTransform(p, [0.6, 0.63, 0.72, 0.78], [0, 1, 1, 0]);
   return <motion.i className="story-spark" style={{ x, y, opacity }} />;
 }

@@ -2071,7 +2071,7 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
    The section is tall and its inner panel sticks, so scrolling through it drives the
    animation (TradeStory.tsx) while the panel stays on screen. Dark, so it continues the
    hero rather than cutting to the light page. */
-.story { position: relative; height: 420vh; background: radial-gradient(90% 60% at 70% 50%, #121a0d 0%, #070907 70%); color: #eef1e6; }
+.story { position: relative; height: 340vh; background: radial-gradient(90% 60% at 70% 50%, #121a0d 0%, #070907 70%); color: #eef1e6; }
 .story-sticky { position: sticky; top: 0; height: 100vh; min-height: 640px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); align-items: center; gap: 72px; padding: 0 max(32px, calc((100vw - 1240px) / 2)); }
 .story-eyebrow { font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--acid); }
 .story-captions { position: relative; height: 230px; margin-top: 22px; }
@@ -2114,7 +2114,7 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .story-spark:nth-child(4n) { background: #f4f6ec; width: 5px; height: 5px; }
 
 @media (max-width: 900px) {
-  .story { height: 380vh; }
+  .story { height: 310vh; }
   .story-sticky { grid-template-columns: minmax(0, 1fr); align-content: center; gap: 20px; padding: 0 16px; }
   .story-captions { height: 150px; margin-top: 12px; }
   .story-caption h2 { font-size: 30px; }
