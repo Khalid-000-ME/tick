@@ -5,6 +5,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { ArrowLeft, DiceFive, UploadSimple, X } from "@phosphor-icons/react";
 import { AVATAR_STYLES, Avatar, genAvatar, type AvatarStyle } from "@/components/Avatar";
 import { clearOnboarding, onboardingPending } from "@/lib/authSession";
+import { lockScroll } from "@/lib/scrollLock";
 import { DURATIONS } from "@/lib/chain/config";
 import { useMyProfile } from "@/lib/profiles";
 import { useAvatarUpload } from "@/lib/useAvatarUpload";
@@ -89,11 +90,10 @@ function Walkthrough({
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onLeave();
     document.addEventListener("keydown", esc);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockScroll();
     return () => {
       document.removeEventListener("keydown", esc);
-      document.body.style.overflow = prev;
+      unlock();
     };
   }, [onLeave]);
 

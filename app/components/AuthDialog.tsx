@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useCreateWallet, useLoginWithEmail, useLoginWithOAuth, useLoginWithPasskey, usePrivy, useSignupWithPasskey, useWallets } from "@privy-io/react-auth";
 import { ArrowLeft, EnvelopeSimple, Fingerprint, GoogleLogo, Wallet, X, XLogo } from "@phosphor-icons/react";
+import { lockScroll } from "@/lib/scrollLock";
 import { pickWallet } from "@/lib/pickWallet";
 import { clearMarks, markOnboarding, markSignIn, onAuthOpen, type AuthMode } from "@/lib/authSession";
 
@@ -30,9 +31,12 @@ export function AuthDialog() {
   const { wallets } = useWallets();
   const stuck = authenticated && !pickWallet(wallets);
   const stuckRef = useRef(false);
+  // Signed in with a wallet: there is nothing to sign in to, so asking for the dialog does nothing.
+  const signedInRef = useRef(false);
   useEffect(() => {
     stuckRef.current = stuck;
-  }, [stuck]);
+    signedInRef.current = authenticated && !stuck;
+  }, [stuck, authenticated]);
   const { initOAuth } = useLoginWithOAuth();
   const { createWallet } = useCreateWallet();
   const { sendCode, loginWithCode } = useLoginWithEmail();
@@ -53,6 +57,9 @@ export function AuthDialog() {
   useEffect(
     () =>
       onAuthOpen((m) => {
+        // Already signed in: do not open at all. It used to open invisibly (the dialog is never drawn for
+        // a signed-in user) while still locking the page's scrolling, which froze the landing page.
+        if (signedInRef.current) return;
         // Signed in without a wallet: this dialog never shows for an authenticated user, so
         // the button would do nothing. Make the missing wallet; only if that fails is the
         // session cleared, so the dialog can open on a clean slate.
@@ -81,18 +88,19 @@ export function AuthDialog() {
     if (authenticated) setOpen(false);
   }
 
+  // Only while the dialog is actually on screen: "open" and signed in means it is not drawn.
+  const visible = open && !authenticated;
   useEffect(() => {
-    if (!open) return;
+    if (!visible) return;
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("keydown", esc);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockScroll();
     panel.current?.querySelector<HTMLElement>("button, input")?.focus();
     return () => {
       document.removeEventListener("keydown", esc);
-      document.body.style.overflow = prev;
+      unlock();
     };
-  }, [open]);
+  }, [visible]);
 
   if (!open || authenticated) return null;
 

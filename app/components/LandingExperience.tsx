@@ -8,6 +8,7 @@ import { Brand } from "@/components/Brand";
 import DotGrid from "@/components/DotGrid";
 import { TradeStory } from "@/components/TradeStory";
 import { openAuth } from "@/lib/authSession";
+import { useTickWallet } from "@/lib/useTickWallet";
 
 /* The product in four lines, led by the card. Every claim here is shipped. */
 /* The whole journey, in the order someone actually does it, written to them. Every line
@@ -40,7 +41,19 @@ const STEPS = [
   },
 ] as const;
 
+/**
+ * The landing page's way in. Signed out it opens the sign-up dialog; signed in there is nothing to
+ * sign up to, so it goes to the feed. (It used to open the dialog regardless, which for a signed-in
+ * visitor drew nothing and froze the page.)
+ */
+function Cta({ signedIn, className, children, signedInLabel = "Open the feed" }: { signedIn: boolean; className: string; children: React.ReactNode; signedInLabel?: string }) {
+  if (signedIn) return <Link href="/feed" className={className}>{signedInLabel} <ArrowUpRight weight="bold" /></Link>;
+  return <button type="button" className={className} onClick={() => openAuth("signup")}>{children} <ArrowUpRight weight="bold" /></button>;
+}
+
 export function LandingExperience() {
+  const { account } = useTickWallet();
+  const signedIn = !!account;
   const reduceMotion = useReducedMotion();
   const { scrollY, scrollYProgress } = useScroll();
 
@@ -61,7 +74,7 @@ export function LandingExperience() {
           <Brand />
           <nav aria-label="Primary navigation">
             <a href="#how">How it works</a><a href="#why">Why Tick</a>
-            <button type="button" className="landing-nav-cta" onClick={() => openAuth("signup")}>Sign up <ArrowUpRight weight="bold" /></button>
+            <Cta signedIn={signedIn} className="landing-nav-cta" signedInLabel="Open feed">Sign up</Cta>
           </nav>
         </div>
       </header>
@@ -104,7 +117,7 @@ export function LandingExperience() {
               Call a price in thirty seconds. Win, and Tick turns it into a card that proves it. Post it and show your crew.
             </p>
             <div className="landing-actions">
-              <button type="button" className="landing-primary" onClick={() => openAuth("signup")}>Sign up free <ArrowUpRight weight="bold" /></button>
+              <Cta signedIn={signedIn} className="landing-primary">Sign up free</Cta>
               <a href="#how" className="landing-secondary">See the card made <ArrowDown /></a>
             </div>
           </motion.div>
@@ -143,14 +156,14 @@ export function LandingExperience() {
           </ol>
           <div className="steps-cta">
             <p>No application. No minimum. Bring whoever you like.</p>
-            <button type="button" className="landing-primary" onClick={() => openAuth("signup")}>Get your first card <ArrowUpRight weight="bold" /></button>
+            <Cta signedIn={signedIn} className="landing-primary" signedInLabel="Go to your feed">Get your first card</Cta>
           </div>
         </section>
 
         <section className="landing-close">
           <p>The world&apos;s first 30-second markets. Crypto. Equities. Sport.</p>
           <h2>Sign up.<br />Trade.<br /><em>Flex your card.</em></h2>
-          <button type="button" className="landing-primary" onClick={() => openAuth("signup")}>Sign up free <ArrowUpRight weight="bold" /></button>
+          <Cta signedIn={signedIn} className="landing-primary">Sign up free</Cta>
         </section>
       </main>
       <footer className="landing-footer"><Brand /></footer>
