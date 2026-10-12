@@ -10,7 +10,7 @@ export function LeaderboardView() {
     <AccountShell active="leaderboard" wallet={wallet}>
       <section className="page-intro">
         <h1>Leaderboard</h1>
-        <p>Ranked by settled money: everything claims paid, minus everything staked.</p>
+        <p>Ranked by net winnings.</p>
       </section>
       <Leaderboard you={wallet.account} />
     </AccountShell>

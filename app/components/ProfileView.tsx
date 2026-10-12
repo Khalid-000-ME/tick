@@ -21,9 +21,9 @@ import { useTickWallet } from "@/lib/useTickWallet";
  * device and apply instantly.
  */
 const MODES: { id: StakeMode; title: string; detail: string }[] = [
-  { id: "tap", title: "One tap", detail: "Tapping a side stakes immediately." },
-  { id: "confirm", title: "Confirm", detail: "A sheet shows the terms; confirm to stake." },
-  { id: "slide", title: "Slide", detail: "Slide to stake, so a stray tap never trades." },
+  { id: "tap", title: "One tap", detail: "Tap a side. You are in." },
+  { id: "confirm", title: "Confirm", detail: "Review, then confirm." },
+  { id: "slide", title: "Slide", detail: "Slide to stake." },
 ];
 
 export function ProfileView() {
@@ -48,7 +48,7 @@ export function ProfileView() {
     <AccountShell active="profile" wallet={wallet}>
       <section className="page-intro">
         <h1>Profile</h1>
-        <p>Saved on chain, so your name shows up anywhere your address does.</p>
+        <p>Your name, on chain.</p>
       </section>
 
       <div className="profile-grid">
@@ -99,7 +99,7 @@ export function ProfileView() {
                 <button type="button" className={theme === "dark" ? "is-active" : ""} onClick={() => theme !== "dark" && toggle()}>Dark</button>
               </div>
             </div>
-            <p className="match-note">Settings are kept on this device and apply straight away.</p>
+            <p className="match-note">Saved on this device.</p>
           </section>
         </div>
       </div>
@@ -251,7 +251,7 @@ function SignInMethods({ onNote }: { onNote: (m: string) => void }) {
           </li>
         ))}
       </ul>
-      <p className="match-note">Any linked method signs you into this same account and wallet.</p>
+      <p className="match-note">Any of these signs you into the same account.</p>
     </section>
   );
 }

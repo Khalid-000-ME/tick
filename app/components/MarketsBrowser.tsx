@@ -172,7 +172,7 @@ export function MarketsBrowser() {
       <main className="board-main">
         <div className="board-head">
           <h1>Markets</h1>
-          <p>Every asset, every window length. A new one opens as each closes.</p>
+          <p>Pick a market. Call it.</p>
         </div>
 
         <div className="board-filters">

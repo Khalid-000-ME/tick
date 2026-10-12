@@ -106,7 +106,7 @@ export function PortfolioView() {
     <AccountShell active="portfolio" wallet={wallet}>
       <section className="page-intro">
         <h1>Portfolio</h1>
-        <p>Every stake this wallet has taken, and how it ended. Winnings are credited to your balance automatically.</p>
+        <p>Every stake, and how it ended.</p>
       </section>
 
       {status !== "ready" || !account ? (

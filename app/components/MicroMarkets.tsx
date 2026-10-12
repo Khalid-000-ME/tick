@@ -160,7 +160,7 @@ export function MicroOrders({
         )}
       </div>
       <AmountPicker value={amount} compact onChange={(n) => { amountTouched.current = true; setAmount(n); }} />
-      <p className="match-note">Most points in the window wins. A tie refunds both sides. Opened at {m.openAway}:{m.openHome}.</p>
+      <p className="match-note">Most points wins. A tie refunds. Opened at {m.openAway}:{m.openHome}.</p>
       {stake.busy && <p className="match-note">{stake.step || "Working..."}</p>}
       {pending !== null && settings.stakeMode !== "tap" && (
         <StakeSheet

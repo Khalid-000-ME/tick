@@ -206,10 +206,10 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
                 {settling ? "Settling..." : "Settle from the final score"}
               </button>
             ) : (
-              <p className="match-meta">Settles from the final score once the match ends. A draw refunds both sides.</p>
+              <p className="match-meta">Settles at full time. A draw refunds.</p>
             )}
             <p className="match-note">
-              Attested by Tick&apos;s key from the public scoreboard, not by Pyth, in a separate contract.
+              Result signed by Tick&apos;s key from the public scoreboard.
               {" "}Key <a href={explorerAddress(ATTESTOR)} target="_blank" rel="noreferrer">{ATTESTOR.slice(0, 8)}...</a>.
             </p>
           </section>

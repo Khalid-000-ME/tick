@@ -85,10 +85,10 @@ const usd = (v: number) => `$${v.toLocaleString("en-US", { minimumFractionDigits
 const plain = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const CAPTIONS = [
-  { range: [0, 0.12], title: "A market opens every 30 seconds.", body: `The strike is Bitcoin's price right now: ${usd(STRIKE)}.` },
-  { range: [0.12, 0.4], title: "Think it ends higher? Tap Above.", body: "One tap. $1 staked. No order book to fill." },
-  { range: [0.4, 0.64], title: "Thirty seconds. That's it.", body: "The price runs against the strike, live from Pyth." },
-  { range: [0.64, 1], title: "You won.", body: "Paid to your balance automatically. The next market is already open." },
+  { range: [0, 0.12], title: "A market opens every 30 seconds.", body: `Strike: ${usd(STRIKE)}, Bitcoin right now.` },
+  { range: [0.12, 0.4], title: "Think it ends higher? Tap Above.", body: "One tap. $1 staked." },
+  { range: [0.4, 0.64], title: "Thirty seconds. That's it.", body: "Live from Pyth." },
+  { range: [0.64, 1], title: "You won.", body: "Paid out automatically." },
 ] as const;
 
 export function TradeStory() {

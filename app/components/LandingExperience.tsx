@@ -13,35 +13,35 @@ import { TradeStory } from "@/components/TradeStory";
 const STEPS = [
   {
     Icon: Fingerprint,
-    kicker: "Takes a few seconds",
-    title: "Sign in with an account you already have.",
-    copy: "Google, a passkey, email or X. There is no seed phrase to write down, no extension to install, and nothing to set up. Your wallet is made for you the moment you arrive.",
+    kicker: "Takes seconds",
+    title: "Sign in with Google.",
+    copy: "Or a passkey, email or X. No seed phrase. No extension.",
   },
   {
     Icon: CurrencyDollar,
     kicker: "Dollars, not tokens",
-    title: "Add money you already understand.",
-    copy: "Your balance is USDC, which is a dollar. No volatile coin to buy first, and no second token to go hunting for when you want to trade: network fees come out of the same dollars.",
+    title: "Add dollars.",
+    copy: "Your balance is USDC. Fees come out of it too.",
     tag: "Card checkout coming",
   },
   {
     Icon: HandTap,
     kicker: "No bankroll needed",
     title: "Start with ten cents.",
-    copy: "You should not have to risk anything real to find out whether you are any good at this. Place your first call for $0.10 and move up only when you want to.",
+    copy: "Risk almost nothing to find out if you are any good.",
   },
   {
     Icon: Lightning,
     kicker: "Ten times quicker",
-    title: "Know if you were right in thirty seconds.",
-    copy: "The quickest markets on Polymarket take five minutes. Yours take thirty seconds, and the next one opens the moment it closes, so you are never waiting on a result.",
+    title: "Know in thirty seconds.",
+    copy: "Polymarket's quickest take five minutes.",
     source: { label: "CoinMarketCap", href: "https://coinmarketcap.com/academy/article/polymarket-debuts-5-minute-bitcoin-prediction-markets-with-instant-settlement" },
   },
   {
     Icon: Trophy,
     kicker: "Nothing up front",
     title: "Keep what you win.",
-    copy: "Placing a call costs you nothing. We take 2% of your winnings, and nothing at all when a call does not land. No spread, no slippage, and no house on the other side of your trade.",
+    copy: "We take 2% of winnings. Nothing if you miss.",
   },
 ] as const;
 
@@ -96,8 +96,7 @@ export function LandingExperience() {
           <motion.div className="landing-hero-content" initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>
             <h1 id="landing-title">Up or down?<br /><em>Thirty seconds to call it.</em></h1>
             <p className="landing-lede">
-              Prediction markets ten times faster than Polymarket&apos;s, settled in dollars. Crypto, stocks
-              and live sport, a new market every thirty seconds. Sign in with Google and make your first call in three taps.
+              Ten times faster than Polymarket. Paid in dollars.
             </p>
             <div className="landing-actions">
               <Link href="/markets" className="landing-primary">Browse live markets <ArrowUpRight weight="bold" /></Link>
@@ -111,7 +110,7 @@ export function LandingExperience() {
 
         <section className="landing-why" id="why">
           <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}>
-            <p>Why Tick</p><h2>From never having traded to your first call, in about a minute.</h2>
+            <p>Why Tick</p><h2>Your first call, in about a minute.</h2>
           </motion.div>
           <ol className="steps">
             {STEPS.map((step, index) => (
@@ -138,7 +137,7 @@ export function LandingExperience() {
             ))}
           </ol>
           <div className="steps-cta">
-            <p>That is the whole thing. No application, no minimum, no waiting list.</p>
+            <p>No application. No minimum.</p>
             <Link href="/markets" className="landing-primary">Make your first call <ArrowUpRight weight="bold" /></Link>
           </div>
         </section>
