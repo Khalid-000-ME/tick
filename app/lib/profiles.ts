@@ -94,6 +94,13 @@ export function useMyProfile(account: `0x${string}` | null, walletClient: Wallet
         // A new account has no MON for the transaction. The server tops it up when needed
         // and does nothing when the wallet already has enough.
         await requestGas(account);
+        // A wallet can be sitting on another network (Privy reported 8009 for one). Move it
+        // to Monad testnet first, the same switch the header's wrong-network button makes.
+        try {
+          if ((await walletClient.getChainId()) !== monadTestnet.id) await walletClient.switchChain({ id: monadTestnet.id });
+        } catch {
+          /* the write below reports it if the wallet still refuses */
+        }
         const hash = await walletClient.writeContract({
           address: CONTRACTS.tickProfiles, abi: TickProfilesAbi, functionName: "setProfile",
           args: [next.username, next.displayName, next.avatar], account, chain: monadTestnet, gas: 600_000n,
