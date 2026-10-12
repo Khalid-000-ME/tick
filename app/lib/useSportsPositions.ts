@@ -265,7 +265,7 @@ export function useSportsPositions(account: `0x${string}` | null, walletClient: 
 
   const claim = useCallback(
     async (id: `0x${string}`): Promise<string> => {
-      if (!walletClient || !account) return "Connect a wallet first.";
+      if (!walletClient || !account) return "Log in first.";
       setClaiming(id);
       try {
         const hash = await walletClient.writeContract({

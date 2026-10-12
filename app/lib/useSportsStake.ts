@@ -39,7 +39,7 @@ export function useSportsStake(walletClient: WalletClient | null, account: `0x${
 
   const submit = useCallback(
     async (terms: SportsTerms, home: boolean, amount: number, label: string): Promise<SportsStakeResult> => {
-      if (!walletClient || !account) return { ok: false, message: "Connect a wallet first." };
+      if (!walletClient || !account) return { ok: false, message: "Log in first." };
       if (amount <= 0) return { ok: false, message: "Enter an amount above zero." };
       if (BigInt(Math.floor(Date.now() / 1000)) >= terms.closesAt) {
         return { ok: false, message: "That fixture has already kicked off." };

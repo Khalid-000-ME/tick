@@ -76,7 +76,7 @@ export function useStake({
 
   const submit = useCallback(
     async (side: "ABOVE" | "BELOW", amount: number, beforeStake?: () => Promise<void>): Promise<StakeResult> => {
-      if (!walletClient || !account) return { ok: false, message: "Connect a wallet first." };
+      if (!walletClient || !account) return { ok: false, message: "Log in first." };
       if (!market.terms || !market.id) return { ok: false, message: "Waiting for a live price from Pyth." };
       if (amount <= 0) return { ok: false, message: "Enter an amount above zero." };
 

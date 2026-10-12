@@ -247,7 +247,7 @@ export function MarketTerminal() {
           <StrikeStepper open={market.openStrike} value={strikeOverride} expo={feed.expo} onChange={setStrikeOverride} />
           <div className="pool-split"><div><span>Pool sentiment</span><strong>{impliedAbove.toFixed(0)}% above</strong></div><div className="pool-track"><span style={{ width: `${impliedAbove}%` }} /></div><div className="pool-labels"><span>${fmtUsd(market.poolAbove)} ABOVE</span><span>${fmtUsd(market.poolBelow)} BELOW</span></div></div>
           {!market.twoSided && (market.poolAbove > 0n || market.poolBelow > 0n) && <p className="ticket-disclosure">One side only so far. If nobody takes the other side this market voids and everyone is refunded.</p>}
-          <fieldset className="side-picker is-order"><legend>{closed ? `Market closed · reopens ${nextOpenLabel()}` : status !== "ready" ? "Connect to take a side" : stake.busy ? stake.step || "Staking…" : `Tap a side to stake ${amount} USDC`}</legend>
+          <fieldset className="side-picker is-order"><legend>{closed ? `Market closed · reopens ${nextOpenLabel()}` : status !== "ready" ? "Log in to take a side" : stake.busy ? stake.step || "Staking…" : `Tap a side to stake ${amount} USDC`}</legend>
             <button type="button" className="side-up" disabled={stake.busy || closed} onClick={() => requestStake("ABOVE")}>
               <span>Above</span><strong>{impliedAbove.toFixed(0)}%</strong><small>wins {returnFor("ABOVE").toFixed(2)}</small>
             </button>
@@ -258,7 +258,7 @@ export function MarketTerminal() {
           <AmountPicker value={amount} onChange={(n) => { amountTouched.current = true; setAmount(n); }} />
           {status !== "ready" && (
             <button className="ticket-primary" type="button" onClick={() => void (status === "wrong-chain" ? switchChain() : connect())}>
-              {status === "wrong-chain" ? "Switch to Monad" : "Connect to take a side"}
+              {status === "wrong-chain" ? "Switch to Monad" : "Log in to take a side"}
             </button>
           )}
           <p className="ticket-disclosure">Testnet USDC, no monetary value.</p>

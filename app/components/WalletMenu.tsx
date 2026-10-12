@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Copy, SignOut, UserCircle, Wallet } from "@phosphor-icons/react";
 import { Avatar } from "@/components/Avatar";
+import { openAuth } from "@/lib/authSession";
 import { useMyProfile } from "@/lib/profiles";
 import type { useTickWallet } from "@/lib/useTickWallet";
 
@@ -37,10 +38,20 @@ export function WalletMenu({ wallet, onCopied }: { wallet: Wallet_; onCopied?: (
   const connected = status !== "disconnected" && status !== "unsupported" && account;
 
   if (!connected) {
+    // With Privy configured, signing in has two front doors. Without it the only way in is
+    // a browser wallet, so the single Connect button stays.
+    if (!process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
+      return (
+        <button className="terminal-wallet" type="button" onClick={() => void connect()}>
+          <Wallet weight="bold" />Connect
+        </button>
+      );
+    }
     return (
-      <button className="terminal-wallet" type="button" onClick={() => void connect()}>
-        <Wallet weight="bold" />Connect
-      </button>
+      <div className="auth-buttons">
+        <button className="auth-login" type="button" onClick={() => openAuth("login")}>Log in</button>
+        <button className="terminal-wallet" type="button" onClick={() => openAuth("signup")}>Sign up</button>
+      </div>
     );
   }
 

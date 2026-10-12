@@ -1,6 +1,9 @@
 "use client";
 
-import { PrivyProvider } from "@privy-io/react-auth";
+import { useEffect } from "react";
+import { PrivyProvider, usePrivy } from "@privy-io/react-auth";
+import { AuthDialog } from "@/components/AuthDialog";
+import { clearMarks, readMarks, shouldEndSession } from "@/lib/authSession";
 import { monadTestnet } from "@/lib/chain/config";
 
 /**
@@ -59,7 +62,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
         loginMethods: ["google", "passkey", "email", "twitter", "wallet"],
       }}
     >
+      <SessionGuard />
+      <AuthDialog />
       {children}
     </PrivyProvider>
   );
+}
+
+/**
+ * Ends a signed-in session that nobody asked to keep. Privy restores its session on every
+ * load, so without this opening Tick put you straight into a signed-in app. A session is
+ * kept only if it was started in this browser session or with "Remember me"
+ * (lib/authSession); anything else, such as one left over from before, is ended here.
+ */
+function SessionGuard() {
+  const { ready, authenticated, logout } = usePrivy();
+  useEffect(() => {
+    if (!ready || !authenticated) return;
+    if (shouldEndSession({ authenticated, ...readMarks() })) {
+      clearMarks();
+      void logout();
+    }
+  }, [ready, authenticated, logout]);
+  return null;
 }

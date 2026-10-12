@@ -87,7 +87,7 @@ export function useMyProfile(account: `0x${string}` | null, walletClient: Wallet
 
   const save = useCallback(
     async (next: Profile): Promise<{ ok: boolean; message: string }> => {
-      if (!walletClient || !account) return { ok: false, message: "Connect first." };
+      if (!walletClient || !account) return { ok: false, message: "Log in first." };
       setSaving(true);
       try {
         const hash = await walletClient.writeContract({

@@ -229,7 +229,7 @@ export function usePositions(account: `0x${string}` | null, walletClient: Wallet
    */
   const claim = useCallback(
     async (id: `0x${string}`): Promise<{ ok: boolean; message: string }> => {
-      if (!walletClient || !account) return { ok: false, message: "Connect a wallet first." };
+      if (!walletClient || !account) return { ok: false, message: "Log in first." };
       setClaiming(id);
       try {
         await pub.simulateContract({

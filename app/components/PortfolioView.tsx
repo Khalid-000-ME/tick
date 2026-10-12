@@ -110,7 +110,7 @@ export function PortfolioView() {
       </section>
 
       {status !== "ready" || !account ? (
-        <div className="page-empty">Connect a wallet to see your stakes.</div>
+        <div className="page-empty">Log in to see your stakes.</div>
       ) : (
         <>
           <section className="stat-row" aria-label="Summary">

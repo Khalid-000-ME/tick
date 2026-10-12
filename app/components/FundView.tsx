@@ -118,7 +118,7 @@ export function FundView() {
       </section>
 
       {status !== "ready" || !account ? (
-        <div className="page-empty">Connect a wallet to see your deposit address.</div>
+        <div className="page-empty">Log in to see your deposit address.</div>
       ) : (
         <>
           <section className="stat-row fund-balances" aria-label="Balances">

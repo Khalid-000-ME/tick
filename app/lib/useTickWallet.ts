@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom, type WalletClient } from "viem";
 import { monadTestnet } from "@/lib/chain/config";
+import { clearMarks, openAuth } from "@/lib/authSession";
 import { useWallet, type WalletStatus, readableError } from "@/lib/useWallet";
 
 /**
@@ -23,7 +24,7 @@ export function useTickWallet() {
 }
 
 function usePrivyBackedWallet() {
-  const { ready, authenticated, login, logout } = usePrivy();
+  const { ready, authenticated, logout } = usePrivy();
   const { wallets } = useWallets();
 
   // Prefer an embedded wallet; fall back to whatever the user connected (their own
@@ -44,13 +45,17 @@ function usePrivyBackedWallet() {
         ? "wrong-chain"
         : "ready";
 
+  // Every sign-in entry point (header buttons, a stake button when signed out) opens the one
+  // dialog in components/AuthDialog, which then drives Privy.
   const connect = useCallback(async () => {
-    try {
-      await login();
-    } catch {
-      /* the Privy modal reports its own errors; nothing extra to surface here */
-    }
-  }, [login]);
+    openAuth("login");
+  }, []);
+
+  // Logging out also forgets "Remember me", so the next visit starts signed out.
+  const disconnect = useCallback(async () => {
+    clearMarks();
+    await logout();
+  }, [logout]);
 
   // Privy's embedded wallet is created directly on the configured chain (see
   // app/providers.tsx), so there is normally nothing to switch. Kept for interface
@@ -92,7 +97,7 @@ function usePrivyBackedWallet() {
     error: null as string | null,
     setError: () => {},
     /** Privy-specific: lets a "log out" affordance exist without a raw-wallet equivalent. */
-    disconnect: logout,
+    disconnect,
   };
 }
 
