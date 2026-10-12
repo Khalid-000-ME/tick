@@ -1,5 +1,5 @@
-import { RoomsView } from "@/components/RoomsView";
+import { GroupsApp } from "@/components/groups/GroupsApp";
 
 export default function GroupsPage() {
-  return <RoomsView />;
+  return <GroupsApp />;
 }

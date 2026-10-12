@@ -17,6 +17,7 @@ export function AccountShell({
   children,
   strip,
   wide = false,
+  app = false,
 }: {
   active: "feed" | "markets" | "portfolio" | "fund" | "settlers" | "leaderboard" | "profile" | "groups";
   wallet: Wallet;
@@ -25,6 +26,8 @@ export function AccountShell({
   strip?: React.ReactNode;
   /** A page that lays out its own columns and needs the full width. */
   wide?: boolean;
+  /** A page that is itself an app filling the screen under the header (the messenger). */
+  app?: boolean;
 }) {
   const { theme, toggle } = useTheme();
 
@@ -57,7 +60,7 @@ export function AccountShell({
         <WalletMenu wallet={wallet} />
       </header>
       </div>
-      <main className={`page-main ${wide ? "is-wide" : ""}`}>{children}</main>
+      <main className={`page-main ${wide || app ? "is-wide" : ""} ${app ? "is-app" : ""}`}>{children}</main>
     </div>
   );
 }

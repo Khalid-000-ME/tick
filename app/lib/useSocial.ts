@@ -114,6 +114,22 @@ export async function fetchChat(kind: "group" | "room", id: number, count = 60):
   return posts.map((p) => ({ from: p.from.toLowerCase(), at: Number(p.at), text: p.text }));
 }
 
+/** The newest message of each group, for the preview under its name in a list. One multicall. */
+export async function fetchLastMessages(ids: readonly number[]): Promise<Map<number, Post>> {
+  const out = new Map<number, Post>();
+  if (ids.length === 0) return out;
+  const res = await pub.multicall({
+    allowFailure: true,
+    contracts: ids.map((id) => ({ address: CONTRACTS.tickSocial, abi: TickSocialAbi, functionName: "groupChat" as const, args: [BigInt(id), 1n] as const })),
+  });
+  res.forEach((r, i) => {
+    if (r.status !== "success") return;
+    const last = (r.result as readonly { from: string; at: bigint; text: string }[])[0];
+    if (last) out.set(ids[i], { from: last.from.toLowerCase(), at: Number(last.at), text: last.text });
+  });
+  return out;
+}
+
 export function useSocial(account: `0x${string}` | null, walletClient: WalletClient | null) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [mine, setMine] = useState<Room[]>([]);
