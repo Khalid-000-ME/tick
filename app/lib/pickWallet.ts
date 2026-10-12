@@ -8,5 +8,7 @@
  * being created.
  */
 export function pickWallet<T extends { walletClientType?: string; linked?: boolean }>(wallets: readonly T[]): T | undefined {
-  return wallets.find((w) => w.walletClientType === "privy") ?? wallets.find((w) => w.linked);
+  // Embedded wallets are "privy", or "privy-v2" for the newer kind; matching only the first
+  // hid every new embedded wallet and left signed-in users with no wallet at all.
+  return wallets.find((w) => w.walletClientType === "privy" || w.walletClientType === "privy-v2") ?? wallets.find((w) => w.linked);
 }
