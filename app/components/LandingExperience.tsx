@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, Fingerprint, IdentificationCard, Lightning, ShareNetwork } from "@phosphor-icons/react";
+import { ArrowDown, ArrowUpRight, Fingerprint, IdentificationCard, Trophy, UsersThree } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { Brand } from "@/components/Brand";
 import DotGrid from "@/components/DotGrid";
-import { TradeStory } from "@/components/TradeStory";
+import { RoomStory } from "@/components/RoomStory";
 import { openAuth } from "@/lib/authSession";
 import { useTickWallet } from "@/lib/useTickWallet";
 
@@ -21,23 +21,23 @@ const STEPS = [
     copy: "Google, a passkey, email or X. No seed phrase. Two testnet USDC on us.",
   },
   {
-    Icon: Lightning,
+    Icon: UsersThree,
+    kicker: "Better with a crew",
+    title: "Start a room.",
+    copy: "Name it, pick a market, send the link. Everyone in it calls the same thirty seconds, from ten cents.",
+  },
+  {
+    Icon: Trophy,
     kicker: "A world first",
-    title: "Trade.",
-    copy: "Call a price in thirty seconds, from ten cents. Polymarket's quickest takes five minutes.",
+    title: "Race the scoreboard.",
+    copy: "A live table re-sorts as each window settles on Pyth. Polymarket's quickest takes five minutes. Ours takes thirty seconds.",
     source: { label: "CoinMarketCap", href: "https://coinmarketcap.com/academy/article/polymarket-debuts-5-minute-bitcoin-prediction-markets-with-instant-settlement" },
   },
   {
     Icon: IdentificationCard,
     kicker: "The whole point",
-    title: "Flex your card.",
-    copy: "Win, and Tick draws your card from your real record, verified on chain. Nobody can fake it.",
-  },
-  {
-    Icon: ShareNetwork,
-    kicker: "Better with people",
-    title: "Post it. Rank up.",
-    copy: "Put it on the feed or in your group, climb the leaderboard, challenge a room.",
+    title: "Flex your profits.",
+    copy: "Win, and Tick draws your card from your real record, verified on chain. Post it to your group or the feed.",
   },
 ] as const;
 
@@ -112,24 +112,24 @@ export function LandingExperience() {
           <div className="landing-hero-scrim" aria-hidden="true" />
           <motion.div className="landing-hero-content" initial={reduceMotion ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>
             <span className="hero-logo" aria-hidden="true"><span className="brand-mark"><i /><i /><i /></span></span>
-            <h1 id="landing-title">Sign up. Trade.<br /><em>Flex your card.</em></h1>
+            <h1 id="landing-title">Compete in groups.<br /><em>Flex your profits.</em></h1>
             <p className="landing-lede">
-              Call a price in thirty seconds. Win, and Tick turns it into a card that proves it. Post it and show your crew.
+              Start a room, call the same thirty seconds as your crew, and race a live scoreboard. Win, and Tick makes the card that proves it.
             </p>
             <div className="landing-actions">
-              <Cta signedIn={signedIn} className="landing-primary">Sign up free</Cta>
-              <a href="#how" className="landing-secondary">See the card made <ArrowDown /></a>
+              <Cta signedIn={signedIn} className="landing-primary">Start a room</Cta>
+              <a href="#how" className="landing-secondary">Watch a round <ArrowDown /></a>
             </div>
           </motion.div>
           <p className="landing-claim">The <em>world&apos;s first</em> 30-second prediction market</p>
           <div className="landing-hero-index" aria-hidden="true"><strong>00:30</strong></div>
         </section>
 
-        <TradeStory />
+        <RoomStory />
 
         <section className="landing-why" id="why">
           <motion.div className="landing-section-head" initial={reduceMotion ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }}>
-            <p>Why Tick</p><h2>Everything here builds one thing: the card you post.</h2>
+            <p>Why Tick</p><h2>Trading is better when your friends are keeping score.</h2>
           </motion.div>
           <ol className="steps">
             {STEPS.map((step, index) => (
@@ -156,14 +156,14 @@ export function LandingExperience() {
           </ol>
           <div className="steps-cta">
             <p>No application. No minimum. Bring whoever you like.</p>
-            <Cta signedIn={signedIn} className="landing-primary" signedInLabel="Go to your feed">Get your first card</Cta>
+            <Cta signedIn={signedIn} className="landing-primary" signedInLabel="Go to your groups">Start a room</Cta>
           </div>
         </section>
 
         <section className="landing-close">
           <p>The world&apos;s first 30-second markets. Crypto. Equities. Sport.</p>
-          <h2>Sign up.<br />Trade.<br /><em>Flex your card.</em></h2>
-          <Cta signedIn={signedIn} className="landing-primary">Sign up free</Cta>
+          <h2>Compete in groups.<br />Win the room.<br /><em>Flex your profits.</em></h2>
+          <Cta signedIn={signedIn} className="landing-primary">Start a room</Cta>
         </section>
       </main>
       <footer className="landing-footer"><Brand /></footer>

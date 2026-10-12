@@ -18,9 +18,9 @@ export const metadata: Metadata = {
   applicationName: "Tick",
   appleWebApp: { capable: true, title: "Tick", statusBarStyle: "black-translucent" },
   icons: { apple: "/icons/apple-touch-icon.png" },
-  title: "Tick | Trade in 30 seconds. Flex your card.",
+  title: "Tick | Compete in groups. Flex your profits.",
   description:
-    "The world's first 30-second prediction market. Sign up, trade, and flex your card: every win becomes a verified card you can post to the feed or your group.",
+    "The world's first 30-second prediction market. Start a room, race your crew on a live scoreboard, and flex the card that proves your profit.",
 };
 
 export const viewport: Viewport = {
