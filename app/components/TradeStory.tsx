@@ -98,6 +98,21 @@ export function TradeStory() {
   // Opening
   const cardIn = useTransform(p, [0, 0.06], [0.92, 1]);
   const cardOpacity = useTransform(p, [0, 0.05], [0.4, 1]);
+
+  // The card on a 3D stage: tilted back with its bottom lifted toward the reader, and
+  // swinging to a new side for each phase (opens left, taps right, the window left), then
+  // squaring up to face the reader for the win. Each swing happens quickly at a phase
+  // boundary and the card drifts gently within a phase, so it always feels in motion.
+  const PHASES = [0, 0.13, 0.19, 0.31, 0.37, 0.55, 0.62, 1];
+  const rotateY = useTransform(p, PHASES, [-20, -14, 16, 12, -16, -10, 0, 0]);
+  const rotateX = useTransform(p, PHASES, [18, 16, 16, 16, 16, 14, 4, 4]);
+  const rotateZ = useTransform(p, PHASES, [-2, -1.5, 2, 1.5, -2, -1.5, 0, 0]);
+  const shiftX = useTransform(p, PHASES, [-30, -20, 30, 24, -30, -20, 0, 0]);
+  // The tap presses the card back for a moment.
+  const press = useTransform(p, [0.28, 0.295, 0.31], [1, 0.965, 1]);
+  const cardScale = useTransform([cardIn, press], ([a, b]: number[]) => a * b);
+  // Its shadow falls away from the side it swings toward.
+  const cardShadow = useTransform(rotateY, (v) => `${(-v * 1.6).toFixed(1)}px 60px 110px rgba(0,0,0,0.62), 0 0 0 1px rgba(255,255,255,0.03) inset`);
   const strikeLen = useTransform(p, [0.08, 0.15], [0, 1]);
   const strikeTags = useTransform(p, [0.13, 0.16], [0, 1]);
 
@@ -147,7 +162,10 @@ export function TradeStory() {
           </div>
         </div>
 
-        <motion.div className="story-card" style={{ scale: cardIn, opacity: cardOpacity }}>
+        <motion.div
+          className="story-card"
+          style={{ scale: cardScale, opacity: cardOpacity, rotateX, rotateY, rotateZ, x: shiftX, boxShadow: cardShadow, transformPerspective: 1400 }}
+        >
           <div className="story-card-head">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/asset-icons/btc.png" alt="" width={36} height={36} />
@@ -192,7 +210,7 @@ export function TradeStory() {
             <motion.line x1="0" y1={STRIKE_Y} x2={PLOT_W} y2={STRIKE_Y} stroke="#e8ecd9" strokeWidth="1.2" strokeDasharray="5 5" style={{ scaleX: strikeLen, originX: 0, transformBox: "fill-box" }} />
             <motion.g style={{ opacity: strikeTags }}>
               <rect x={PLOT_W - 62} y={STRIKE_Y + 4} width="56" height="20" rx="3" fill="#e8ecd9" />
-              <text x={PLOT_W - 34} y={STRIKE_Y + 18} textAnchor="middle" fontSize="12" fontFamily="ui-sans-serif, system-ui" fill="#0b0f09">Strike</text>
+              <text x={PLOT_W - 34} y={STRIKE_Y + 18} textAnchor="middle" fontSize="11" fontWeight="600" letterSpacing="1" fontFamily="ui-monospace, monospace" fill="#0b0f09">STRIKE</text>
               <rect x={PLOT_W + 2} y={STRIKE_Y - 10} width="76" height="20" rx="3" fill="#0b0f09" stroke="#e8ecd9" strokeWidth="1" />
               <text x={PLOT_W + 40} y={STRIKE_Y + 4} textAnchor="middle" fontSize="11" fontFamily="ui-monospace, monospace" fill="#e8ecd9">{plain(STRIKE)}</text>
             </motion.g>

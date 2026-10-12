@@ -2123,3 +2123,15 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   .story-bar { margin: 12px -16px 0; }
   .story-won-inner strong { font-size: 60px; }
 }
+
+/* The trade window speaks in one voice: the same uppercase mono as the story's eyebrow. */
+.story-card { font-family: var(--font-geist-mono), monospace; text-transform: uppercase; letter-spacing: .05em; will-change: transform; }
+.story-card-head strong { font-weight: 600; letter-spacing: .08em; }
+.story-side span { font-size: 15px; font-weight: 600; letter-spacing: .08em; }
+.story-side small, .story-status, .story-card-head span, .story-price-row span { letter-spacing: .08em; }
+.story-won-inner strong { font-family: var(--font-geist-mono), monospace; font-weight: 600; letter-spacing: -.04em; }
+.story-won-inner span { font-family: var(--font-geist-mono), monospace; font-size: 12px; letter-spacing: .1em; }
+.story-sticky { perspective: 1600px; }
+.story-chart text { font-family: var(--font-geist-mono), ui-monospace, monospace; }
+/* On phones the swing needs side room, or the card edge meets the screen edge. */
+@media (max-width: 900px) { .story-card { width: 90%; justify-self: center; } }
