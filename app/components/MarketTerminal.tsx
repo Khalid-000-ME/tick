@@ -249,10 +249,10 @@ export function MarketTerminal() {
           {!market.twoSided && (market.poolAbove > 0n || market.poolBelow > 0n) && <p className="ticket-disclosure">One side only so far. If nobody takes the other side this market voids and everyone is refunded.</p>}
           <fieldset className="side-picker is-order"><legend>{closed ? `Market closed · reopens ${nextOpenLabel()}` : status !== "ready" ? "Log in to take a side" : stake.busy ? stake.step || "Staking…" : `Tap a side to stake ${amount} USDC`}</legend>
             <button type="button" className="side-up" disabled={stake.busy || closed} onClick={() => requestStake("ABOVE")}>
-              <span>Above</span><strong>{impliedAbove.toFixed(0)}%</strong><small>wins {returnFor("ABOVE").toFixed(2)}</small>
+              <span>Above</span><strong>{impliedAbove.toFixed(0)}%</strong><small>pays {returnFor("ABOVE").toFixed(2)}</small>
             </button>
             <button type="button" className="side-down" disabled={stake.busy || closed} onClick={() => requestStake("BELOW")}>
-              <span>Below</span><strong>{(100 - impliedAbove).toFixed(0)}%</strong><small>wins {returnFor("BELOW").toFixed(2)}</small>
+              <span>Below</span><strong>{(100 - impliedAbove).toFixed(0)}%</strong><small>pays {returnFor("BELOW").toFixed(2)}</small>
             </button>
           </fieldset>
           <AmountPicker value={amount} onChange={(n) => { amountTouched.current = true; setAmount(n); }} />
@@ -293,7 +293,7 @@ export function MarketTerminal() {
           tone={pending === "ABOVE" ? "up" : "down"}
           eyebrow={`${feed.symbol} · closes in ${secondsToClose}s`}
           title={<>{amount} USDC <em>{pending}</em> {strikeNumber === null ? "" : `$${formatPrice(strikeNumber)}`}</>}
-          detail={`Wins about ${returnFor(pending).toFixed(2)} USDC if it lands. Nothing if it does not.`}
+          detail={payoutLine(returnFor(pending), amount)}
           confirmLabel={`Stake ${pending}`}
           onCancel={() => setPending(null)}
           onConfirm={() => void placeStake(pending)}
@@ -305,6 +305,18 @@ export function MarketTerminal() {
       {notice && <div className="terminal-notice" role="status"><Check weight="bold" /><p>{notice}</p><button type="button" aria-label="Dismiss" onClick={() => setNotice(null)}><X /></button></div>}
     </div>
   );
+}
+
+/**
+ * What the confirm sheet says a stake returns. The total includes the stake, so it is also
+ * broken into "your stake back plus the profit": the profit is the other side's money less
+ * the 2% fee, which is the figure that matches what the portfolio later shows. With nobody
+ * on the other side yet there is no profit to promise, and the market refunds instead.
+ */
+function payoutLine(total: number, stake: number): string {
+  const profit = total - stake;
+  if (profit <= 0.005) return "Nobody is on the other side yet. If it stays that way, you are refunded in full.";
+  return `Pays about ${total.toFixed(2)} USDC if it lands: your ${stake} back plus ${profit.toFixed(2)} profit after the 2% fee. Nothing if it does not.`;
 }
 
 /**

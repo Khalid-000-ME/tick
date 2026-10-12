@@ -2236,3 +2236,6 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .auth-remember input:focus-visible { outline: 2px solid var(--a-accent); outline-offset: 2px; }
 .auth-switch { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--a-line); color: var(--a-dim); font-size: 13px; }
 .auth-switch button { border: 0; background: none; padding: 0; color: var(--a-ink); font: 600 13px var(--font-geist-sans), sans-serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* A win shows the profit, with what came back underneath it, so the two are never confused. */
+.stake-result .pnl small { display: block; margin-top: 2px; font: 10px var(--font-geist-mono), monospace; color: var(--t-dim); letter-spacing: .02em; white-space: nowrap; }

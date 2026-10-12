@@ -279,7 +279,7 @@ export function SportsMarketView({ espnId }: { espnId: string }) {
           tone={pick.tone === "up" ? "up" : "down"}
           eyebrow={event.league}
           title={<>{amount} USDC on <em>{pick.team.short}</em></>}
-          detail={`Pays about ${(amount * payout(pick.mine, pick.theirs)).toFixed(2)} USDC if they win. A draw refunds.`}
+          detail={`Pays about ${(amount * payout(pick.mine, pick.theirs)).toFixed(2)} USDC if they win: your ${amount} back plus the profit after the 2% fee. A draw refunds.`}
           confirmLabel="Stake"
           onCancel={() => setPending(null)}
           onConfirm={() => void place(pick.side)}

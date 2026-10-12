@@ -209,6 +209,7 @@ export function PortfolioView() {
                         {s === "refunded"
                           ? p.claimed ? "returned" : "pending"
                           : pnl === null ? "" : `${pnl >= 0 ? "+" : "−"}${Math.abs(pnl).toFixed(2)}`}
+                        {s === "won" && p.payout !== null && <small>{p.payout.toFixed(2)} back, profit after the 2% fee</small>}
                       </span>
                     </span>
                     <span className="stake-actions">
