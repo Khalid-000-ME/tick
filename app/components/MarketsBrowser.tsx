@@ -153,6 +153,9 @@ export function MarketsBrowser() {
 
   return (
     <div className="terminal-shell page-shell board-shell">
+      {/* The strip is the very first thing on screen, with the header pinned under it. */}
+      <div className="page-top">
+      <TickerStrip mode={kind} />
       <header className="terminal-header page-header">
         <Link href="/" className="terminal-back" aria-label="Home"><ArrowLeft /></Link>
         <Brand />
@@ -167,7 +170,7 @@ export function MarketsBrowser() {
         </button>
         <WalletMenu wallet={wallet} />
       </header>
-      <TickerStrip mode={kind} />
+      </div>
 
       <main className="board-main">
         <div className="board-head">

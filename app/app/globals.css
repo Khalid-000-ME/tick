@@ -1414,7 +1414,9 @@ h2 { font-weight: 450; letter-spacing: -.055em; line-height: 1.08; }
 .terminal-nav a { padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--t-dim); }
 .terminal-nav a:hover, .terminal-nav a[aria-current="page"] { color: var(--t-ink); background: var(--t-line); }
 .terminal-shell.page-shell { height: auto; min-height: 100dvh; overflow: visible; display: block; }
+.page-top { position: sticky; top: 0; z-index: 20; }
 .page-header { position: sticky; top: 0; z-index: 20; }
+.page-top > .page-header { position: static; }
 .page-main { max-width: 1040px; margin: 0 auto; padding: 36px 24px 80px; color: var(--t-ink); }
 .page-main, .page-shell { background: var(--t-bg); }
 .page-intro h1 { font-size: 28px; font-weight: 600; letter-spacing: -.02em; }

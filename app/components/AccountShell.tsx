@@ -25,6 +25,10 @@ export function AccountShell({
 
   return (
     <div className="terminal-shell page-shell">
+      {/* The strip, when a page has one, is the very first thing on screen; the header is
+          pinned under it, and the two scroll as one. */}
+      <div className="page-top">
+      {strip}
       <header className="terminal-header page-header">
         <Link href="/markets" className="terminal-back" aria-label="Back to the markets"><ArrowLeft /></Link>
         <Brand />
@@ -44,7 +48,7 @@ export function AccountShell({
         </button>
         <WalletMenu wallet={wallet} />
       </header>
-      {strip}
+      </div>
       <main className="page-main">{children}</main>
     </div>
   );
