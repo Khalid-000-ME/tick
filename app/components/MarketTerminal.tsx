@@ -177,7 +177,7 @@ export function MarketTerminal() {
   const ageLabel = market.priceAge === null ? "-" : `${market.priceAge}s old`;
 
   return (
-    <div className="terminal-shell">
+    <div className="terminal-shell is-flat">
       <TickerStrip />
       <header className="terminal-header">
         <Link href="/" className="terminal-back" aria-label="Back to landing page"><ArrowLeft /></Link><Brand />

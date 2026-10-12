@@ -2239,32 +2239,34 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 /* A win shows the profit, with what came back underneath it, so the two are never confused. */
 .stake-result .pnl small { display: block; margin-top: 2px; font: 10px var(--font-geist-mono), monospace; color: var(--t-dim); letter-spacing: .02em; white-space: nowrap; }
 
-/* ---- The app navbar: one black capsule, on every page and in both themes ----
-   It floats under the running strip with space around it, and keeps its own colours
-   whatever the page theme is, so everything inside is styled for a black ground. This block
-   comes last on purpose: it replaces the earlier flat, bordered header rules. */
-.terminal-shell .terminal-header { display: flex; align-items: center; gap: 10px; width: min(1280px, calc(100% - 32px)); height: 60px; margin: 12px auto 0; padding: 0 10px 0 16px; border: 0; border-radius: 999px; background: #0c0e0a; color: #eef1e6; box-shadow: 0 12px 36px rgba(0, 0, 0, .3); }
-.terminal-shell .page-top { background: transparent; }
-.terminal-shell .terminal-header .brand { font-size: 28px; color: #f4f6ec; letter-spacing: -.07em; }
-.terminal-shell .terminal-header .brand-mark i { background: var(--acid); }
-.terminal-shell .terminal-header .brand-period { color: var(--acid); }
-.terminal-shell .terminal-back { flex: none; width: 36px; height: 36px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 50%; color: #eef1e6; }
-.terminal-shell .terminal-back:hover { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .3); }
-.terminal-shell .terminal-header .terminal-nav { margin-left: auto; gap: 2px; }
-.terminal-shell .terminal-header .terminal-nav a { padding: 8px 14px; border-radius: 999px; color: rgba(238, 241, 230, .68); }
-.terminal-shell .terminal-header .terminal-nav a:hover, .terminal-shell .terminal-header .terminal-nav a[aria-current="page"] { color: #fff; background: rgba(255, 255, 255, .12); }
-.terminal-shell .terminal-header .window-clock + .terminal-nav { margin-left: 0; }
-.terminal-shell .terminal-header .theme-toggle { flex: none; width: 38px; height: 38px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 50%; color: #eef1e6; }
-.terminal-shell .terminal-header .theme-toggle:hover { background: rgba(255, 255, 255, .12); }
-.terminal-shell .terminal-header .terminal-wallet { min-height: 38px; padding: 0 16px; border-radius: 999px; background: var(--acid); color: #14170f; font-weight: 650; }
-.terminal-shell .terminal-header .auth-login { min-height: 38px; border-color: rgba(255, 255, 255, .24); border-radius: 999px; color: #eef1e6; }
-.terminal-shell .terminal-header .auth-login:hover { border-color: #fff; background: rgba(255, 255, 255, .08); }
+/* ---- The app navbar: one black capsule ----
+   It floats under the running strip with space around it, and keeps its own colours whatever
+   the page theme is, so everything inside is styled for a black ground. This block comes last
+   on purpose: it replaces the earlier flat, bordered header rules. The trading terminal is
+   the exception (.is-flat): there the header stays the full-width bar it always was, so the
+   chart, the ticket and the countdown keep every pixel of height they can get. */
+.terminal-shell:not(.is-flat) .terminal-header { display: flex; align-items: center; gap: 10px; width: min(1280px, calc(100% - 32px)); height: 60px; margin: 12px auto 0; padding: 0 10px 0 16px; border: 0; border-radius: 999px; background: #0c0e0a; color: #eef1e6; box-shadow: 0 12px 36px rgba(0, 0, 0, .3); }
+.terminal-shell:not(.is-flat) .page-top { background: transparent; }
+.terminal-shell:not(.is-flat) .terminal-header .brand { font-size: 28px; color: #f4f6ec; letter-spacing: -.07em; }
+.terminal-shell:not(.is-flat) .terminal-header .brand-mark i { background: var(--acid); }
+.terminal-shell:not(.is-flat) .terminal-header .brand-period { color: var(--acid); }
+.terminal-shell:not(.is-flat) .terminal-back { flex: none; width: 36px; height: 36px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 50%; color: #eef1e6; }
+.terminal-shell:not(.is-flat) .terminal-back:hover { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .3); }
+.terminal-shell:not(.is-flat) .terminal-header .terminal-nav { margin-left: auto; gap: 2px; }
+.terminal-shell:not(.is-flat) .terminal-header .terminal-nav a { padding: 8px 14px; border-radius: 999px; color: rgba(238, 241, 230, .68); }
+.terminal-shell:not(.is-flat) .terminal-header .terminal-nav a:hover, .terminal-shell:not(.is-flat) .terminal-header .terminal-nav a[aria-current="page"] { color: #fff; background: rgba(255, 255, 255, .12); }
+.terminal-shell:not(.is-flat) .terminal-header .window-clock + .terminal-nav { margin-left: 0; }
+.terminal-shell:not(.is-flat) .terminal-header .theme-toggle { flex: none; width: 38px; height: 38px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 50%; color: #eef1e6; }
+.terminal-shell:not(.is-flat) .terminal-header .theme-toggle:hover { background: rgba(255, 255, 255, .12); }
+.terminal-shell:not(.is-flat) .terminal-header .terminal-wallet { min-height: 38px; padding: 0 16px; border-radius: 999px; background: var(--acid); color: #14170f; font-weight: 650; }
+.terminal-shell:not(.is-flat) .terminal-header .auth-login { min-height: 38px; border-color: rgba(255, 255, 255, .24); border-radius: 999px; color: #eef1e6; }
+.terminal-shell:not(.is-flat) .terminal-header .auth-login:hover { border-color: #fff; background: rgba(255, 255, 255, .08); }
 /* The countdown keeps its place in the middle, scaled to fit a 60px capsule: label and value on one line. */
-.terminal-shell .terminal-header .window-clock { flex-direction: row; align-items: baseline; gap: 10px; margin: 0 auto; color: #f4f6ec; }
-.terminal-shell .terminal-header .window-clock-label { color: rgba(238, 241, 230, .55); }
-.terminal-shell .terminal-header .window-clock-value { font-size: 30px; }
-.terminal-shell .terminal-header .window-clock-value small { color: rgba(238, 241, 230, .55); }
-.terminal-shell .terminal-header .window-clock.is-urgent, .terminal-shell .terminal-header .window-clock.is-urgent .window-clock-value small { color: var(--t-urgent); }
+.terminal-shell:not(.is-flat) .terminal-header .window-clock { flex-direction: row; align-items: baseline; gap: 10px; margin: 0 auto; color: #f4f6ec; }
+.terminal-shell:not(.is-flat) .terminal-header .window-clock-label { color: rgba(238, 241, 230, .55); }
+.terminal-shell:not(.is-flat) .terminal-header .window-clock-value { font-size: 30px; }
+.terminal-shell:not(.is-flat) .terminal-header .window-clock-value small { color: rgba(238, 241, 230, .55); }
+.terminal-shell:not(.is-flat) .terminal-header .window-clock.is-urgent, .terminal-shell:not(.is-flat) .terminal-header .window-clock.is-urgent .window-clock-value small { color: var(--t-urgent); }
 
 /* Testnet / Mainnet. */
 .mode-switch { position: relative; flex: none; }
@@ -2281,23 +2283,23 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
   /* Two rows: brand, countdown and sign-in on the first; the menu, the network pill and the
      theme button on the second. The menu needs about half the width to stay usable, so it
      wraps down on its own when the first row is full. */
-  .terminal-shell .terminal-header { flex-wrap: wrap; height: auto; min-height: 56px; padding: 8px 8px 8px 16px; row-gap: 6px; border-radius: 28px; }
-  .terminal-shell .terminal-header .brand { order: 1; }
-  .terminal-shell .terminal-header .window-clock { order: 2; margin: 0 4px 0 auto; }
-  .terminal-shell .terminal-header .window-clock-label { display: none; }
-  .terminal-shell .terminal-header .window-clock-value { font-size: 24px; }
-  .terminal-shell .terminal-header > .auth-buttons, .terminal-shell .terminal-header > .wallet-menu, .terminal-shell .terminal-header > .terminal-wallet { order: 3; margin-left: auto; }
-  .terminal-shell .terminal-header .window-clock ~ .auth-buttons, .terminal-shell .terminal-header .window-clock ~ .wallet-menu, .terminal-shell .terminal-header .window-clock ~ .terminal-wallet { margin-left: 0; }
-  .terminal-shell .terminal-header .terminal-nav, .page-shell .terminal-nav { order: 4; flex: 1 1 46%; min-width: 46%; margin: 0; display: flex; overflow-x: auto; scrollbar-width: none; }
-  .terminal-shell .terminal-header .terminal-nav a { flex: 0 0 auto; padding: 7px 12px; font-size: 12px; }
-  .terminal-shell .terminal-header .mode-switch { order: 5; margin: 0; }
-  .terminal-shell .terminal-header .theme-toggle { order: 6; }
+  .terminal-shell:not(.is-flat) .terminal-header { flex-wrap: wrap; height: auto; min-height: 56px; padding: 8px 8px 8px 16px; row-gap: 6px; border-radius: 28px; }
+  .terminal-shell:not(.is-flat) .terminal-header .brand { order: 1; }
+  .terminal-shell:not(.is-flat) .terminal-header .window-clock { order: 2; margin: 0 4px 0 auto; }
+  .terminal-shell:not(.is-flat) .terminal-header .window-clock-label { display: none; }
+  .terminal-shell:not(.is-flat) .terminal-header .window-clock-value { font-size: 24px; }
+  .terminal-shell:not(.is-flat) .terminal-header > .auth-buttons, .terminal-shell:not(.is-flat) .terminal-header > .wallet-menu, .terminal-shell:not(.is-flat) .terminal-header > .terminal-wallet { order: 3; margin-left: auto; }
+  .terminal-shell:not(.is-flat) .terminal-header .window-clock ~ .auth-buttons, .terminal-shell:not(.is-flat) .terminal-header .window-clock ~ .wallet-menu, .terminal-shell:not(.is-flat) .terminal-header .window-clock ~ .terminal-wallet { margin-left: 0; }
+  .terminal-shell:not(.is-flat) .terminal-header .terminal-nav, .page-shell .terminal-nav { order: 4; flex: 1 1 46%; min-width: 46%; margin: 0; display: flex; overflow-x: auto; scrollbar-width: none; }
+  .terminal-shell:not(.is-flat) .terminal-header .terminal-nav a { flex: 0 0 auto; padding: 7px 12px; font-size: 12px; }
+  .terminal-shell:not(.is-flat) .terminal-header .mode-switch { order: 5; margin: 0; }
+  .terminal-shell:not(.is-flat) .terminal-header .theme-toggle { order: 6; }
   /* With no countdown to share the first row, the network pill moves up beside the logo and
      the whole second row is the menu. */
-  .terminal-shell .terminal-header:not(:has(.window-clock)) .mode-switch { order: 2; margin-left: auto; }
-  .terminal-shell .terminal-header:not(:has(.window-clock)) > .auth-buttons, .terminal-shell .terminal-header:not(:has(.window-clock)) > .wallet-menu, .terminal-shell .terminal-header:not(:has(.window-clock)) > .terminal-wallet { margin-left: 0; }
-  .terminal-shell .terminal-header:not(:has(.window-clock)) .terminal-nav { flex-basis: 70%; min-width: 70%; }
-  .terminal-shell .terminal-header .auth-login, .terminal-shell .terminal-header .terminal-wallet { min-height: 36px; padding: 0 13px; }
+  .terminal-shell:not(.is-flat) .terminal-header:not(:has(.window-clock)) .mode-switch { order: 2; margin-left: auto; }
+  .terminal-shell:not(.is-flat) .terminal-header:not(:has(.window-clock)) > .auth-buttons, .terminal-shell:not(.is-flat) .terminal-header:not(:has(.window-clock)) > .wallet-menu, .terminal-shell:not(.is-flat) .terminal-header:not(:has(.window-clock)) > .terminal-wallet { margin-left: 0; }
+  .terminal-shell:not(.is-flat) .terminal-header:not(:has(.window-clock)) .terminal-nav { flex-basis: 70%; min-width: 70%; }
+  .terminal-shell:not(.is-flat) .terminal-header .auth-login, .terminal-shell:not(.is-flat) .terminal-header .terminal-wallet { min-height: 36px; padding: 0 13px; }
 }
 @media (max-width: 520px) {
   .mode-pills button:not(.is-active) { display: none; }
@@ -2306,12 +2308,12 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 }
 
 @media (max-width: 400px) {
-  .terminal-shell .terminal-header { gap: 8px; padding-left: 14px; }
-  .terminal-shell .terminal-header .brand { font-size: 24px; }
-  .terminal-shell .terminal-header .auth-login, .terminal-shell .terminal-header .terminal-wallet { padding: 0 11px; font-size: 12px; }
+  .terminal-shell:not(.is-flat) .terminal-header { gap: 8px; padding-left: 14px; }
+  .terminal-shell:not(.is-flat) .terminal-header .brand { font-size: 24px; }
+  .terminal-shell:not(.is-flat) .terminal-header .auth-login, .terminal-shell:not(.is-flat) .terminal-header .terminal-wallet { padding: 0 11px; font-size: 12px; }
   .mode-pills button.is-active { padding: 5px 8px; font-size: 10px; }
-  .terminal-shell .terminal-header .terminal-nav { gap: 0; }
-  .terminal-shell .terminal-header .terminal-nav a { padding: 7px 7px; font-size: 11.5px; }
+  .terminal-shell:not(.is-flat) .terminal-header .terminal-nav { gap: 0; }
+  .terminal-shell:not(.is-flat) .terminal-header .terminal-nav a { padding: 7px 7px; font-size: 11.5px; }
 }
 
 /* The welcome-gift confirmation: a short pill that fades itself out. */
@@ -2425,3 +2427,26 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .gas-meter { height: 10px; margin: 2px 0 12px; border-radius: 999px; background: var(--t-line); overflow: hidden; }
 .gas-meter i { display: block; height: 100%; border-radius: 999px; background: var(--yes); transition: width .4s ease; }
 .gas-meter i.is-low { background: #e0803f; }
+
+/* The terminal's flat header: the capsule rules above skip it, so only the parts styled for
+   a black ground need putting back on the page's own surface. */
+.terminal-shell.is-flat .mode-pills { background: rgba(125, 136, 119, .14); }
+.terminal-shell.is-flat .mode-pills button { color: var(--t-dim); }
+.terminal-shell.is-flat .mode-pills button:hover { color: var(--t-ink); }
+.terminal-shell.is-flat .mode-pills button.is-active { background: var(--t-ink); color: var(--t-surface); }
+
+@media (max-width: 760px) {
+  /* The flat header has more in it than the old three-column grid could hold (the network
+     pill arrived later), which pushed the sign-in buttons out of the bar. Two rows instead:
+     logo, countdown and sign-in, then the menu, the network pill and the theme button. */
+  .terminal-shell.is-flat .terminal-header { display: flex; flex-wrap: wrap; align-items: center; height: auto; min-height: 58px; padding: 8px 14px; gap: 8px; row-gap: 6px; }
+  .terminal-shell.is-flat .terminal-header .brand { order: 1; }
+  .terminal-shell.is-flat .terminal-header .window-clock { order: 2; flex-direction: row; align-items: baseline; gap: 8px; margin: 0 4px 0 auto; }
+  .terminal-shell.is-flat .terminal-header .window-clock-label { display: none; }
+  .terminal-shell.is-flat .terminal-header .window-clock-value { font-size: 24px; }
+  .terminal-shell.is-flat .terminal-header > .auth-buttons, .terminal-shell.is-flat .terminal-header > .wallet-menu { order: 3; }
+  .terminal-shell.is-flat .terminal-header .terminal-nav { order: 4; flex: 1 1 46%; min-width: 46%; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .terminal-shell.is-flat .terminal-header .terminal-nav a { flex: 0 0 auto; padding: 7px 10px; font-size: 12px; }
+  .terminal-shell.is-flat .terminal-header .mode-switch { order: 5; margin-left: auto; }
+  .terminal-shell.is-flat .terminal-header .theme-toggle { order: 6; }
+}
