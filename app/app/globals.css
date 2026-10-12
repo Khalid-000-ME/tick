@@ -2131,7 +2131,12 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 .story-side small, .story-status, .story-card-head span, .story-price-row span { letter-spacing: .08em; }
 .story-won-inner strong { font-family: var(--font-geist-mono), monospace; font-weight: 600; letter-spacing: -.04em; }
 .story-won-inner span { font-family: var(--font-geist-mono), monospace; font-size: 12px; letter-spacing: .1em; }
-.story-sticky { perspective: 1600px; }
 .story-chart text { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 /* On phones the swing needs side room, or the card edge meets the screen edge. */
 @media (max-width: 900px) { .story-card { width: 90%; justify-self: center; } }
+
+/* The stage holds the card and the glow behind it. Perspective lives on the card alone
+   (transformPerspective), never on a parent too: stacking two is what warped it. */
+.story-stage { position: relative; display: grid; place-items: center; }
+.story-glow { position: absolute; inset: 8% 4%; border-radius: 50%; background: radial-gradient(closest-side, #d8f35f44, #4ade8018 55%, transparent 75%); filter: blur(40px); pointer-events: none; }
+@media (max-width: 900px) { .story-stage .story-card { width: 90%; } }

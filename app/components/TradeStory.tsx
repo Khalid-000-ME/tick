@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
+import { motion, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
 
 /**
  * One whole trade, played by scrolling.
@@ -99,20 +99,33 @@ export function TradeStory() {
   const cardIn = useTransform(p, [0, 0.06], [0.92, 1]);
   const cardOpacity = useTransform(p, [0, 0.05], [0.4, 1]);
 
-  // The card on a 3D stage: tilted back with its bottom lifted toward the reader, and
-  // swinging to a new side for each phase (opens left, taps right, the window left), then
-  // squaring up to face the reader for the win. Each swing happens quickly at a phase
-  // boundary and the card drifts gently within a phase, so it always feels in motion.
-  const PHASES = [0, 0.13, 0.19, 0.31, 0.37, 0.55, 0.62, 1];
-  const rotateY = useTransform(p, PHASES, [-20, -14, 16, 12, -16, -10, 0, 0]);
-  const rotateX = useTransform(p, PHASES, [18, 16, 16, 16, 16, 14, 4, 4]);
-  const rotateZ = useTransform(p, PHASES, [-2, -1.5, 2, 1.5, -2, -1.5, 0, 0]);
-  const shiftX = useTransform(p, PHASES, [-30, -20, 30, 24, -30, -20, 0, 0]);
-  // The tap presses the card back for a moment.
-  const press = useTransform(p, [0.28, 0.295, 0.31], [1, 0.965, 1]);
-  const cardScale = useTransform([cardIn, press], ([a, b]: number[]) => a * b);
-  // Its shadow falls away from the side it swings toward.
-  const cardShadow = useTransform(rotateY, (v) => `${(-v * 1.6).toFixed(1)}px 60px 110px rgba(0,0,0,0.62), 0 0 0 1px rgba(255,255,255,0.03) inset`);
+  // The card is filmed, not flipped. One camera move runs through the whole story, every
+  // value eased by a spring so the card carries weight and never snaps:
+  //   entry    rises from lying flat on a table and tilts up, angled toward the captions
+  //   tap      the camera leans in on the buttons; the click presses the card, which rebounds
+  //   window   a slow pan from left to right across the chart while the candles print
+  //   win      squares up and lifts toward the reader as the glow behind it blooms
+  //   exit     lies back down as the section ends, so the last frames still move
+  // No roll (rotateZ): combined with a turn it reads as a warped trapezoid, not depth.
+  // Positive rotateY sends the right edge away, so the card faces the captions on its left.
+  const CAM = [0, 0.12, 0.16, 0.24, 0.3, 0.34, 0.46, 0.58, 0.64, 0.82, 1];
+  const spring = { stiffness: 90, damping: 22, mass: 0.6 };
+  const rotateX = useSpring(useTransform(p, CAM, [34, 12, 11, 18, 20, 17, 10, 6, 0, 0, 22]), spring);
+  const rotateY = useSpring(useTransform(p, CAM, [14, 10, 8, 4, 3, 10, 2, -9, 0, 0, 8]), spring);
+  const lift = useSpring(useTransform(p, CAM, [140, 0, 0, -24, -30, -20, 0, 0, -12, -12, 40]), spring);
+  const pan = useSpring(useTransform(p, CAM, [40, 0, 0, -10, -12, 22, 0, -30, 0, 0, 0]), spring);
+  const zoom = useSpring(useTransform(p, CAM, [0.88, 1, 1, 1.04, 1.06, 1.03, 1, 1, 1.05, 1.05, 0.94]), spring);
+  // The click is crisp, so it is not sprung: a quick press on top of the camera's zoom.
+  const press = useTransform(p, [0.285, 0.295, 0.305], [1, 0.965, 1]);
+  const cardScale = useTransform([zoom, press, cardIn], ([z, k, c]: number[]) => z * k * c);
+  // Light falls from above, so the shadow drops further the more the card lies back, and
+  // slides away from the side it turns toward.
+  const cardShadow = useTransform([rotateX, rotateY], ([rx, ry]: number[]) =>
+    `${(-ry * 1.5).toFixed(1)}px ${(28 + rx * 2.2).toFixed(1)}px 110px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset`
+  );
+  // A lime glow behind the card: faint as it rises, warmer through the window, a bloom on the win.
+  const glowOpacity = useTransform(p, [0, 0.12, 0.34, 0.58, 0.64, 0.82, 1], [0, 0.25, 0.3, 0.5, 0.95, 0.7, 0.15]);
+  const glowScale = useTransform(p, [0, 0.58, 0.66, 1], [0.7, 0.95, 1.25, 1]);
   const strikeLen = useTransform(p, [0.08, 0.15], [0, 1]);
   const strikeTags = useTransform(p, [0.13, 0.16], [0, 1]);
 
@@ -162,9 +175,11 @@ export function TradeStory() {
           </div>
         </div>
 
+        <div className="story-stage">
+        <motion.i className="story-glow" style={{ opacity: glowOpacity, scale: glowScale }} aria-hidden="true" />
         <motion.div
           className="story-card"
-          style={{ scale: cardScale, opacity: cardOpacity, rotateX, rotateY, rotateZ, x: shiftX, boxShadow: cardShadow, transformPerspective: 1400 }}
+          style={{ scale: cardScale, opacity: cardOpacity, rotateX, rotateY, x: pan, y: lift, boxShadow: cardShadow, transformPerspective: 1500 }}
         >
           <div className="story-card-head">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -254,6 +269,7 @@ export function TradeStory() {
             </motion.div>
           </motion.div>
         </motion.div>
+        </div>
       </div>
     </section>
   );
