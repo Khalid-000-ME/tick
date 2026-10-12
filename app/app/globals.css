@@ -3060,12 +3060,16 @@ button.landing-nav-cta { font-size: 13px; }
 .rs-title strong { font-size: 16px; font-weight: 700; letter-spacing: -.02em; }
 .rs-title small { font-size: 12px; color: #8d9784; }
 .rs-crew { display: flex; }
-.rs-face { display: grid; place-items: center; width: 30px; height: 30px; margin-left: -8px; border: 2px solid #10130d; border-radius: 50%; font-size: 12px; font-weight: 800; color: #10120f; }
+.rs-face { display: inline-flex; width: 30px; height: 30px; margin-left: -6px; border: 2px solid #10130d; border-radius: 9px; overflow: hidden; background: #10130d; }
+.rs-face .avatar, .rs-avatar .avatar { display: block; width: 100% !important; height: 100% !important; }
+.rs-face svg, .rs-avatar svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 .rs-invite { position: absolute; right: 150px; padding: 5px 12px; border-radius: 999px; background: #d8f35f; color: #10120f; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .rs-body { display: grid; grid-template-columns: minmax(0, 1fr) 250px; }
 .rs-market { padding: 16px 18px 18px; min-width: 0; }
 .rs-market-top { display: flex; align-items: center; gap: 12px; }
-.rs-market-top > div:first-child { display: flex; flex-direction: column; flex: 1; }
+.rs-name { position: relative; flex: 1; min-width: 0; height: 42px; }
+.rs-name > span { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.rs-unset strong { color: #8d9784; }
 .rs-market-top strong { font-size: 20px; font-weight: 700; letter-spacing: -.03em; }
 .rs-market-top small { font-size: 12px; color: #8d9784; }
 .rs-price { font: 600 17px var(--font-geist-mono), monospace; font-variant-numeric: tabular-nums; }
@@ -3081,8 +3085,7 @@ button.landing-nav-cta { font-size: 13px; }
 .rs-picker > div { display: flex; gap: 6px; }
 .rs-picker span { position: relative; padding: 7px 14px; border: 1px solid #2d3627; border-radius: 999px; font-size: 13px; font-weight: 650; }
 .rs-picker .is-on i { position: absolute; inset: -1px; border-radius: 999px; background: #d8f35f; }
-.rs-picker .is-on { color: #10120f; }
-.rs-picker .is-on { z-index: 0; } .rs-picker .is-on > * { position: relative; }
+.rs-picker .is-on > b { position: relative; font-weight: 650; }
 .rs-cursor { position: absolute; right: 8px; bottom: -10px; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .5)); pointer-events: none; z-index: 3; }
 .rs-cursor.is-tap { right: 70px; bottom: -8px; }
 .rs-settled { position: absolute; left: 12px; top: 10px; padding: 5px 12px; border-radius: 999px; background: #d8f35f; color: #10120f; font-size: 12px; font-weight: 800; }
@@ -3103,8 +3106,9 @@ button.landing-nav-cta { font-size: 13px; }
 .rs-row { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 9px; padding: 0 10px; border-radius: 14px; background: #171c13; }
 .rs-lead { position: absolute; inset: 0; border-radius: 14px; box-shadow: inset 0 0 0 1.5px #d8f35f, 0 0 22px rgba(216, 243, 95, .28); pointer-events: none; }
 .rs-rank { width: 14px; text-align: center; font-size: 13px; font-weight: 700; color: #8d9784; }
-.rs-avatar { position: relative; display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; font-size: 13px; font-weight: 800; color: #10120f; }
-.rs-ring { position: absolute; inset: -4px; border-radius: 50%; }
+.rs-avatar { position: relative; display: block; flex: none; width: 32px; height: 32px; border-radius: 9px; }
+.rs-avatar .avatar { border-radius: 9px; overflow: hidden; }
+.rs-ring { position: absolute; inset: -4px; border-radius: 12px; }
 .rs-ring.is-up { box-shadow: 0 0 0 2px #22c55e; } .rs-ring.is-down { box-shadow: 0 0 0 2px #ef4444; }
 .rs-who { display: flex; flex-direction: column; flex: 1; min-width: 0; justify-content: center; gap: 1px; }
 .rs-who strong { font-size: 13.5px; font-weight: 650; }
@@ -3127,7 +3131,7 @@ button.landing-nav-cta { font-size: 13px; }
 .rs-likes span { display: inline-grid; }
 .rs-compose { display: flex; align-items: center; justify-content: space-between; margin: 6px 14px 14px; padding: 9px 9px 9px 18px; border: 1px solid #232a1e; border-radius: 999px; background: #1a2015; font-size: 14px; color: #8d9784; }
 .rs-compose i { padding: 7px 14px; border-radius: 999px; background: #232a1e; color: #eef1e6; font-size: 12.5px; font-style: normal; font-weight: 650; }
-.rs-card { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: min(420px, 86%); transform-origin: 50% 50%; }
+.rs-card { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: min(472px, 90%); transform-origin: 50% 50%; }
 .rs-card .results-card { margin: 0; padding: 22px 24px 18px; border-radius: 20px; }
 .rs-card .results-net { font-size: 64px; }
 .rs-card .results-line { font-size: 11.5px; }
@@ -3152,6 +3156,7 @@ button.landing-nav-cta { font-size: 13px; }
   .rs-board > header { margin-bottom: 6px; }
   .rs-market { padding: 10px 12px 12px; }
   .rs-market-top strong { font-size: 17px; }
+  .rs-name { height: 36px; }
   .rs-price { font-size: 14px; }
   .rs-clock { width: 46px; height: 46px; }
   .rs-clock b { font-size: 19px; }
@@ -3159,7 +3164,7 @@ button.landing-nav-cta { font-size: 13px; }
   .rs-dock { margin-top: 8px; }
   .rs-pool-lbl { margin: 4px 0 6px; }
   .rs-sides > span { height: 38px; font-size: 15px; }
-  .rs-avatar { width: 26px; height: 26px; font-size: 11px; }
+  .rs-avatar { width: 26px; height: 26px; }
   .rs-ring { inset: -3px; }
   .rs-who strong { font-size: 12.5px; }
   .rs-sub { height: 12px; }
@@ -3175,3 +3180,11 @@ button.landing-nav-cta { font-size: 13px; }
   .rs-card-slot { height: 104px; }
   .rs-likes { bottom: 64px; }
 }
+
+/* The post the story ends on: the feed's own white post, centred, with the pixel avatar and the card in it. */
+.rs-panel { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: min(520px, 100%); height: 380px; border-radius: 22px; background: #fffefc; border: 1px solid rgba(16, 18, 15, .09); box-shadow: 0 30px 64px rgba(6, 8, 5, .5), 0 2px 6px rgba(6, 8, 5, .14); color: #10120f; font-family: var(--font-geist-sans), system-ui, sans-serif; overflow: hidden; }
+.rs-panel .sf-row .avatar { flex: none; border-radius: 12px; overflow: hidden; }
+.rs-panel .sf-row svg { image-rendering: pixelated; }
+.rs-dest { position: absolute; left: 24px; right: 24px; bottom: 76px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #686b64; }
+.rs-dest b { padding: 4px 11px; border-radius: 999px; background: #10120f; color: #fff; font-size: 12px; font-weight: 650; }
+@media (max-width: 900px) { .rs-panel { height: 360px; } .rs-dest { bottom: 70px; } }

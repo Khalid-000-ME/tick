@@ -2,14 +2,15 @@
 
 import { useRef, useSyncExternalStore } from "react";
 import { motion, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
+import { Avatar, genAvatar } from "@/components/Avatar";
 
 /**
  * The idea of the product, played by scrolling: compete in a group, then flex the profit.
  *
  * The panel pins while the section scrolls past and scroll position is the clock. A room fills with a
  * crew, the owner picks a market, everyone calls the same thirty seconds with their sides showing live,
- * the scoreboard races and re-sorts as the window settles, the winner's card is made, and the card lands
- * in the group chat. It is built from the same parts as the real room page (the clock ring, the chart
+ * the scoreboard races and re-sorts as the window settles, the winner's card is made, and the card is
+ * posted to the feed. It is built from the same parts as the real room page (the clock ring, the chart
  * with its strike, Above and Below, the scoreboard with a ring round each face, the card), so what the
  * reader sees is what they will use. The numbers are illustrative, not live.
  *
@@ -19,15 +20,15 @@ import { motion, useScroll, useSpring, useTransform, type MotionValue } from "mo
  *   0.28 to 0.62  the window: everyone calls it, candles print, the clock runs down
  *   0.62 to 0.78  it settles and the scoreboard re-sorts
  *   0.78 to 0.90  the winner's card is generated
- *   0.90 to 1.00  the card is posted to the group chat
+ *   0.90 to 1.00  the card is posted, to the feed and the group
  */
 
 // ---- the crew -------------------------------------------------------------------------------
 interface Player {
   id: string;
   name: string;
-  from: string;
-  to: string;
+  /** Seeds the pixel avatar, the same identicon the app draws, so the faces here are the faces in the product. */
+  seed: string;
   pick: "ABOVE" | "BELOW";
   stake: number;
   /** Net before this round and after it. */
@@ -37,14 +38,20 @@ interface Player {
   ranks: number[];
   joinAt: number;
   pickAt: number;
+  /** Stacking: whoever is climbing must be drawn over whoever they pass. */
+  z: number;
 }
-/** You pass Maya, then Dev, then Maya passes Dev: one pair at a time, like a real table. */
-const RANK_STOPS = [0.64, 0.675, 0.685, 0.715, 0.725, 0.755];
+/**
+ * Each row changes place exactly when the numbers cross, one pair at a time, as a real table does.
+ * The nets run linearly from 0.63 to 0.75, so the crossings are: Nora passes Luca at 0.650, You passes
+ * Luca at 0.666, You passes Nora at 0.716. Each slide spans its own crossing.
+ */
+const RANK_STOPS = [0.64, 0.66, 0.676, 0.706, 0.73, 0.755];
 const PLAYERS: Player[] = [
-  { id: "you", name: "You", from: "#d8f35f", to: "#173f31", pick: "ABOVE", stake: 2, start: 0.2, end: 1.18, ranks: [2, 1, 1, 0, 0, 0], joinAt: 0.02, pickAt: 0.31 },
-  { id: "maya", name: "Maya", from: "#f0b64a", to: "#b4410a", pick: "ABOVE", stake: 1, start: 0.55, end: 1.04, ranks: [1, 2, 2, 2, 2, 1], joinAt: 0.05, pickAt: 0.36 },
-  { id: "dev", name: "Dev", from: "#58c7dc", to: "#0b7285", pick: "BELOW", stake: 1, start: 0.8, end: -0.2, ranks: [0, 0, 0, 1, 1, 2], joinAt: 0.08, pickAt: 0.42 },
-  { id: "sam", name: "Sam", from: "#b497ff", to: "#6d3fd0", pick: "BELOW", stake: 0.5, start: -0.1, end: -0.6, ranks: [3, 3, 3, 3, 3, 3], joinAt: 0.11, pickAt: 0.48 },
+  { id: "you", name: "You", seed: "You", pick: "ABOVE", stake: 2, start: 0.2, end: 1.18, ranks: [2, 2, 1, 1, 0, 0], joinAt: 0.02, pickAt: 0.31, z: 4 },
+  { id: "maya", name: "Nora", seed: "Nora", pick: "ABOVE", stake: 1, start: 0.55, end: 1.04, ranks: [1, 0, 0, 0, 1, 1], joinAt: 0.05, pickAt: 0.36, z: 3 },
+  { id: "dev", name: "Luca", seed: "Luca", pick: "BELOW", stake: 1, start: 0.8, end: -0.2, ranks: [0, 1, 2, 2, 2, 2], joinAt: 0.08, pickAt: 0.42, z: 2 },
+  { id: "sam", name: "Finn", seed: "Finn", pick: "BELOW", stake: 0.5, start: -0.1, end: -0.6, ranks: [3, 3, 3, 3, 3, 3], joinAt: 0.11, pickAt: 0.48, z: 1 },
 ];
 
 // ---- the price series -----------------------------------------------------------------------
@@ -92,7 +99,7 @@ const CAPTIONS = [
   { range: [0.28, 0.62], title: "Everyone calls the same 30 seconds.", body: "Above or below, from ten cents. You see who is on which side as it happens." },
   { range: [0.62, 0.78], title: "The scoreboard races.", body: "Every window settles on Pyth and the table re-sorts. Nobody referees it." },
   { range: [0.78, 0.9], title: "Win it, and Tick makes your card.", body: "Your profit, drawn from your real record and verified on chain." },
-  { range: [0.9, 1], title: "Flex it in the group.", body: "Post it to the chat or the feed. The profit is the post." },
+  { range: [0.9, 1], title: "Flex it on the feed.", body: "Post it to your feed and your group. The profit is the post." },
 ] as const;
 
 const money = (v: number) => `${v >= 0 ? "+" : "−"}$${Math.abs(v).toFixed(2)}`;
@@ -126,10 +133,15 @@ export function RoomStory() {
   const picker = useTransform(p, [0.14, 0.17, 0.235, 0.265], [0, 1, 1, 0]);
   const pickerY = useSpring(useTransform(p, [0.14, 0.17], [14, 0]), bouncy);
   const ethOn = useTransform(p, [0.2, 0.215], [0, 1]);
+  // The chosen chip turns dark as its lime fill arrives; before that it reads like the others.
+  const ethInk = useTransform(p, [0.2, 0.215], ["#eef1e6", "#10120f"]);
   const pickCursorX = useTransform(p, [0.16, 0.2], [90, 0]);
   const pickCursorY = useTransform(p, [0.16, 0.2], [60, 0]);
   const pickCursorOp = useTransform(p, [0.16, 0.175, 0.23, 0.245], [0, 1, 1, 0]);
   const chartIn = useTransform(p, [0.225, 0.28], [0, 1]);
+  // The market has no name and no clock until the owner's pick lands, or the room looks already set up.
+  const named = useTransform(p, [0.2, 0.218], [0, 1]);
+  const unnamed = useTransform(p, [0.2, 0.218], [1, 0]);
   const strikeX = useTransform(p, [0.24, 0.285], [16, W - 8]);
   const strikeTag = useTransform(p, [0.27, 0.29], [0, 1]);
   const price = useTransform(p, PRICE_STOPS, PRICE_VALUES);
@@ -202,15 +214,18 @@ export function RoomStory() {
             <div className="rs-body">
               <div className="rs-market">
                 <div className="rs-market-top">
-                  <div><strong>ETH/USD</strong><small>30s window</small></div>
+                  <div className="rs-name">
+                    <motion.span className="rs-unset" style={{ opacity: unnamed }}><strong>No market yet</strong><small>the owner picks it</small></motion.span>
+                    <motion.span style={{ opacity: named }}><strong>ETH/USD</strong><small>30s window</small></motion.span>
+                  </div>
                   <motion.span className="rs-price" style={{ opacity: chartIn }}>{priceText}</motion.span>
-                  <div className="rs-clock" role="timer" aria-label="Seconds left in the window">
+                  <motion.div className="rs-clock" style={{ opacity: named }} role="timer" aria-label="Seconds left in the window">
                     <svg viewBox="0 0 100 100" aria-hidden="true">
                       <circle cx="50" cy="50" r="46" fill="none" strokeWidth="6" className="rs-clock-track" />
                       <motion.circle cx="50" cy="50" r="46" fill="none" strokeWidth="6" strokeLinecap="round" className="rs-clock-run" strokeDasharray="289" style={{ strokeDashoffset: dash, rotate: -90, transformOrigin: "50% 50%" }} />
                     </svg>
-                    <motion.b style={{ opacity: chartIn }}>{secs}</motion.b>
-                  </div>
+                    <motion.b>{secs}</motion.b>
+                  </motion.div>
                 </div>
 
                 <div className="rs-chart">
@@ -232,9 +247,10 @@ export function RoomStory() {
                     <small>Pick this room&apos;s market</small>
                     <div>
                       <span>BTC</span>
-                      <motion.span className="is-on" style={{ opacity: 1 }}>
-                        <motion.i style={{ opacity: ethOn }} />ETH
-                      </motion.span>
+                      <span className="is-on">
+                        <motion.i style={{ opacity: ethOn }} />
+                        <motion.b style={{ color: ethInk }}>ETH</motion.b>
+                      </span>
                       <span>SOL</span>
                     </div>
                     <motion.svg className="rs-cursor" style={{ x: pickCursorX, y: pickCursorY, opacity: pickCursorOp }} viewBox="0 0 24 24" width="30" height="30"><path d="M4 2 L4 19 L8.5 14.6 L11.6 21.4 L14.4 20.2 L11.3 13.5 L17.6 13.5 Z" fill="#10120f" stroke="#fff" strokeWidth="1.4" strokeLinejoin="round" /></motion.svg>
@@ -263,7 +279,7 @@ export function RoomStory() {
             </div>
           </motion.div>
 
-          <Finale p={p} bouncy={bouncy} narrow={narrow} />
+          <Finale p={p} bouncy={bouncy} />
         </div>
       </div>
     </section>
@@ -274,7 +290,11 @@ export function RoomStory() {
 function Joiner({ p, pl, bouncy }: { p: MotionValue<number>; pl: Player; bouncy: { stiffness: number; damping: number; mass: number } }) {
   const o = useTransform(p, [pl.joinAt, pl.joinAt + 0.025], [0, 1]);
   const s = useSpring(useTransform(p, [pl.joinAt, pl.joinAt + 0.03], [0.3, 1]), bouncy);
-  return <motion.span className="rs-face" style={{ opacity: o, scale: s, background: `linear-gradient(135deg, ${pl.from}, ${pl.to})` }}>{pl.name[0]}</motion.span>;
+  return (
+    <motion.span className="rs-face" style={{ opacity: o, scale: s }}>
+      <Avatar avatar={genAvatar("pixel", pl.seed)} seed={pl.seed} name={pl.name} size={30} />
+    </motion.span>
+  );
 }
 
 /** One row of the scoreboard: it holds its place, shows a live pick, then counts to its result and slides to its new rank. */
@@ -287,14 +307,14 @@ function Row({ p, pl, row }: { p: MotionValue<number>; pl: Player; row: number }
   const ringOp = useTransform(p, [pl.pickAt, pl.pickAt + 0.02, 0.63, 0.66], [0, 1, 1, 0]);
   const rise = useTransform(p, [0.64, 0.75], [0, 1]);
   const won = pl.end - pl.start > 0.3;
-  const lead = useTransform(p, [0.715, 0.74], [0, pl.ranks[pl.ranks.length - 1] === 0 ? 1 : 0]);
+  const lead = useTransform(p, [0.72, 0.745], [0, pl.ranks[pl.ranks.length - 1] === 0 ? 1 : 0]);
   const rankText = useTransform(y, (v) => String(Math.round(v / row) + 1));
   return (
-    <motion.li className="rs-row" style={{ y, height: row - 6, zIndex: pl.id === "you" ? 2 : 1 }}>
+    <motion.li className="rs-row" style={{ y, height: row - 6, zIndex: pl.z }}>
       <motion.i className="rs-lead" style={{ opacity: lead }} aria-hidden="true" />
       <motion.b className="rs-rank">{rankText}</motion.b>
-      <span className="rs-avatar" style={{ background: `linear-gradient(135deg, ${pl.from}, ${pl.to})` }}>
-        {pl.name[0]}
+      <span className="rs-avatar">
+        <Avatar avatar={genAvatar("pixel", pl.seed)} seed={pl.seed} name={pl.name} size={32} />
         <motion.i className={`rs-ring ${pl.pick === "ABOVE" ? "is-up" : "is-down"}`} style={{ opacity: ringOp }} />
       </span>
       <span className="rs-who">
@@ -327,17 +347,22 @@ function CandleMark({ p, c, range }: { p: MotionValue<number>; c: Candle; range:
 }
 
 /**
- * The end: the arena falls away, the winner's card is made, and it lands in the group chat.
- * One card element travels from the middle of the stage to a bubble in the chat, so it reads as the
- * same object being made and then shared.
+ * The end: the arena falls away, the winner's card is made, and it is posted to the feed.
+ *   0.78 to 0.86  the card is generated (a scan, the profit counting up, the verified badge)
+ *   0.86 to 0.94  it settles into a composer, a caption types itself and a cursor taps Post
+ *   0.94 to 1.00  the composer becomes a post in the feed, with the same card in it, and likes come in
+ * One card element travels through all three, so it reads as the same object being made then shared,
+ * and the post is drawn the way the feed draws it: who, the card, the words, the likes.
  */
-function Finale({ p, bouncy, narrow }: { p: MotionValue<number>; bouncy: { stiffness: number; damping: number; mass: number }; narrow: boolean }) {
+const CAPTION = "30 seconds. Called it.";
+const LIKES = 24;
+
+function Finale({ p, bouncy }: { p: MotionValue<number>; bouncy: { stiffness: number; damping: number; mass: number } }) {
+  // the card: where it is, how big, and what it shows
   const cardOp = useTransform(p, [0.78, 0.8], [0, 1]);
   const rise = useSpring(useTransform(p, [0.78, 0.84], [24, 0]), bouncy);
-  const scale = useTransform(p, [0.78, 0.84, 0.86, 0.915], [0.86, 1.05, 1.05, 0.62]);
-  // The chat is taller on a phone, so the slot the card lands in is further above the stage's centre.
-  const y = useTransform(p, [0.78, 0.84, 0.86, 0.915], [0, 0, 0, narrow ? -78 : -34]);
-  const x = useTransform(p, [0.86, 0.915], ["0%", "26%"]);
+  const scale = useTransform(p, [0.78, 0.84, 0.86, 0.9, 0.94, 0.98], [0.86, 1.1, 1.1, 1, 1, 0.97]);
+  const y = useTransform(p, [0.78, 0.84, 0.86, 0.9, 0.94, 0.98], [0, 0, 0, -22, -22, -34]);
   const scanY = useTransform(p, [0.79, 0.84], ["-12%", "112%"]);
   const scanOp = useTransform(p, [0.79, 0.8, 0.835, 0.845], [0, 1, 1, 0]);
   const net = useTransform(p, [0.8, 0.85], [0, 1.18]);
@@ -347,39 +372,67 @@ function Finale({ p, bouncy, narrow }: { p: MotionValue<number>; bouncy: { stiff
   const status = useTransform(p, [0.79, 0.8, 0.84, 0.855], [0, 1, 1, 0]);
   const ready = useTransform(p, [0.85, 0.865, 0.88, 0.9], [0, 1, 1, 0]);
 
-  const chat = useTransform(p, [0.86, 0.9], [0, 1]);
-  const chatY = useSpring(useTransform(p, [0.86, 0.9], [20, 0]), bouncy);
-  const m1 = useTransform(p, [0.885, 0.905], [0, 1]);
-  const m2 = useTransform(p, [0.895, 0.915], [0, 1]);
-  const r1 = useTransform(p, [0.945, 0.965], [0, 1]);
-  const r2 = useTransform(p, [0.96, 0.98], [0, 1]);
-  const likes = useTransform(p, [0.95, 0.995], [0, 7]);
+  // the white panel the card moves into: a composer, then a post
+  const panel = useTransform(p, [0.86, 0.9], [0, 1]);
+  const panelY = useSpring(useTransform(p, [0.86, 0.9], [22, 0]), bouncy);
+  const composing = useTransform(p, [0.9, 0.925, 0.945, 0.955], [0, 1, 1, 0]);
+  const posted = useTransform(p, [0.955, 0.975], [0, 1]);
+
+  // composing: the caption types, the cursor goes to Post and taps it
+  const typed = useTransform(p, [0.885, 0.925], [0, CAPTION.length]);
+  const typedText = useTransform(typed, (v) => CAPTION.slice(0, Math.round(v)));
+  const cursorX = useTransform(p, [0.915, 0.935], [-70, 0]);
+  const cursorY = useTransform(p, [0.915, 0.935], [-60, 0]);
+  const cursorOp = useTransform(p, [0.915, 0.925, 0.945, 0.953], [0, 1, 1, 0]);
+  const cursorPress = useTransform(p, [0.935, 0.94, 0.946, 0.951], [1, 0.8, 0.8, 1]);
+  const postPress = useSpring(useTransform(p, [0.932, 0.94, 0.947, 0.954], [1, 0.93, 0.93, 1]), bouncy);
+
+  // posted: the toast, and the likes arriving
+  const toast = useTransform(p, [0.96, 0.975], [0, 1]);
+  const toastY = useSpring(useTransform(p, [0.96, 0.975], [12, 0]), bouncy);
+  const likes = useTransform(p, [0.975, 0.998], [0, LIKES]);
   const likesText = useTransform(likes, (v) => String(Math.round(v)));
-  const heart = useSpring(useTransform(p, [0.945, 0.955, 0.97], [1, 1.35, 1]), bouncy);
-  const toast = useTransform(p, [0.925, 0.945], [0, 1]);
-  const toastY = useSpring(useTransform(p, [0.925, 0.945], [12, 0]), bouncy);
+  const heartPop = useSpring(useTransform(p, [0.972, 0.982, 0.99], [1, 1.35, 1]), bouncy);
+  const heartFill = useTransform(p, [0.975, 0.98], [0, 1]);
 
   return (
     <div className="rs-finale" aria-hidden="true">
-      <motion.div className="rs-chat" style={{ opacity: chat, y: chatY }}>
-        <header><span className="rs-chat-mark">ST</span><div><strong>Sigma Traders</strong><small>4 members · 1 room</small></div></header>
-        <div className="rs-msgs">
-          <motion.p className="rs-msg" style={{ opacity: m1 }}><b className="c0">Maya</b>that last window was close</motion.p>
-          <motion.p className="rs-msg" style={{ opacity: m2 }}><b className="c1">Dev</b>rematch?</motion.p>
-          <div className="rs-card-slot" />
-          <motion.p className="rs-msg" style={{ opacity: r1 }}><b className="c0">Maya</b>gg. you got me</motion.p>
-          <motion.p className="rs-msg" style={{ opacity: r2 }}><b className="c1">Dev</b>running it back</motion.p>
-        </div>
-        <motion.div className="rs-likes" style={{ opacity: r1 }}>
-          <motion.span style={{ scale: heart }}>
-            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 21s-7.500-4.600-9.600-9.200C.9 8.400 3 5 6.400 5c2 0 3.600 1.100 4.600 2.700C12 6.100 13.600 5 15.600 5 19 5 21.100 8.400 19.600 11.800 17.500 16.400 12 21 12 21z" fill="#e5484d" /></svg>
-          </motion.span>
-          <motion.b>{likesText}</motion.b>
+      <motion.div className="rs-panel" style={{ opacity: panel, y: panelY }}>
+        <motion.div className="sf-compose" style={{ opacity: composing }}>
+          <div className="sf-row">
+            <Avatar avatar={genAvatar("pixel", "You")} seed="You" name="You" size={40} />
+            <p className="sf-typed"><motion.span>{typedText}</motion.span><i className="sf-caret" /></p>
+          </div>
+          <div className="rs-dest"><span>Post to</span><b>Feed</b><b>Sigma Traders</b></div>
+          <div className="sf-bar">
+            <span className="sf-pill">Photo</span>
+            <span className="sf-check"><b>✓</b> Show my card</span>
+            <motion.span className="sf-post-btn" style={{ scale: postPress }}>Post</motion.span>
+          </div>
+          <motion.div className="sf-cursor" style={{ x: cursorX, y: cursorY, opacity: cursorOp, scale: cursorPress }}>
+            <svg viewBox="0 0 24 24" width="34" height="34"><path d="M4 2 L4 19 L8.5 14.6 L11.6 21.4 L14.4 20.2 L11.3 13.5 L17.6 13.5 Z" fill="#10120f" stroke="#ffffff" strokeWidth="1.4" strokeLinejoin="round" /></svg>
+          </motion.div>
         </motion.div>
-        <div className="rs-compose"><span>Write a message</span><i>Card</i></div>
+
+        <motion.div className="sf-post" style={{ opacity: posted }}>
+          <div className="sf-row sf-post-head">
+            <Avatar avatar={genAvatar("pixel", "You")} seed="You" name="You" size={40} />
+            <span className="sf-who"><strong>You</strong><small>now · in Sigma Traders</small></span>
+          </div>
+          <p className="sf-caption">{CAPTION}</p>
+          <div className="sf-likes">
+            <motion.span className="sf-heart" style={{ scale: heartPop }}>
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path d="M12 21s-7.500-4.600-9.600-9.200C.9 8.400 3 5 6.400 5c2 0 3.600 1.100 4.600 2.700C12 6.100 13.600 5 15.600 5 19 5 21.100 8.400 19.600 11.800 17.500 16.400 12 21 12 21z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                <motion.path d="M12 21s-7.500-4.600-9.600-9.200C.9 8.400 3 5 6.400 5c2 0 3.600 1.100 4.600 2.700C12 6.100 13.600 5 15.600 5 19 5 21.100 8.400 19.600 11.800 17.500 16.400 12 21 12 21z" fill="#e5484d" style={{ opacity: heartFill }} />
+              </svg>
+            </motion.span>
+            <motion.b>{likesText}</motion.b>
+          </div>
+        </motion.div>
       </motion.div>
 
-      <motion.div className="rs-card" style={{ opacity: cardOp, scale, x, y: useTransform([y, rise], ([a, b]: number[]) => a + b) }}>
+      <motion.div className="rs-card" style={{ opacity: cardOp, scale, y: useTransform([y, rise], ([a, b]: number[]) => a + b) }}>
         <div className="results-card is-up is-flex">
           <motion.i className="sf-scan" style={{ top: scanY, opacity: scanOp }} />
           <motion.span className="results-eyebrow" style={{ opacity: badge }}>Verified on chain</motion.span>
@@ -392,7 +445,7 @@ function Finale({ p, bouncy, narrow }: { p: MotionValue<number>; bouncy: { stiff
         </div>
       </motion.div>
 
-      <motion.div className="rs-toast" style={{ opacity: toast, y: toastY, x: "-50%" }}><i>✓</i> Posted to Sigma Traders</motion.div>
+      <motion.div className="rs-toast" style={{ opacity: toast, y: toastY, x: "-50%" }}><i>✓</i> Posted to your feed and Sigma Traders</motion.div>
     </div>
   );
 }

@@ -122,7 +122,6 @@ export function LandingExperience() {
             </div>
           </motion.div>
           <p className="landing-claim">The <em>world&apos;s first</em> 30-second prediction market</p>
-          <div className="landing-hero-index" aria-hidden="true"><strong>00:30</strong></div>
         </section>
 
         <RoomStory />
