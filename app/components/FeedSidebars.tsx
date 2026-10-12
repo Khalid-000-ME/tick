@@ -85,13 +85,33 @@ const SHOWN = ["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD", "TSLA"];
 
 const money = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: v < 1 ? 4 : 2, maximumFractionDigits: v < 1 ? 4 : 2 });
 
+interface Fixture {
+  espnId: string;
+  league: string;
+  name: string;
+  home: { abbr: string; score: number | null; logo: string };
+  away: { abbr: string; score: number | null; logo: string };
+  state: "pre" | "in" | "post";
+  secondsToKickoff: number;
+  open: boolean;
+}
+
+const kickoffIn = (s: number) => (s < 3600 ? `in ${Math.max(1, Math.round(s / 60))}m` : s < 86_400 ? `in ${Math.round(s / 3600)}h` : `in ${Math.round(s / 86_400)}d`);
+
+/**
+ * What can be traded right now, in two tabs: live prices (30 seconds, one tap to a trade) and
+ * the games that are on or about to be (one tap to the match). Finished games are left out,
+ * since there is nothing left to call on them.
+ */
 export function TopMarkets() {
+  const [tab, setTab] = useState<"crypto" | "sports">("crypto");
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [fixtures, setFixtures] = useState<Fixture[] | null>(null);
 
   useEffect(() => {
     let off = false;
     const feeds = SHOWN.map((s) => FEEDS.find((f) => f.symbol === s)).filter((f): f is NonNullable<typeof f> => !!f);
-    async function load() {
+    async function loadPrices() {
       try {
         const res = await fetch(`/api/price/live?ids=${feeds.map((f) => f.id).join(",")}`);
         if (!res.ok) return;
@@ -109,35 +129,94 @@ export function TopMarkets() {
         /* the rail keeps the last quotes */
       }
     }
-    void load();
-    const t = setInterval(load, 4000);
+    async function loadSports() {
+      try {
+        const res = await fetch("/api/sports/events");
+        const body = (await res.json()) as { events?: Fixture[] };
+        if (!off && body.events) setFixtures(body.events);
+      } catch {
+        /* the rail keeps the last fixtures */
+      }
+    }
+    void loadPrices();
+    void loadSports();
+    const a = setInterval(loadPrices, 4000);
+    const b = setInterval(loadSports, 20_000);
     return () => {
       off = true;
-      clearInterval(t);
+      clearInterval(a);
+      clearInterval(b);
     };
   }, []);
 
+  // Live first, then the soonest to start; anything finished is gone.
+  const games = (fixtures ?? [])
+    .filter((f) => f.state !== "post")
+    .sort((x, y) => (x.state === "in" ? -1 : 0) - (y.state === "in" ? -1 : 0) || x.secondsToKickoff - y.secondsToKickoff)
+    .slice(0, 5);
+
   return (
     <section className="rail-card is-markets" aria-label="Top markets">
-      <header className="rail-head"><h2>Trade now</h2><Link href="/markets">All markets</Link></header>
-      <ul className="rail-list market-rail">
-        {SHOWN.map((symbol) => {
-          const feed = FEEDS.find((f) => f.symbol === symbol);
-          const q = quotes.find((x) => x.symbol === symbol);
-          if (!feed) return null;
-          return (
-            <li key={symbol}>
-              <Link href={`/trade?feed=${encodeURIComponent(symbol)}&window=30`} aria-label={`Trade ${feed.label}, 30 seconds`}>
-                {ASSET_ICONS[symbol] ? <Image src={ASSET_ICONS[symbol]} alt="" width={30} height={30} className="market-icon" /> : <span className="market-icon" />}
-                <span className="rail-name"><strong>{ticker(symbol)}</strong><small>{feed.label} · 30s</small></span>
+      <header className="rail-head">
+        <h2>Trade now</h2>
+        <div className="rail-tabs" role="tablist" aria-label="Market type">
+          {(["crypto", "sports"] as const).map((t) => (
+            <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? "is-active" : ""} onClick={() => setTab(t)}>
+              {t === "crypto" ? "Crypto" : "Sports"}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      {tab === "crypto" ? (
+        <ul className="rail-list market-rail">
+          {SHOWN.map((symbol) => {
+            const feed = FEEDS.find((f) => f.symbol === symbol);
+            const q = quotes.find((x) => x.symbol === symbol);
+            if (!feed) return null;
+            return (
+              <li key={symbol}>
+                <Link href={`/trade?feed=${encodeURIComponent(symbol)}&window=30`} aria-label={`Trade ${feed.label}, 30 seconds`}>
+                  {ASSET_ICONS[symbol] ? <Image src={ASSET_ICONS[symbol]} alt="" width={30} height={30} className="market-icon" /> : <span className="market-icon" />}
+                  <span className="rail-name"><strong>{ticker(symbol)}</strong><small>{feed.label} · 30s</small></span>
+                  <span className="market-quote">
+                    {q ? (q.closed ? <small>Closed</small> : <strong>${money(q.price)}</strong>) : <small>…</small>}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      ) : fixtures === null ? (
+        <p className="rail-empty">Reading the scoreboard…</p>
+      ) : games.length === 0 ? (
+        <p className="rail-empty">No games on or coming up right now.</p>
+      ) : (
+        <ul className="rail-list market-rail">
+          {games.map((g) => (
+            <li key={g.espnId}>
+              <Link href={`/sports/${g.espnId}`} aria-label={`Open ${g.name}`}>
+                <span className="fixture-logos" aria-hidden="true">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- ESPN crest, tiny */}
+                  <img src={g.away.logo} alt="" width={26} height={26} onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+                  {/* eslint-disable-next-line @next/next/no-img-element -- ESPN crest, tiny */}
+                  <img src={g.home.logo} alt="" width={26} height={26} onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+                </span>
+                <span className="rail-name"><strong>{g.away.abbr} at {g.home.abbr}</strong><small>{g.league}</small></span>
                 <span className="market-quote">
-                  {q ? (q.closed ? <small>Closed</small> : <strong>${money(q.price)}</strong>) : <small>…</small>}
+                  {g.state === "in" ? (
+                    <strong className="is-live">{g.away.score ?? 0} - {g.home.score ?? 0}</strong>
+                  ) : (
+                    <small>{kickoffIn(g.secondsToKickoff)}</small>
+                  )}
+                  {g.state === "in" && <small className="live-tag">Live</small>}
                 </span>
               </Link>
             </li>
-          );
-        })}
-      </ul>
+          ))}
+        </ul>
+      )}
+      <Link href="/markets" className="rail-more">All markets <ArrowRight weight="bold" /></Link>
     </section>
   );
 }

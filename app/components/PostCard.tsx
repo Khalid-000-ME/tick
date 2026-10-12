@@ -26,11 +26,11 @@ export function ago(at: number): string {
   return `${Math.floor(s / 86400)}d`;
 }
 
-export function ResultsCard({ standing, overlay = false }: { standing?: Standing; overlay?: boolean }) {
+export function ResultsCard({ standing, overlay = false, size }: { standing?: Standing; overlay?: boolean; size?: "hero" }) {
   const net = standing?.net ?? 0;
   const up = net >= 0;
   return (
-    <div className={`results-card ${up ? "is-up" : "is-down"} ${overlay ? "is-overlay" : ""}`}>
+    <div className={`results-card ${up ? "is-up" : "is-down"} ${overlay ? "is-overlay" : ""} ${size === "hero" ? "is-hero" : ""}`}>
       {/* The profit's face. React hoists this into the head once however many cards there are. */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Pixel&display=swap" precedence="default" />
       <span className="results-eyebrow">
