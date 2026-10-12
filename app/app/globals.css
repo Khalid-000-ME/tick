@@ -2239,3 +2239,78 @@ button.confirm-skip { background: none; border: 0; padding: 4px 0 0; cursor: poi
 
 /* A win shows the profit, with what came back underneath it, so the two are never confused. */
 .stake-result .pnl small { display: block; margin-top: 2px; font: 10px var(--font-geist-mono), monospace; color: var(--t-dim); letter-spacing: .02em; white-space: nowrap; }
+
+/* ---- The app navbar: one black capsule, on every page and in both themes ----
+   It floats under the running strip with space around it, and keeps its own colours
+   whatever the page theme is, so everything inside is styled for a black ground. This block
+   comes last on purpose: it replaces the earlier flat, bordered header rules. */
+.terminal-shell .terminal-header { display: flex; align-items: center; gap: 10px; width: min(1280px, calc(100% - 32px)); height: 60px; margin: 12px auto 0; padding: 0 10px 0 16px; border: 0; border-radius: 999px; background: #0c0e0a; color: #eef1e6; box-shadow: 0 12px 36px rgba(0, 0, 0, .3); }
+.terminal-shell .page-top { background: transparent; }
+.terminal-shell .terminal-header .brand { font-size: 28px; color: #f4f6ec; letter-spacing: -.07em; }
+.terminal-shell .terminal-header .brand-mark i { background: var(--acid); }
+.terminal-shell .terminal-header .brand-period { color: var(--acid); }
+.terminal-shell .terminal-back { flex: none; width: 36px; height: 36px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 50%; color: #eef1e6; }
+.terminal-shell .terminal-back:hover { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .3); }
+.terminal-shell .terminal-header .terminal-nav { margin-left: auto; gap: 2px; }
+.terminal-shell .terminal-header .terminal-nav a { padding: 8px 14px; border-radius: 999px; color: rgba(238, 241, 230, .68); }
+.terminal-shell .terminal-header .terminal-nav a:hover, .terminal-shell .terminal-header .terminal-nav a[aria-current="page"] { color: #fff; background: rgba(255, 255, 255, .12); }
+.terminal-shell .terminal-header .window-clock + .terminal-nav { margin-left: 0; }
+.terminal-shell .terminal-header .theme-toggle { flex: none; width: 38px; height: 38px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 50%; color: #eef1e6; }
+.terminal-shell .terminal-header .theme-toggle:hover { background: rgba(255, 255, 255, .12); }
+.terminal-shell .terminal-header .terminal-wallet { min-height: 38px; padding: 0 16px; border-radius: 999px; background: var(--acid); color: #14170f; font-weight: 650; }
+.terminal-shell .terminal-header .auth-login { min-height: 38px; border-color: rgba(255, 255, 255, .24); border-radius: 999px; color: #eef1e6; }
+.terminal-shell .terminal-header .auth-login:hover { border-color: #fff; background: rgba(255, 255, 255, .08); }
+/* The countdown keeps its place in the middle, scaled to fit a 60px capsule: label and value on one line. */
+.terminal-shell .terminal-header .window-clock { flex-direction: row; align-items: baseline; gap: 10px; margin: 0 auto; color: #f4f6ec; }
+.terminal-shell .terminal-header .window-clock-label { color: rgba(238, 241, 230, .55); }
+.terminal-shell .terminal-header .window-clock-value { font-size: 30px; }
+.terminal-shell .terminal-header .window-clock-value small { color: rgba(238, 241, 230, .55); }
+.terminal-shell .terminal-header .window-clock.is-urgent, .terminal-shell .terminal-header .window-clock.is-urgent .window-clock-value small { color: var(--t-urgent); }
+
+/* Testnet / Mainnet. */
+.mode-switch { position: relative; flex: none; }
+.mode-pills { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, .1); }
+.mode-pills button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 0; border-radius: 999px; background: transparent; color: rgba(238, 241, 230, .62); font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: background .2s, color .2s; }
+.mode-pills button:hover { color: #fff; }
+.mode-pills button.is-active { background: #f4f6ec; color: #10120f; }
+.mode-pills i { width: 6px; height: 6px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 8px #16a34a; }
+.mode-note { position: absolute; top: calc(100% + 14px); right: 0; z-index: 60; width: 270px; padding: 14px 16px; border-radius: 14px; background: #0c0e0a; color: #eef1e6; box-shadow: 0 18px 50px rgba(0, 0, 0, .4); }
+.mode-note strong { font-size: 14px; }
+.mode-note p { margin-top: 6px; color: rgba(238, 241, 230, .7); font-size: 13px; line-height: 1.5; }
+
+@media (max-width: 760px) {
+  /* Two rows: brand, countdown and sign-in on the first; the menu, the network pill and the
+     theme button on the second. The menu needs about half the width to stay usable, so it
+     wraps down on its own when the first row is full. */
+  .terminal-shell .terminal-header { flex-wrap: wrap; height: auto; min-height: 56px; padding: 8px 8px 8px 16px; row-gap: 6px; border-radius: 28px; }
+  .terminal-shell .terminal-header .brand { order: 1; }
+  .terminal-shell .terminal-header .window-clock { order: 2; margin: 0 4px 0 auto; }
+  .terminal-shell .terminal-header .window-clock-label { display: none; }
+  .terminal-shell .terminal-header .window-clock-value { font-size: 24px; }
+  .terminal-shell .terminal-header > .auth-buttons, .terminal-shell .terminal-header > .wallet-menu, .terminal-shell .terminal-header > .terminal-wallet { order: 3; margin-left: auto; }
+  .terminal-shell .terminal-header .window-clock ~ .auth-buttons, .terminal-shell .terminal-header .window-clock ~ .wallet-menu, .terminal-shell .terminal-header .window-clock ~ .terminal-wallet { margin-left: 0; }
+  .terminal-shell .terminal-header .terminal-nav, .page-shell .terminal-nav { order: 4; flex: 1 1 46%; min-width: 46%; margin: 0; display: flex; overflow-x: auto; scrollbar-width: none; }
+  .terminal-shell .terminal-header .terminal-nav a { flex: 0 0 auto; padding: 7px 12px; font-size: 12px; }
+  .terminal-shell .terminal-header .mode-switch { order: 5; margin: 0; }
+  .terminal-shell .terminal-header .theme-toggle { order: 6; }
+  /* With no countdown to share the first row, the network pill moves up beside the logo and
+     the whole second row is the menu. */
+  .terminal-shell .terminal-header:not(:has(.window-clock)) .mode-switch { order: 2; margin-left: auto; }
+  .terminal-shell .terminal-header:not(:has(.window-clock)) > .auth-buttons, .terminal-shell .terminal-header:not(:has(.window-clock)) > .wallet-menu, .terminal-shell .terminal-header:not(:has(.window-clock)) > .terminal-wallet { margin-left: 0; }
+  .terminal-shell .terminal-header:not(:has(.window-clock)) .terminal-nav { flex-basis: 70%; min-width: 70%; }
+  .terminal-shell .terminal-header .auth-login, .terminal-shell .terminal-header .terminal-wallet { min-height: 36px; padding: 0 13px; }
+}
+@media (max-width: 520px) {
+  .mode-pills button:not(.is-active) { display: none; }
+  .mode-pills button.is-active { padding: 6px 10px; }
+  .mode-pills { cursor: pointer; }
+}
+
+@media (max-width: 400px) {
+  .terminal-shell .terminal-header { gap: 8px; padding-left: 14px; }
+  .terminal-shell .terminal-header .brand { font-size: 24px; }
+  .terminal-shell .terminal-header .auth-login, .terminal-shell .terminal-header .terminal-wallet { padding: 0 11px; font-size: 12px; }
+  .mode-pills button.is-active { padding: 5px 8px; font-size: 10px; }
+  .terminal-shell .terminal-header .terminal-nav { gap: 0; }
+  .terminal-shell .terminal-header .terminal-nav a { padding: 7px 7px; font-size: 11.5px; }
+}

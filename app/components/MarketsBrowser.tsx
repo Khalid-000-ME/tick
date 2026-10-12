@@ -17,6 +17,7 @@ import { TickerStrip } from "@/components/TickerStrip";
 import { nextOpenLabel } from "@/lib/marketHours";
 import { MicroBoard } from "@/components/MicroMarkets";
 import { WalletMenu } from "@/components/WalletMenu";
+import { ModeSwitch } from "@/components/ModeSwitch";
 import { DURATIONS } from "@/lib/chain/config";
 import { useTheme } from "@/lib/useTheme";
 import { useTickWallet } from "@/lib/useTickWallet";
@@ -165,6 +166,7 @@ export function MarketsBrowser() {
           <Link href="/leaderboard">Leaderboard</Link>
           <Link href="/fund">Fund</Link>
         </nav>
+        <ModeSwitch />
         <button className="theme-toggle" type="button" onClick={toggle} aria-label="Toggle theme">
           {theme === "dark" ? <Sun weight="bold" /> : <Moon weight="bold" />}
         </button>

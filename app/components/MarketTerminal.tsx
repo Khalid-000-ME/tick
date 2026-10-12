@@ -13,6 +13,7 @@ import { TVChart } from "@/components/TVChart";
 import { StakeSheet } from "@/components/StakeSheet";
 import { useSettings } from "@/lib/useSettings";
 import { WalletMenu } from "@/components/WalletMenu";
+import { ModeSwitch } from "@/components/ModeSwitch";
 import { TickerStrip } from "@/components/TickerStrip";
 import { NewsPanel } from "@/components/NewsPanel";
 import { PositionsDock } from "@/components/PositionsDock";
@@ -192,6 +193,7 @@ export function MarketTerminal() {
           <Link href="/leaderboard">Leaderboard</Link>
           <Link href="/fund">Fund</Link>
         </nav>
+        <ModeSwitch />
         <button
           className="theme-toggle"
           type="button"
