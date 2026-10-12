@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUpRight, CurrencyDollar, Lightning, ShieldCheck } from 
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { Brand } from "@/components/Brand";
 import DotGrid from "@/components/DotGrid";
+import { TradeStory } from "@/components/TradeStory";
 
 /* A plotted line for the proof panel, crossing the strike mid-way so the ABOVE/BELOW
    split the panel illustrates is actually visible. Illustrative, not live data — the
@@ -96,6 +97,8 @@ export function LandingExperience() {
           </motion.div>
           <div className="landing-hero-index" aria-hidden="true"><span>PYTH / MONAD</span><strong>00:30</strong></div>
         </section>
+
+        <TradeStory />
 
         <section className="landing-signal" aria-label="At a glance">
           <span><i /> A new market every 30 seconds</span><span>2,880 windows a day, per asset</span><span>10 assets plus live sport</span><span>Free testnet USDC</span>
