@@ -8,6 +8,10 @@ for (const id of idx.order) {
   s = s.replace(/<aside>[\s\S]*?<\/aside>/g, "");
   s = s.replace(/\/_blob\/6e73796a9419edbcb5358d2a67bf6144/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/deck-room.png");
   s = s.replace(/\/_blob\/00d8ccb7f1469e42322ea721764f5326/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/deck-feed.png");
+  s = s.replace(/\/_blob\/db863bb3917c2e738ccb86701d1c6903/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/raw/trade.png");
+  s = s.replace(/\/_blob\/45c2641ca6eef12bb63be77ddfa86315/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/raw/groupchat.png");
+  s = s.replace(/\/_blob\/150d83ef43bafdffb971c81b8e244a9c/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/raw/card.png");
+  s = s.replace(/\/_blob\/34ffd1eebe81929c83cd322e50bf245e/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/raw/markets.png");
   body += `<div class="pg">${s}</div>`;
 }
 const links = Object.values(idx.faces).filter(f => f.href).map(f => `<link rel="stylesheet" href="${f.href}">`).join("");
