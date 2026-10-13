@@ -2,3 +2,5 @@ target/
 .anchor/
 node_modules/
 .localnet.json
+.env
+.env.*
