@@ -340,3 +340,111 @@ thirty seconds with us.
 ## X profile
 
 [@your_handle]
+
+---
+
+# Hackathon form, round four
+
+## How do you know people actually need this? (1000)
+
+We will be straight: we have not run a large user study, and we are not going to dress up a
+hackathon build as validated demand.
+
+What we have is behaviour that already exists. People screenshot their wins and paste them into
+group chats today. Fantasy sports is a multi-billion dollar category whose entire mechanic is a
+private league of friends with a scoreboard, and it needs no explaining to anyone. Trading Discords
+run leaderboards by hand, in spreadsheets, on the honour system, because the product they want does
+not exist yet.
+
+There is market evidence too. Polymarket shipping five-minute Bitcoin markets says the demand for
+shorter windows is real and that the incumbents feel it. Nobody has gone shorter, and nobody has
+made it social.
+
+And we have early signal of our own. On testnet, with no marketing and no incentives, six wallets
+have placed 38 stakes totalling $64.10, and the result cards got posted to the feed without us
+asking. That is small, and we are quoting it as what it is: people who tried it kept calling the
+next window, which is the behaviour the whole product depends on.
+
+The honest summary is that the need for a fast social prediction market is inferred, not proven, and
+proving it is what the next six months are for.
+
+## How far along are you? Do you have users? (1000)
+
+Live on Monad testnet and complete end to end. Not a prototype, and not a demo rigged for the video.
+
+Shipped: six contracts on testnet. The market itself, plus groups, rooms, chat, profiles, sports and
+a gas station. Settlement is permissionless and paid, so an outside bot earns half the fee for
+settling a window, and we have an independent settler bot running against it. The social layer is on
+chain too: groups, rooms, members, avatars and chat live in contract storage, and feed posts keep
+their photo bytes in the event log. We run no database.
+
+Also shipped: the Next.js app with a trading terminal, feed, groups, rooms, leaderboard and
+portfolio; an Envio indexer for history; and a signed Android APK as a Trusted Web Activity.
+
+Users: 6 wallets, 38 stakes, $64.10 staked, $62.68 returned after settlement. Testnet money, so
+treat it as usage rather than revenue. No marketing has been done.
+
+On Solana: the Anchor port of the market is written and verified end to end on a local validator,
+where two traders stake, an outsider settles and both claim, with the money accounted for to the
+cent. The devnet deploy is pending faucet SOL.
+
+## Who else is building in this space, and what are they getting wrong? (1000)
+
+Polymarket and Kalshi own the category, and they earned it. They solved the hard parts: liquidity,
+resolution, regulatory standing. Limitless, Myriad and the on-chain challengers are mostly competing
+on the same axis, cheaper or faster settlement of the same kind of question.
+
+What they are all getting wrong is the same thing, and we do not think it is an oversight so much as
+a different goal. They are building an instrument for a lone forecaster. The screen is single
+player. The questions are long-dated, so nothing happens between placing and resolving. There is no
+room, no scoreboard, no proof you can show anyone. When a user wants to share a win, they leave the
+app and take a screenshot, which anyone could fake.
+
+The result is that the social half of the behaviour happens somewhere else and the product captures
+none of it. That is a distribution problem as much as a product one: every win is a piece of
+marketing that walks out of the door unsigned.
+
+Polymarket's five-minute markets show they can feel the pull toward shorter windows. But five
+minutes played alone is still a wait, not a game. We think the unlock is thirty seconds plus a room
+plus a card that proves the number, and that it has to be built that way from the contract up, which
+is why we are not simply a social layer bolted onto someone else's market.
+
+## How do you make money? (500)
+
+Live today: 2% of profit on every settled market, taken from the losing pool and written into the
+contract. Half the fee goes to whoever settles the window, which is what keeps settlement
+permissionless; the rest is ours.
+
+Next: paid rooms. Private leagues with entry pots and a cut of the room, so running a group is worth
+something to the host and to us. The volume comes from the loop, not from a subscription.
+
+No token, and no plan for one.
+
+## How long have you each been working on this, full time? (500)
+
+[Both of us for about ___ weeks, alongside ___. Fill this in honestly; judges meet a lot of teams and
+can tell when a timeline is being stretched. If it is a few intense weeks around coursework, say so.
+Shipping this much that fast is the point, not a weakness.]
+
+## Where is each member based, do you work in person, would funding change it? (500)
+
+[Both of us are based in ___, India, and we work in person / remotely. Funding would not change where
+we are based for now; it would go into runway rather than relocation. Edit to match the truth, and
+if you would relocate for an accelerator, say that explicitly because it is a question they are
+really asking.]
+
+## Have you formed a legal entity?
+
+No. [Confirm.]
+
+## Have you taken any investment?
+
+No. [Confirm.]
+
+## Are you currently fundraising?
+
+Yes. Raising $500K on a $5M post-money SAFE. [Confirm, and keep it consistent with the deck.]
+
+## Do you have a live token?
+
+No.
