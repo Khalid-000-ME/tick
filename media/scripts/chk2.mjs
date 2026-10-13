@@ -6,5 +6,5 @@ await p.evaluate(() => document.fonts.ready);
 await p.waitForTimeout(1200);
 const pages = await p.$$(".pg");
 await pages[0].screenshot({ path: "/tmp/s1.png" });
-await pages[4].screenshot({ path: "/tmp/s5.png" });
+await pages[5].screenshot({ path: "/tmp/s5.png" });
 await b.close();
