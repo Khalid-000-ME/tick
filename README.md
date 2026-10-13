@@ -1,35 +1,68 @@
 # Tick
 
-30-second price markets on Monad. Stake **ABOVE** or **BELOW** a strike; when the window closes, the contract reads Pyth and pays the winning side from the losing side. No reporter, no operator signature, no dispute window: the outcome is a comparison anyone can recompute.
+**The world's first 30-second prediction market, played with your friends.**
+Start a room, call the same thirty seconds as your crew, race a live scoreboard, and post the card that proves what you made. Every result is read from chain, so nobody can fake a win.
 
-## How it works
+Live at **[tick-predict.xyz](https://tick-predict.xyz)** · Android APK in `mobile/dist/tick.apk`
+
+## What it does
+
+- **Call a window.** Will this price be higher thirty seconds from now? Stake **ABOVE** or **BELOW** from ten cents. Crypto, equities and sport.
+- **Compete in a group.** Make a group, open rooms inside it, pick the market everyone calls, and watch a live scoreboard re-sort as each window settles.
+- **Flex the proof.** A win draws a card from your real record, verified against the chain, and posts to the group chat or the public feed.
+- **No seed phrase.** Sign in with Google, a passkey, email or X. Gas is abstracted: you top up a percentage bar, never a native token.
+
+## How the market works
 
 - **A market is its terms.** `(feedId, strike, expo, closesAt)` hashes to the market id, so there is no "create market" transaction. Windows sit on a 30-second grid and the strike for a window is Pyth's price at window open, served identically to every client by `/api/strike`.
 - **Parimutuel.** Winners split the losing pool pro rata, minus a 2% fee on profit. A one-sided market voids and refunds everyone.
-- **Settlement is a race.** The app's own settler waits 10 seconds after the close (`SETTLE_GRACE_S`) before stepping in, so an outside bot gets first shot at the bounty; the app only settles as a fallback. `npm run settler` is such a bot, and `/settlers` shows who won.
-- **Settlement is permissionless and paid.** `settleWithUpdate` takes a signed Pyth update for the exact close second and has Pyth verify it, so a market settles correctly whenever someone gets round to it inside the settle window. The caller earns half the market's fee (capped at 2 USDC), so outside bots have a reason to do it. `app/scripts/settler.ts` is one.
+- **Settlement is permissionless and paid.** `settleWithUpdate` takes a signed Pyth update for the exact close second and has Pyth verify it, so a market settles correctly whenever someone gets round to it inside the settle window. The caller earns half the market's fee (capped at 2 USDC). The app's own settler waits 10 seconds after the close (`SETTLE_GRACE_S`) so an outside bot gets first shot at the bounty; `/settlers` shows who won.
+- **No reporter, no dispute window.** The outcome is a comparison anyone can recompute.
 - **Fresh-price cutoff.** A stake is only accepted while the on-chain price is within 10 seconds of fresh. This is the residual latency-arbitrage window, and it is on screen rather than hidden.
-- **Built for Monad's parallelism.** Pools are sharded 64 ways. `contracts/test/Concurrency.t.sol` measures read-after-write conflicts directly and finds none between stakers.
 - **Pyth is a pull oracle,** so the chart reads Hermes off chain for free. An on-chain price update is posted only just before a stake, never on a timer.
 
-## Deployment (Monad testnet, chain 10143)
+## Why a parallel chain
+
+A thirty-second market only works if settlement, staking and every social write land in seconds and cost a fraction of a cent. Serial execution cannot carry it: at the close of a window, every settlement, claim and scoreboard write arrives at once.
+
+Tick is built for that. Pools are sharded 64 ways so stakers never touch the same slot, and `contracts/test/Concurrency.t.sol` measures read-after-write conflicts directly and finds none between stakers. The same design is what makes the Solana port natural: independent accounts per shard, per room and per post, so the whole close-of-window burst is parallelisable.
+
+## Deployments
+
+**Monad testnet (chain 10143)** — live, this is what the app runs against today.
 
 | | |
 |---|---|
 | Tick | `0x16B57356a482Fc5b307bB76D7dC8F5d76A6Be1b2` |
+| TickSocial (groups, rooms, chat) | `0x26307B3c17A0a1e3Fb381c70D7F9584D933a3129` |
+| TickFeed (posts, photos, likes) | `0x26608eDF8e677431fFDDda4d1630D6B99d383433` |
+| TickProfiles | `0xaD241b9D273462F6DBf67D74c8aDa2B907D91c59` |
+| TickSports | `0x26f9cDA88c70bd3D5b005a91AF754a5fc5aF0cE3` |
+| GasStation | `0x1FAE6A8F254505480678D80835E19ECB8236490A` |
 | Stake token | Circle USDC `0x534b2f3A21130d7a60830c2Df862319e593943A3` (6 decimals) |
 | Pyth | `0x2880aB155794e7179c9eE2e38200202908C17B43` |
 | Feeds | BTC/USD, ETH/USD, SOL/USD, TSLA |
+
+Explorer: [testnet.monadscan.com](https://testnet.monadscan.com)
+
+**Solana devnet** — in progress. The market and social programs are being ported now; addresses land in this table as each one deploys, and no claim of a live Solana deployment is made until they do.
 
 ## Pieces
 
 | Path | What it is |
 |---|---|
-| `contracts/` | Foundry project: `Tick.sol`, 48 tests (staking, settlement, solvency fuzzing, concurrency, bounty), deploy scripts |
-| `app/` | Next.js 16 app: trading terminal, `/portfolio`, `/fund`, API routes for strike, live price, price posting and settlement |
-| `indexer/` | Envio HyperIndex over `Staked`, `Settled`, `Claimed`. The RPC caps `getLogs` at about 100 blocks, so wallet history is read from this index |
+| `contracts/` | Foundry project: `Tick.sol`, `TickSocial.sol`, `TickFeed.sol`, `TickProfiles.sol`, `TickSports.sol`, `GasStation.sol`, plus tests for staking, settlement, solvency fuzzing, concurrency and the settler bounty |
+| `app/` | Next.js 16 app: feed, groups, rooms, trading terminal, leaderboard, `/portfolio`, `/fund`, and API routes for strike, live price, price posting, settlement and standings |
+| `indexer/` | Envio HyperIndex over the market and social events. The RPC caps `getLogs` at about 100 blocks, so history is read from this index |
+| `mobile/` | Android wrapper (Trusted Web Activity, package `app.tick.mobile`) and the signed release APK |
+| `media/` | Demo video, launch video and the dApp Store art |
+| `submission/` | Hackathon and dApp Store answers, and the pitch deck PDF |
 
-Sign-in is Privy (email or passkey, with an embedded wallet). Wins are credited to the Tick balance automatically; voided stakes are refunded from the Portfolio page.
+### On-chain social
+
+Groups, rooms, members, avatars and chat live in `TickSocial` storage. Feed posts keep their photo bytes in the event log and the post records the block it landed in, so a photo is recovered with one contract read and one single-block log query. Nothing social is held in a database of ours.
+
+Sign-in is Privy (Google, passkey, email or X, with an embedded wallet). Wins are credited to the Tick balance automatically; voided stakes are refunded from the Portfolio page.
 
 ## Trade from Claude Code (MCP)
 
@@ -57,6 +90,9 @@ cd app && npm install && npm run dev
 
 # indexer (Docker for local dev, or deploy `indexer/` on Envio Cloud)
 cd indexer && npm install && npm run codegen && npm run dev
+
+# android (needs the keystore; see mobile/README)
+cd mobile && ./gradlew assembleRelease
 ```
 
 `app/.env.local` (names only; never commit values, never add a `NEXT_PUBLIC_` prefix to the secrets):
@@ -64,6 +100,7 @@ cd indexer && npm install && npm run codegen && npm run dev
 | Variable | Notes |
 |---|---|
 | `OPERATOR_PK` | Server-only. Pays gas for price posts and settlement; testnet key only |
+| `ATTESTOR_PK` | Server-only. Signs sports result attestations |
 | `PYTH_API_KEY` | Server-only. Hermes requires a bearer token |
 | `NEXT_PUBLIC_PRIVY_APP_ID` | Public by design |
 | `PRIVY_APP_SECRET` | Server-only |
@@ -76,6 +113,7 @@ A new wallet with no MON is sent 0.2 MON automatically on its first stake (`/api
 - `app/scripts/bounty-e2e.ts`: two stakers, an outside settler holding only MON. The settler earned exactly half the 2% fee in USDC, and payouts plus fee plus bounty accounted for the whole stake.
 - `app/scripts/browser-flow.ts`: replays the UI's exact approve, deposit, stake, settle, claim path from a cold wallet.
 - `app/scripts/settler.ts`: a standalone bot that discovers closed markets from `Staked` events and settles them.
+- `app/scripts/standings-check.ts`: rebuilds every trader's realised profit from `Settled` events and checks it against what the app shows.
 
 ## Limits worth knowing
 
