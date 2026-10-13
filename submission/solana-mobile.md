@@ -269,3 +269,74 @@ faucet SOL, nothing else. We would rather tell you that than put an address in t
 not resolve.
 
 The repository is public and the demo video is a single unbroken take against the live testnet.
+
+---
+
+# Hackathon form, round three
+
+## Important context about the repo (500)
+
+The repo is the whole product, nothing unrelated in it. `contracts/` is the Monad market and the
+social contracts in Solidity, `solana/` is the Anchor port of the market, `app/` is the Next.js app,
+`indexer/` is the Envio HyperIndex, `mobile/` is the Android wrapper and the signed APK, `media/`
+holds the demo video and store art, `submission/` holds these answers and the deck.
+
+Two notes. `contracts/lib/` is vendored Foundry dependencies, not our code. The Solana program is
+written and tested but its devnet deploy is still pending, and the README says so.
+
+## Demo video
+
+Upload `media/out/tick-demo.mp4` to YouTube as unlisted, then paste the link.
+It is 63 seconds, the live product on a phone, no slides and no code.
+
+## Show demo video on the public project page
+
+Yes.
+
+## Live product link
+
+https://tick-predict.xyz
+
+## Access instructions
+
+No credentials needed. Sign in with Google, a passkey, email or X, and a new account is funded with
+testnet USDC automatically. Gas is covered on first use, so no faucet trip is required.
+
+Everything runs on Monad testnet, so no real money is involved. If you would rather look around
+first, the feed, markets and any room are readable signed out.
+
+Android: the signed APK is at
+https://github.com/Khalid-000-ME/tick/tree/main/mobile/dist/tick.apk
+
+## Pitch video script, about two minutes
+
+Record it on a phone, both of you in frame or cutting between you. Plain room, no slides.
+
+**Khalid (0:00 to 0:25)**
+Hi, I am Khalid, and this is Lakshmi Kanth. We built Tick. Between us we have won several global
+web3 hackathons, and Lakshmi Kanth has shipped production fintech, which is how we knew this one was
+buildable in a weekend and worth more than a weekend.
+
+**Lakshmi Kanth (0:25 to 1:00)**
+Tick is a prediction market that settles every thirty seconds, and you play it with your friends.
+You open a room in your group, everyone calls the same thirty seconds, above or below, from ten
+cents. A live scoreboard re-sorts after every window. Win, and the app draws a card from your real
+on-chain record and drops it into the group chat. Nobody can fake a win, and nobody can hide a loss,
+because the number comes off the chain.
+
+**Khalid (1:00 to 1:35)**
+Prediction markets already won the argument. Billions get bet on being right. But the fastest market
+anyone runs takes five minutes, and you play it alone, while the group chat and the screenshots
+happen in a different app entirely. Thirty seconds is what closes that gap. It is short enough to
+play together in real time. Nobody shipped it because at the close of a window every settlement and
+claim lands at once, and a serial chain cannot carry that for a ten cent stake. Parallel execution
+can. That is why we are moving to Solana.
+
+**Lakshmi Kanth (1:35 to 2:00)**
+It is live now on testnet, with six contracts, an Android build and the social layer on chain, and
+the Solana program is written and tested. We are two builders who ship fast and finish. Come call
+thirty seconds with us.
+
+## X profile
+
+[@your_handle]
