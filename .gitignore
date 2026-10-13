@@ -8,3 +8,4 @@ broadcast/
 *.tsbuildinfo
 app/.data/
 .DS_Store
+.agents/skills/

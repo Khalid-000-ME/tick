@@ -64,6 +64,23 @@ Groups, rooms, members, avatars and chat live in `TickSocial` storage. Feed post
 
 Sign-in is Privy (Google, passkey, email or X, with an embedded wallet). Wins are credited to the Tick balance automatically; voided stakes are refunded from the Portfolio page.
 
+## Licence, tools and attribution
+
+MIT, in `LICENSE`. The code is ours and is public.
+
+**AI tools.** Claude Code was used throughout this build, as an engineering tool: writing and
+reviewing Solidity, the Anchor port, the app, and the test harnesses, alongside us. Every design
+decision and every line that shipped was ours to accept or reject.
+
+**External code and services.** Pyth Network for prices, pulled from Hermes off chain and verified
+on chain at settlement. Privy for sign-in and embedded wallets. Envio HyperIndex for history.
+OpenZeppelin and Foundry's `forge-std` under `contracts/lib/`, vendored as submodules and not our
+work. TradingView's lightweight-charts for the terminal. androidbrowserhelper for the Android
+wrapper. Team and sport logos are used nominatively to identify the market being traded.
+
+**Build window.** This project was built during the hackathon period. The commit history in this
+repository covers the whole of it.
+
 ## Trade from Claude Code (MCP)
 
 `.mcp.json` registers a `tick` MCP server, so Claude Code can trade Tick in conversation:
