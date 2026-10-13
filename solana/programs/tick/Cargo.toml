@@ -1,0 +1,22 @@
+[package]
+name = "tick"
+version = "0.1.0"
+description = "Tick: 30-second parimutuel price markets, settled from Pyth"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "tick"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+anchor-spl = "0.31.1"
+solana-program = "=2.2.1"
