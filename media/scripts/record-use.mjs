@@ -97,6 +97,25 @@ const smoothScroll = (page, by, overMs) => page.evaluate(([by, overMs]) => new P
   requestAnimationFrame(step);
 }), [by, overMs]);
 
+
+/** Taps something by its visible text, and shrugs if that control is not on this screen. */
+async function tapText(page, text, opts = {}) {
+  try {
+    const el = page.getByText(text, { exact: opts.exact ?? false }).first();
+    await el.waitFor({ state: "visible", timeout: 6000 });
+    const box = await el.boundingBox();
+    if (box) {
+      const x = Math.round(box.x + box.width / 2), y = Math.round(box.y + box.height / 2);
+      await page.evaluate(([x, y]) => window.__demo?.move(x, y), [x, y]);
+      await page.waitForTimeout(600);
+      await page.evaluate(([x, y]) => window.__demo?.press(x, y), [x, y]);
+      await page.waitForTimeout(150);
+    }
+    await el.click({ timeout: 4000 });
+    return true;
+  } catch { return false; }
+}
+
 const scenes = {
   /** Take a side on a live window, and stay on screen while it lands. */
   stake: async (page) => {
@@ -135,6 +154,96 @@ const scenes = {
     await page.waitForTimeout(14000);
     await smoothScroll(page, 420, 1400);
     await page.waitForTimeout(2500);
+  },
+
+  /** The room: the window everyone in the group is calling, and the board that re-sorts. */
+  room: async (page) => {
+    await page.goto(`${BASE}/rooms/2`, { waitUntil: "load" });
+    await page.waitForTimeout(4500);
+    await tapText(page, "$0.5");
+    await page.waitForTimeout(1100);
+    await tapText(page, "$1", { exact: true });
+    await page.waitForTimeout(1400);
+    await smoothScroll(page, 620, 2000);
+    await page.waitForTimeout(2600);
+    await smoothScroll(page, -300, 1200);
+    await page.waitForTimeout(1600);
+  },
+
+  /** The markets list, switching between crypto and sport. */
+  markets: async (page) => {
+    await page.goto(`${BASE}/markets`, { waitUntil: "load" });
+    await page.waitForTimeout(4000);
+    await tapText(page, "Sports");
+    await page.waitForTimeout(2600);
+    await tapText(page, "Markets", { exact: true });
+    await page.waitForTimeout(2200);
+    await smoothScroll(page, 560, 2000);
+    await page.waitForTimeout(1800);
+  },
+
+  /** The portfolio, filtered down to what is still open. */
+  portfolio: async (page) => {
+    await page.goto(`${BASE}/portfolio`, { waitUntil: "load" });
+    await page.waitForTimeout(4200);
+    await smoothScroll(page, 320, 1200);
+    await page.waitForTimeout(1200);
+    await tapText(page, "Open");
+    await page.waitForTimeout(2600);
+    await smoothScroll(page, 420, 1600);
+    await page.waitForTimeout(1800);
+  },
+
+  /** The card, and the share actions that carry it out of the app. */
+  card: async (page) => {
+    await page.goto(`${BASE}/w/0xc15394cdcb3bc24999d21480f014a227384ac17e`, { waitUntil: "load" });
+    await page.waitForTimeout(4000);
+    await tapText(page, "Copy link");
+    await page.waitForTimeout(2400);
+    await smoothScroll(page, 420, 1600);
+    await page.waitForTimeout(2000);
+  },
+
+  /** The feed, sorted the other way and back. */
+  feed: async (page) => {
+    await page.goto(`${BASE}/feed`, { waitUntil: "load" });
+    await page.waitForTimeout(4000);
+    await tapText(page, "Top", { exact: true });
+    await page.waitForTimeout(2400);
+    await tapText(page, "Latest", { exact: true });
+    await page.waitForTimeout(1800);
+    await smoothScroll(page, 620, 2200);
+    await page.waitForTimeout(1800);
+  },
+
+  /** Groups, opening the one Marco is in. */
+  groups: async (page) => {
+    await page.goto(`${BASE}/groups`, { waitUntil: "load" });
+    await page.waitForTimeout(3800);
+    await tapText(page, "Sigma Traders");
+    await page.waitForTimeout(3600);
+    await smoothScroll(page, 420, 1600);
+    await page.waitForTimeout(1800);
+  },
+
+  /** The board everyone is racing. */
+  leaderboard: async (page) => {
+    await page.goto(`${BASE}/leaderboard`, { waitUntil: "load" });
+    await page.waitForTimeout(4000);
+    await smoothScroll(page, 700, 2400);
+    await page.waitForTimeout(2200);
+    await smoothScroll(page, -400, 1400);
+    await page.waitForTimeout(1600);
+  },
+
+  /** The landing page and its scroll story. */
+  landing: async (page) => {
+    await page.goto(`${BASE}/`, { waitUntil: "load" });
+    await page.waitForTimeout(2600);
+    await smoothScroll(page, 1500, 4200);
+    await page.waitForTimeout(1800);
+    await smoothScroll(page, 1500, 4200);
+    await page.waitForTimeout(1600);
   },
 };
 

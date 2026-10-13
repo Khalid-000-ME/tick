@@ -18,19 +18,21 @@ Monad.** No bypass was added to the app, and none of this can reach production.
 
 These are the clips that show the product in actual operation, which is what the rules ask for.
 
-## The product being toured — cutaways and B-roll
+## The rest of the product, also being used
 
-| File | Length | Shows |
+Every one of these has the pointer doing something: switching a tab, picking a stake size, opening a
+group, copying a card link. Same capture and encode as the three above.
+
+| File | Length | What happens |
 |---|---|---|
-| `clips/04-room.mp4` | 11s | a room: the 30s window, chart, crowd split, stake controls live |
-| `clips/05-terminal.mp4` | 10s | the trading terminal |
-| `clips/06-card.mp4` | 8s | a settled card, +$3.68, 22 calls, #1 overall |
-| `clips/07-portfolio.mp4` | 8s | record, win rate, total staked, open positions |
-| `clips/08-chat-tour.mp4` | 9s | the group chat with cards in it |
-| `clips/09-feed.mp4` | 8s | the feed, composer active |
-| `clips/10-leaderboard.mp4` | 8s | the live leaderboard, Marco marked YOU |
-| `clips/11-markets.mp4` | 8s | markets list, crypto and sport |
-| `clips/12-landing.mp4` | 7s | landing page, for a cold open |
+| `clips/04-room.mp4` | 20s | the room everyone is calling: picks $0.5, the payout line updates, then the board |
+| `clips/05-markets.mp4` | 18s | switches to **Sports**, real NFL fixtures, then back to crypto |
+| `clips/06-portfolio.mp4` | 16s | filters to **Open**, with a refund waiting to be claimed |
+| `clips/07-card.mp4` | 15s | a settled card, +$3.68, and **Copy link** to carry it out of the app |
+| `clips/08-feed.mp4` | 18s | sorts by **Top**, then back to **Latest** |
+| `clips/09-groups.mp4` | 15s | opens Sigma Traders and lands in the chat |
+| `clips/10-leaderboard.mp4` | 13s | the board everyone is racing |
+| `clips/11-landing.mp4` | 16s | the landing page and its scroll story |
 
 ## Stills
 
