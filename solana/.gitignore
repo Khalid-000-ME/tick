@@ -1,3 +1,4 @@
 target/
 .anchor/
 node_modules/
+.localnet.json
