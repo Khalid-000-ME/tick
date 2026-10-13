@@ -10,6 +10,10 @@ group membership, room membership and open positions.
 
 ## Clips, silent, for cutting under the script
 
+All clips are **1080x1920, 30fps, h264 crf 18**, recorded at a 540px mobile viewport and scaled with
+lanczos. Scrolling runs on the page's own animation frames with an eased curve, so the motion is
+smooth rather than one jump per wheel tick.
+
 | File | Length | Shows |
 |---|---|---|
 | `clips/01-room.mp4` | 11s | a room, signed in: ETH/USD 30s window, chart, crowd split, **Tap a side to stake 1 USDC** with the stake sizes |

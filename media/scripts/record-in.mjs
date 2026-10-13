@@ -17,7 +17,9 @@ import { privateKeyToAccount } from "viem/accounts";
 
 const BASE = process.env.DEMO_BASE || "http://localhost:3000";
 const OUT = "/Users/khalid/Projects/colosseum/tick/media/raw-in";
-const VW = 430, VH = 932;
+// 540 CSS px still renders the mobile layout, and the recorder's frame is the CSS viewport, so a
+// wider viewport is the only way to a sharper video: a larger recordVideo size just letterboxes.
+const VW = 540, VH = 960;
 const CURSOR = readFileSync("/Users/khalid/Projects/colosseum/tick/media/scripts/cursor.js", "utf8");
 
 // The same deterministic demo trader the traffic script funds and plays with, so the account on
@@ -62,60 +64,70 @@ const scenes = {
   landing: async (page, d) => {
     await page.goto(`${BASE}/`, { waitUntil: "load" });
     await d.wait(1600);
+    await d.settle();
     await d.scroll(900, 2600);
     await d.wait(1200);
   },
   feed: async (page, d) => {
     await page.goto(`${BASE}/feed`, { waitUntil: "load" });
     await d.wait(2600);
+    await d.settle();
     await d.scroll(700, 2400);
     await d.wait(1400);
   },
   portfolio: async (page, d) => {
     await page.goto(`${BASE}/portfolio`, { waitUntil: "load" });
     await d.wait(3000);
+    await d.settle();
     await d.scroll(600, 2200);
     await d.wait(1400);
   },
   markets: async (page, d) => {
     await page.goto(`${BASE}/markets`, { waitUntil: "load" });
     await d.wait(2400);
+    await d.settle();
     await d.scroll(700, 2400);
     await d.wait(1200);
   },
   trade: async (page, d) => {
     await page.goto(`${BASE}/trade?feed=BTC%2FUSD&window=30`, { waitUntil: "load" });
     await d.wait(3600);
+    await d.settle();
     await d.scroll(500, 2000);
     await d.wait(2600);
   },
   groups: async (page, d) => {
     await page.goto(`${BASE}/groups`, { waitUntil: "load" });
     await d.wait(2600);
+    await d.settle();
     await d.scroll(400, 1800);
     await d.wait(1400);
   },
   chat: async (page, d) => {
     await page.goto(`${BASE}/groups/1`, { waitUntil: "load" });
     await d.wait(3400);
+    await d.settle();
     await d.scroll(500, 2000);
     await d.wait(1600);
   },
   room: async (page, d) => {
     await page.goto(`${BASE}/rooms/2`, { waitUntil: "load" });
     await d.wait(4200);
+    await d.settle();
     await d.scroll(600, 2200);
     await d.wait(2600);
   },
   card: async (page, d) => {
     await page.goto(`${BASE}/w/0xc15394cdcb3bc24999d21480f014a227384ac17e`, { waitUntil: "load" });
     await d.wait(3400);
+    await d.settle();
     await d.scroll(400, 1800);
     await d.wait(1800);
   },
   leaderboard: async (page, d) => {
     await page.goto(`${BASE}/leaderboard`, { waitUntil: "load" });
     await d.wait(2600);
+    await d.settle();
     await d.scroll(600, 2200);
     await d.wait(1400);
   },
@@ -138,9 +150,31 @@ for (const name of names) {
   const page = await ctx.newPage();
   const d = {
     wait: (ms) => page.waitForTimeout(ms),
+    // The shared testnet RPC rate-limits everyone, and a failed read raises a toast. It is a real
+    // condition, not something to paper over, so the recording simply waits for it to clear rather
+    // than deleting it from the page.
+    settle: async (maxMs = 12000) => {
+      const t0 = Date.now();
+      while (Date.now() - t0 < maxMs) {
+        const noisy = await page.evaluate(() =>
+          [...document.querySelectorAll("*")].some((el) => /RPC Request failed|Request failed/i.test(el.textContent || "") && el.children.length === 0));
+        if (!noisy) return;
+        await page.waitForTimeout(700);
+      }
+    },
+    // Scrolls on the page's own animation frames, so the motion is as smooth as the display
+    // rather than one jump per wheel tick. An eased curve also reads as a hand, not a machine.
     scroll: async (by, overMs) => {
-      const steps = Math.max(1, Math.round(overMs / 120));
-      for (let i = 0; i < steps; i++) { await page.mouse.wheel(0, by / steps); await page.waitForTimeout(120); }
+      await page.evaluate(([by, overMs]) => new Promise((done) => {
+        const start = window.scrollY, t0 = performance.now();
+        const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+        const step = (now) => {
+          const t = Math.min(1, (now - t0) / overMs);
+          window.scrollTo(0, start + by * ease(t));
+          t < 1 ? requestAnimationFrame(step) : done();
+        };
+        requestAnimationFrame(step);
+      }), [by, overMs]);
     },
   };
   try {
