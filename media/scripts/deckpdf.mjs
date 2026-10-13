@@ -12,6 +12,8 @@ for (const id of idx.order) {
   s = s.replace(/\/_blob\/45c2641ca6eef12bb63be77ddfa86315/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/raw/groupchat.png");
   s = s.replace(/\/_blob\/150d83ef43bafdffb971c81b8e244a9c/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/raw/card.png");
   s = s.replace(/\/_blob\/34ffd1eebe81929c83cd322e50bf245e/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/raw/markets.png");
+  s = s.replace(/\/_blob\/a999435622f5dc051d41e4e186eedc37/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/team/khalid.png");
+  s = s.replace(/\/_blob\/5c31d7ce6b73706648398873d86d5840/g, "file:///Users/khalid/Projects/colosseum/tick/media/store/team/lakshmikanth.png");
   body += `<div class="pg">${s}</div>`;
 }
 const links = Object.values(idx.faces).filter(f => f.href).map(f => `<link rel="stylesheet" href="${f.href}">`).join("");
