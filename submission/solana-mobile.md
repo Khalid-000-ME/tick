@@ -307,6 +307,7 @@ first, the feed, markets and any room are readable signed out.
 
 Android: the signed APK is at
 https://github.com/Khalid-000-ME/tick/tree/main/mobile/dist/tick.apk
+(direct download: https://github.com/Khalid-000-ME/tick/raw/main/mobile/dist/tick.apk )
 
 ## Pitch video script, about two minutes
 

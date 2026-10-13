@@ -140,7 +140,8 @@ If you would rather look around before signing in, the feed, the markets and any
 
 ANDROID
 
-The signed APK is at https://github.com/Khalid-000-ME/tick/tree/main/mobile/dist/tick.apk, package app.tick.mobile. It is a Trusted Web Activity over the same site, so it behaves identically.
+The signed APK is at https://github.com/Khalid-000-ME/tick/tree/main/mobile/dist/tick.apk
+(direct download: https://github.com/Khalid-000-ME/tick/raw/main/mobile/dist/tick.apk ), package app.tick.mobile. It is a Trusted Web Activity over the same site, so it behaves identically.
 
 VERIFYING IT ON CHAIN
 

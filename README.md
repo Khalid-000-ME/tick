@@ -1,9 +1,15 @@
+![Tick](media/store/banner-1200x600.png)
+
 # Tick
 
 **The world's first 30-second prediction market, played with your friends.**
 Start a room, call the same thirty seconds as your crew, race a live scoreboard, and post the card that proves what you made. Every result is read from chain, so nobody can fake a win.
 
-Live at **[tick-predict.xyz](https://tick-predict.xyz)** · Android APK in `mobile/dist/tick.apk`
+Live at **[tick-predict.xyz](https://tick-predict.xyz)**
+
+**Download the Android app:** [mobile/dist/tick.apk](mobile/dist/tick.apk) ·
+[direct download](https://github.com/Khalid-000-ME/tick/raw/main/mobile/dist/tick.apk) ·
+[release page](https://github.com/Khalid-000-ME/tick/releases/tag/v1.0.0)
 
 ## What it does
 
