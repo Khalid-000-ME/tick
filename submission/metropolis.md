@@ -154,39 +154,65 @@ Settlement is permissionless: run `npm run settler` in app/ and your own bot can
 If anything is unresponsive, it is the shared testnet RPC rate limit, which allows 25 requests a second across everyone. Reloading clears it.
 ```
 
-## Bounty: Envio, Best Use of Envio (3125 / 8,000)
+## Bounty: Envio, Best Use of Envio (2917 / 8,000)
 
 ```
-Tick is a thirty-second prediction market played in group rooms, and the entire read path of the app runs on Envio HyperIndex. Not as an analytics add-on: without it the product does not work.
+Envio is the entire read path of the app. Every screen that shows history reads from HyperIndex;
+without it the product does not work.
 
-WHY WE NEEDED IT
+WHY IT IS LOAD-BEARING
 
-Monad testnet's RPC caps eth_getLogs at roughly 99 blocks per query and allows about 25 requests per second shared across everybody. Tick settles a window every thirty seconds and writes its whole social layer on chain, so a single user's history can span hundreds of thousands of blocks. Reconstructing a portfolio, a leaderboard or a feed from the RPC would mean thousands of range queries per page load, which is both impossible inside the rate limit and unusably slow. HyperSync reads it in one pass instead.
+Monad testnet's RPC caps eth_getLogs at about 99 blocks and allows roughly 25 requests a second
+across everybody, while Tick settles a window every thirty seconds and writes its whole social layer
+on chain. Rebuilding a portfolio, a leaderboard or a feed from the RPC would be thousands of range
+queries per page load: impossible inside the rate limit and unusably slow. HyperSync reads it in one
+pass.
 
-WHAT WE INDEX
+WHAT IS INDEXED (indexer/config.yaml, schema.graphql, src/handlers)
 
-The indexer is in indexer/, four handlers covering four contracts:
+Four handlers over four contracts:
 
-- Tick (indexer/src/handlers/Tick.ts): Staked, Settled, Claimed. This builds the Market and Stake and Claim entities that drive the portfolio, the leaderboard, the room scoreboard and the settler bounty table. Settled carries the outcome, the settle price, both pool totals, the settler address and the bounty paid, which is what lets us show who settled each window and what they earned.
-- TickProfiles: ProfileSet, for usernames, display names and avatars.
-- TickSocial: GroupCreated, GroupChanged, GroupJoined, RoomCreated, RoomJoined, GroupPosted, RoomPosted. The whole group and room graph, including chat messages, lives in contract storage and is read back through Envio.
-- TickFeed: Posted and Liked. Posted carries the photo bytes themselves in the event log, so the indexer is also how we serve images.
+- Tick.ts: Staked, Settled, Claimed
+- Social.ts: GroupCreated, GroupChanged, GroupJoined, RoomCreated, RoomJoined, GroupPosted, RoomPosted
+- Feed.ts: Posted, Liked
+- Profiles.ts: ProfileSet
 
-We use field_selection to pull transaction hashes alongside the events, so every stake in a user's history links straight to its transaction.
+The schema is eleven entities with @derivedFrom relations, not a flat event log. Market is a derived
+entity assembled from three separate events: Staked builds its pools, Settled writes the outcome,
+settle price, both pool totals, the settler address and the bounty paid, Claimed resolves payouts,
+and it owns its stakes and claims through @derivedFrom. Group owns GroupMember and Message; Room
+owns RoomMember. field_selection pulls transaction hashes alongside events so every position in the
+UI links to the transaction that made it.
 
-WHAT IT POWERS IN THE APP
+WHAT IT DRIVES, FEATURE BY FEATURE
 
 - /portfolio and the record on every results card (app/lib/useIndexedPositions.ts)
-- the global leaderboard and every room scoreboard, which re-sorts after each window settles (app/lib/server/standings.ts)
-- the social graph: groups, rooms, membership and chat (app/lib/useSocial.ts)
-- the feed, including photos (app/lib/useFeed.ts, app/lib/feed.ts)
+- the global leaderboard and every room scoreboard, which re-sorts after each window settles
+  (app/lib/server/standings.ts, polled every 3s by /api/room-board)
+- the group and room graph, membership and chat (app/lib/useSocial.ts)
+- the feed, including photographs (app/lib/useFeed.ts, app/lib/feed.ts)
 - profiles and avatars (app/lib/profiles.ts)
 
-The photo path is the one we are proudest of. Feed posts keep their image bytes in the event log rather than on a server of ours, and the post records the single block it landed in. The indexer stores those bytes, so /api/feed/image/[id] serves a photo from the index with the chain as a fallback: one contract read and one single-block log query if the index has not caught it yet. That means the app runs no database and no object storage at all, and Envio is what makes that practical rather than theoretical.
+THE PART WE THINK IS ORIGINAL
 
-HONEST NOTE
+Feed posts keep their image bytes in the event log rather than on a server of ours, and each post
+records the single block it landed in. The indexer stores those bytes, so /api/feed/image/[id]
+serves a photograph straight out of the index, falling back to one contract read plus a
+single-block log query if the index has not caught it yet. That is what lets this app run no
+database and no object storage at all: Envio is the storage layer for a social product, not an
+analytics sidecar.
 
-We are on the hosted dev tier and have deployed three times, so the endpoint URL changes on each deploy and the app reads it from NEXT_PUBLIC_INDEXER_URL rather than hardcoding it. The app degrades rather than breaks if the endpoint is unset: history falls back to reading what it can from the browser, which is slower and shallower, and that fallback is exactly the experience we built the indexer to avoid.
+DEPLOYMENT
+
+Deployed on Envio Cloud, hosted dev tier. The endpoint changes on each deploy, so the app reads it
+from NEXT_PUBLIC_INDEXER_URL rather than hardcoding it, and degrades to a shallow browser-side
+fallback if it is unset, which is exactly the experience the indexer exists to avoid.
+
+SEEING THE DATA FLOW
+
+Open https://tick-predict.xyz/leaderboard or /portfolio: every row is an Envio query. Place a stake
+and it appears in the portfolio once the indexer picks the event up. The clips in media/pitch show
+this end to end.
 ```
 
 Link:
@@ -195,32 +221,54 @@ Link:
 https://github.com/Khalid-000-ME/tick/tree/main/indexer
 ```
 
-## Bounty: Privy (3168 / 8,000)
+## Bounty: Privy (2901 / 8,000)
 
 ```
-Tick is for people who trade in group chats, most of whom do not consider themselves crypto users. The hard requirement was that someone could go from a link to a staked position without ever meeting a seed phrase, an extension or a faucet. Privy is what makes that true.
+Privy is the signing layer for every on-chain write in this app, not a sign-in button. Login is the
+least of what we use it for.
 
-WHAT WE USE
+WHAT IT POWERS BEYOND AUTHENTICATION
 
-- Sign-in with Google, a passkey, email or X, with an embedded wallet created for every account. No seed phrase at any point, no extension, nothing to install.
-- Server-side token verification for anything that hands out money (app/lib/server/privyAuth.ts). The browser sends its Privy access token; the server verifies the signature against Privy's published JWKS, checks the issuer and the audience, and gets a user id. It then asks Privy which wallets that user actually owns and will only act on one of those. This matters because our welcome gift and gas station give away testnet funds, and an address in a request body proves nothing: anyone can post a thousand made-up addresses. Tying it to a verified Privy user id means a person can claim once no matter how many wallets they create.
-- Embedded wallet signing for every on-chain action: stake, settle, claim, post to the feed, create a group, send a message.
+1. EMBEDDED WALLETS SIGN EVERY TRANSACTION. Staking on a window, settling a closed market, claiming
+winnings, depositing, withdrawing, posting a card to the feed, creating and joining groups and
+rooms, sending a chat message and setting a profile all go through the Privy embedded wallet. A user
+signs a dozen transactions in a session without ever seeing a seed phrase, an extension or a native
+token.
 
-WHAT WE BUILT AROUND IT
+2. WALLET PROVISIONING WE DRIVE OURSELVES (app/components/WalletGuard.tsx). We hit a real failure:
+new accounts were arriving signed in with no wallet at all, so there was no address, no name in the
+header and nothing to stake with. We diagnosed it against Privy's API with our app secret and found
+embedded_wallet_config.create_on_login set to off, with mode user-controlled-server-wallets-only.
+Rather than block every new user on a dashboard setting, WalletGuard calls useCreateWallet once per
+sign-in with no UI of its own, and is a no-op when the wallet already exists.
 
-WalletGuard (app/components/WalletGuard.tsx). We hit a real problem in development: newer accounts were arriving signed in with no wallet at all, so there was no address, no name in the header and nothing to stake with. We diagnosed it by querying the Privy API with our app secret and found embedded_wallet_config.create_on_login set to off on our app, with mode user-controlled-server-wallets-only. Rather than block every new user until a dashboard setting changed, WalletGuard asks the client to create the wallet once per sign-in, with no UI of its own. It is harmless if the dashboard setting is turned back on, because the wallet already exists and nothing is requested. That was the single biggest onboarding fix in the project.
+3. SERVER-SIDE WALLET OWNERSHIP GATING MONEY (app/lib/server/privyAuth.ts). Anything that hands out
+funds cannot trust an address in a request body: anyone can post a thousand made-up addresses. The
+browser sends its Privy access token; the server verifies the signature against Privy's published
+JWKS, checks issuer and audience, and gets a user id. It then queries Privy for the wallets that
+user actually owns and will only credit one of those. The welcome gift and the gas station are both
+gated this way, so a person claims once however many wallets they create. This is Privy's API doing
+authorisation of value transfer, not login.
 
-Onboarding (app/components/Onboarding.tsx). A skippable profile and preferences flow right after sign-up, shown as a modal whose contents change per phase, so a first-time user ends up with a username and an avatar instead of a hex address.
+4. WALLET SELECTION ACROSS TYPES (app/lib/pickWallet.ts). Prefers the embedded wallet and falls back
+to one the user connected, so "use the wallet I already have" runs through the same code path as a
+brand new embedded one, including the privy and privy-v2 client types.
 
-WelcomeGift (app/components/WelcomeGift.tsx). New accounts receive testnet USDC automatically, gated on the verified Privy user id described above.
+5. GAS ABSTRACTION BUILT ON IT. Users never hold or think about MON. A percentage bar shows gas
+remaining and a fill action tops it up through our GasStation contract, swapping internally, so the
+only unit anyone sees is the stake currency. That is only possible because the embedded wallet is
+ours to orchestrate rather than a third-party extension we have to ask.
 
-Gas abstraction. Users never hold or think about the native token. A percentage bar shows gas remaining and a Fill gas action tops it up, swapping internally, so the only unit anyone sees is the stake currency.
+WHY IT MATTERS FOR THIS PRODUCT
 
-WHY IT MATTERS FOR THIS PRODUCT SPECIFICALLY
+Tick is a thirty-second market played inside a group chat. The entire premise is that someone drops
+an invite link and the group is playing within a minute. Privy is why the path from link to first
+signed transaction contains no wallet step, for people who do not consider themselves crypto users.
 
-A thirty-second market is worthless if onboarding takes five minutes. The entire premise is that a group can be playing together within a minute of someone dropping an invite link into their chat. Privy is the reason the path from link to first stake has no wallet step in it at all, and the reason we could put the invite link in a group chat and expect it to work for people who have never used a crypto app.
+WHERE TO SEE IT
 
-The app is live at https://tick-predict.xyz and signing in takes about fifteen seconds, which is the clearest demonstration we can offer.
+Live at https://tick-predict.xyz: sign in and the embedded wallet is created, funded and signing
+within about fifteen seconds.
 ```
 
 Link:

@@ -81,6 +81,59 @@ wrapper. Team and sport logos are used nominatively to identify the market being
 **Build window.** This project was built during the hackathon period. The commit history in this
 repository covers the whole of it.
 
+## Envio: the whole read path
+
+Monad testnet's RPC caps `eth_getLogs` at about 99 blocks and allows roughly 25 requests a second
+across everyone, while Tick settles a window every thirty seconds and writes its social layer on
+chain. Rebuilding a portfolio, a leaderboard or a feed from the RPC would mean thousands of range
+queries per page load. HyperIndex reads it in one pass, and every screen in the app that shows
+history is reading from it.
+
+`indexer/` holds `config.yaml`, `schema.graphql` and four handlers over four contracts:
+
+| Handler | Events | Drives |
+|---|---|---|
+| `src/handlers/Tick.ts` | `Staked`, `Settled`, `Claimed` | portfolio, leaderboard, room scoreboards, settler bounties |
+| `src/handlers/Social.ts` | `GroupCreated`, `GroupChanged`, `GroupJoined`, `RoomCreated`, `RoomJoined`, `GroupPosted`, `RoomPosted` | the group and room graph, and chat |
+| `src/handlers/Feed.ts` | `Posted`, `Liked` | the feed, including the photo bytes themselves |
+| `src/handlers/Profiles.ts` | `ProfileSet` | usernames, display names, avatars |
+
+The schema is eleven entities with `@derivedFrom` relations, not a flat event log: `Market` carries
+the settled outcome, both pool totals, the settler and the bounty, and owns its `stakes` and
+`claims`. `field_selection` pulls transaction hashes alongside events so every position links to its
+transaction.
+
+The part worth looking at is the photo path. Feed posts keep their image bytes in the event log
+rather than on a server of ours, and each post records the single block it landed in, so
+`app/api/feed/image/[id]` serves a photo out of the index with the chain as a fallback. That is why
+this app runs no database and no object storage at all.
+
+Consumed in `app/lib/useIndexedPositions.ts`, `app/lib/server/standings.ts`, `app/lib/useSocial.ts`,
+`app/lib/useFeed.ts`, `app/lib/feed.ts` and `app/lib/profiles.ts`.
+
+## Privy: wallets, not just login
+
+Privy is the signing layer for every on-chain write in the app, not a sign-in button.
+
+- **Embedded wallets sign everything.** Staking, settling, claiming, depositing, withdrawing,
+  posting to the feed, creating and joining groups and rooms, sending a chat message and setting a
+  profile all go through the embedded wallet. No extension, no seed phrase, no native token.
+- **Wallet provisioning we drive ourselves** (`app/components/WalletGuard.tsx`). Our Privy app has
+  `embedded_wallet_config.create_on_login` off, which left newer accounts signed in with no wallet
+  and nothing to stake with. WalletGuard calls `useCreateWallet` once per sign-in, with no UI, and
+  is a no-op when the wallet already exists.
+- **Server-side ownership checks on anything that hands out money**
+  (`app/lib/server/privyAuth.ts`). The browser sends its Privy access token; the server verifies it
+  against Privy's JWKS, issuer and audience, then asks Privy which wallets that user owns and will
+  only credit one of those. An address in a request body proves nothing, so the welcome gift and the
+  gas station are gated on the Privy user id, which means one claim per person however many wallets
+  they make.
+- **Wallet selection** (`app/lib/pickWallet.ts`). Prefers the embedded wallet, falls back to one the
+  user connected, so "sign in with the wallet I already have" works through the same path.
+- **Gas abstraction on top of it.** Users never hold MON. A percentage bar shows gas left and a fill
+  action tops it up through `GasStation`, swapping internally, so the only unit anyone sees is the
+  stake currency.
+
 ## Trade from Claude Code (MCP)
 
 `.mcp.json` registers a `tick` MCP server, so Claude Code can trade Tick in conversation:
