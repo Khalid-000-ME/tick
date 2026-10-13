@@ -104,8 +104,16 @@ The jury explicitly values honesty about limitations. Include these:
 4. A teleprompter version with the beats broken into breathable lines.
 5. One alternative opening, fifteen seconds, in case the first feels stiff.
 
-Assets available: `media/out/tick-demo-monad.mp4` for product footage, `media/store/` for stills,
-`submission/tick-pitch-deck.pdf` for the visual language (dark, acid green `#d8f35f`, Geist).
+Assets are in `media/pitch/`, indexed in `media/pitch/ASSETS.md`:
+
+- `media/pitch/00-full-demo.mp4` — the whole 70s product tour with voiceover, ending on the Monad card.
+- `media/pitch/clips/` — seven silent clips to cut under the script: room, trade, card, feed, groups,
+  markets, landing. Each shows a cursor moving and tapping, so it reads as someone using the app.
+- `media/pitch/stills/` — six 1080x1920 portrait screens plus `07-monad-proof.png`, the Monad
+  evidence card, every number on it read live from the chain.
+- `submission/tick-pitch-deck.pdf` for the visual language: dark, acid green `#d8f35f`, Geist.
+
+Put `stills/07-monad-proof.png` on screen whenever the script mentions the chain.
 
 ## Rules for the script
 
