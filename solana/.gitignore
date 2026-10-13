@@ -4,3 +4,4 @@ node_modules/
 .localnet.json
 .env
 .env.*
+private/
