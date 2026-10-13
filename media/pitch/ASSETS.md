@@ -8,6 +8,17 @@ The session is not mocked. The app already supports a plain EIP-1193 wallet when
 and signs through it. **Every tap in the first three clips produced a transaction that exists on
 Monad.** No bypass was added to the app, and none of this can reach production.
 
+## Privy, end to end — the bounty clip
+
+`clips/00-privy-login.mp4`, 1m45s. The only clip that uses Privy itself rather than the app's
+fallback wallet path: email entered, Privy sends the code, the code is typed in, the account signs
+in, and then **the embedded wallet signs a real stake** on BTC/USD, ending on *"Staked 0.25 USDC
+ABOVE on BTC/USD. Settles when the window closes. Anyone can settle it."* with the pool moving to
+100% above.
+
+That is the Privy bounty's requirement, which is functionality beyond login: the sign-in is the
+first twenty seconds, the embedded wallet signing a transaction is the rest.
+
 ## The product being used — lead with these
 
 | File | Length | What happens, start to finish |

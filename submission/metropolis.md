@@ -277,6 +277,14 @@ Link:
 https://github.com/Khalid-000-ME/tick/blob/main/app/lib/server/privyAuth.ts
 ```
 
+**Optional Privy demo video (up to 2 min)** — upload `media/pitch/clips/00-privy-login.mp4`
+(1m45s) and paste the link. It shows email sign-in through Privy, the embedded wallet, and that
+wallet signing a real stake on Monad, which is the "beyond authentication" the bounty asks to see.
+
+**Optional Envio demo video (up to 2 min)** — `media/pitch/clips/06-portfolio.mp4` and
+`10-leaderboard.mp4` both show indexed data driving the screen; splice them or point at
+https://tick-predict.xyz/leaderboard, where every row is an Envio query.
+
 ## Optional promotion
 
 Promo clip: upload `brag-output/brag.mp4` (21s, inside the 30s cap).
