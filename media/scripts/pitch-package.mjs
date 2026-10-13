@@ -119,20 +119,9 @@ const cards = {
   "02-khalid": SHELL(`
     <div style="display:flex;align-items:center;gap:56px">
       <img src="team/khalid.png" style="width:300px;height:300px;border-radius:150px;object-fit:cover;border:3px solid #3b4a30">
-      <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:16px">
         <h2 style="text-align:left;font-size:92px">Khalid</h2>
-        <p style="font-size:38px;color:#d8f35f">Co-founder, CEO</p>
-        <p style="font-size:32px;color:#c9cebd;max-width:760px;line-height:1.35">Multiple global web3 hackathon wins. Contracts, settlement, the terminal.</p>
-      </div>
-    </div>`),
-
-  "03-lakshmikanth": SHELL(`
-    <div style="display:flex;align-items:center;gap:56px">
-      <img src="team/lakshmikanth.png" style="width:300px;height:300px;border-radius:150px;object-fit:cover;border:3px solid #3b4a30">
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <h2 style="text-align:left;font-size:92px">Lakshmi Kanth</h2>
-        <p style="font-size:38px;color:#d8f35f">Co-founder, CTO</p>
-        <p style="font-size:32px;color:#c9cebd;max-width:760px;line-height:1.35">Fintech engineering, payments and risk. The social layer and the app.</p>
+        <p style="font-size:32px;color:#c9cebd;max-width:780px;line-height:1.35">Multiple global web3 hackathon wins. Built Tick solo: contracts, settlement, the app, the indexer and the Android build.</p>
       </div>
     </div>`),
 
