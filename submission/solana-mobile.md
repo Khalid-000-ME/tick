@@ -67,9 +67,10 @@ whatever address you will actually read, or point it at your own mailbox.
 
 **Art** (in `media/store/`)
 - dApp Icon 512x512: `icon-512.png` (solid background, no transparency, as required)
-- Banner 1200x600: `banner-1200x600.png` (middle kept clear, the icon sits over it)
-- Previews, portrait 9:16, upload 4 to 8: `01-feed.png`, `02-trade.png`, `03-room.png`, `04-groups.png`,
-  `05-card.png`, `06-markets.png`
+- Banner 1200x600: `banner-1200x600.png` (wordmark and tagline left, the app right)
+- Previews, portrait 1080x1920, upload 4 to 8: `01-feed.png`, `02-trade.png`, `03-room.png`, `04-chat.png`,
+  `05-card.png`, `06-markets.png`. Each is a real 430x932 mobile capture, captioned, on the brand backdrop.
+  The unbranded captures are in `media/store/raw/` if a plain screenshot is wanted instead.
 
 **Language / Countries**: English (United States), all countries.
 
