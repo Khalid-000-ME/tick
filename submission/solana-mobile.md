@@ -144,3 +144,13 @@ The honest version, which is also the strongest one:
   feed are small and self-contained, and the client reads them through one adapter.
 - The next step is a Solana deployment: the market and settlement programs in Anchor, the wallet flow
   through Mobile Wallet Adapter, and the same Privy sign-in, which already supports Solana wallets.
+
+## Module fields (headline, tag, graphic)
+
+**Headline** (50 max) — `Compete in groups. Flex your profits.` (37)
+Alternates: `30-second markets you play with your friends` (43) · `Call 30 seconds. Race your crew. Flex the card.` (46)
+
+**Tag** (12 max) — `30s markets` (11)
+Alternates: `Predictions` (11) · `Flex proof` (10) · `30s` (3)
+
+**Graphic 1200x1200** — `media/store/graphic-1200x1200.png`
