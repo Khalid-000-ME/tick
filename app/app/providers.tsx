@@ -5,6 +5,7 @@ import { PrivyProvider, usePrivy } from "@privy-io/react-auth";
 import { AuthDialog } from "@/components/AuthDialog";
 import { Onboarding } from "@/components/Onboarding";
 import { WalletGuard } from "@/components/WalletGuard";
+import { SolanaWalletGuard } from "@/components/SolanaWalletGuard";
 import { WelcomeGift } from "@/components/WelcomeGift";
 import { clearMarks, readMarks, shouldEndSession } from "@/lib/authSession";
 import { monadTestnet } from "@/lib/chain/config";
@@ -73,6 +74,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <SessionGuard />
       <WalletGuard />
+      <SolanaWalletGuard />
       <AuthDialog />
       <WelcomeGift />
       <Onboarding />

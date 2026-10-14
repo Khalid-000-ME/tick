@@ -160,6 +160,11 @@ export function MarketTerminal() {
     // terms are identical, so the strike and the close second come from the same place; only the
     // signing and the settlement venue differ.
     if (isSolana) {
+      if (!solanaWallet.address) {
+        setNotice("Setting up your Solana wallet. Try again in a moment; if it keeps saying this, Solana wallets are switched off for this app.");
+        void solanaWallet.create().catch(() => {});
+        return;
+      }
       if (!market.terms) { setNotice("No open window right now."); return; }
       const terms = {
         feedId: Uint8Array.from(Buffer.from(feed.id.replace(/^0x/, ""), "hex")),
