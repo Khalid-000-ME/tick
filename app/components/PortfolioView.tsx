@@ -9,6 +9,7 @@ import { SportsPortfolio } from "@/components/SportsPortfolio";
 import { useTickWallet } from "@/lib/useTickWallet";
 import { useIndexedPositions } from "@/lib/useIndexedPositions";
 import { isRefundPending, statusOf, usePositions, type Position, type PositionStatus } from "@/lib/usePositions";
+import { SolanaPositions } from "@/components/SolanaPositions";
 import { explorerTx } from "@/lib/chain/config";
 
 type Filter = "all" | "wins" | "losses" | "refunds" | "open";
@@ -129,6 +130,10 @@ export function PortfolioView() {
             <ShareActions address={account} net={stats.net} compact />
             <small>Your card shows what the chain says you made. Anyone can open it.</small>
           </div>
+
+          {/* The Solana ledger is its own section: different wallet, different token, its own
+              settlement. Merging the two totals would invent a shared unit that does not exist. */}
+          <SolanaPositions />
 
           {pendingRefunds.length > 0 && (
             <section className="refund-bar" role="status">

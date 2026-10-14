@@ -16,7 +16,8 @@ import { WalletMenu } from "@/components/WalletMenu";
 import { ModeSwitch } from "@/components/ModeSwitch";
 import { ChainSwitch } from "@/components/ChainSwitch";
 import { useChain } from "@/lib/useChain";
-import { useSolanaStake } from "@/lib/solana/useSolanaStake";
+import { useSolanaStake, useSolanaWallet } from "@/lib/solana/useSolanaStake";
+import { useSolanaPositions } from "@/lib/solana/useSolanaPositions";
 import { SOLANA } from "@/lib/solana/program";
 import { RailGrip } from "@/components/RailGrip";
 import { TickerStrip } from "@/components/TickerStrip";
@@ -81,6 +82,8 @@ export function MarketTerminal() {
   const [pending, setPending] = useState<"ABOVE" | "BELOW" | null>(null);
   const { chain, isSolana } = useChain();
   const solana = useSolanaStake();
+  const solanaWallet = useSolanaWallet();
+  const solanaPositions = useSolanaPositions(solanaWallet.address);
   // The amount default still copies into state, because the field is edited in place.
   const amountTouched = useRef(false);
   useEffect(() => {
@@ -167,9 +170,28 @@ export function MarketTerminal() {
       };
       const units = BigInt(Math.round(amount * 1e6));
       const r = await solana.submit(terms, which === "ABOVE", units);
-      setNotice(r.ok && r.signature
-        ? `Staked ${amount} USDC ${which} on Solana. ${SOLANA.explorer("tx", r.signature)}`
-        : r.message);
+      if (!r.ok) { setNotice(r.message); return; }
+
+      // The terms are kept the moment the stake lands: the program stores a market under their
+      // hash, so losing them here would make the position impossible to follow afterwards.
+      solanaPositions.record(terms, which, amount, feed.symbol, r.signature);
+      setNotice(`Staked ${amount} USDC ${which} on Solana. Settles when the window closes.`);
+
+      // Nudge the fallback settler once the window has closed. It stands down for the grace period
+      // so an outside bot can take the bounty first; this only covers the windows nobody takes.
+      const closesIn = Number(terms.closesAt) * 1000 - Date.now();
+      window.setTimeout(() => {
+        void fetch("/api/solana/settle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            feedId: Buffer.from(terms.feedId).toString("hex"),
+            strike: terms.strike.toString(),
+            expo: terms.expo,
+            closesAt: Number(terms.closesAt),
+          }),
+        }).then(() => solanaPositions.refresh()).catch(() => {});
+      }, Math.max(0, closesIn) + 12_000);
       return;
     }
 
