@@ -10,6 +10,9 @@ import { RoomStory } from "@/components/RoomStory";
 import { openAuth } from "@/lib/authSession";
 import { useTickWallet } from "@/lib/useTickWallet";
 
+/** The signed Android build, served straight from the repository. */
+const APK_URL = "https://github.com/Khalid-000-ME/tick/raw/main/mobile/dist/tick.apk";
+
 /* The product in four lines, led by the card. Every claim here is shipped. */
 /* The whole journey, in the order someone actually does it, written to them. Every line
    is true of the product today except the card checkout, which says it is coming. */
@@ -168,6 +171,9 @@ export function LandingExperience() {
       <footer className="landing-footer">
         <Brand />
         <nav className="landing-legal" aria-label="Legal">
+          {/* The Android build is a Trusted Web Activity over this same site, so the download is
+              a direct link to the signed APK rather than a store listing. */}
+          <a href={APK_URL} download>Download for Android</a>
           <Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link>
         </nav>
       </footer>

@@ -63,12 +63,12 @@ for (const [out, shot, l1, l2] of PREVIEWS) {
   await p.close();
   console.log(out);
 }
-const p = await b.newPage({ viewport: { width: 1200, height: 600 } });
+const p = await b.newPage({ viewport: { width: 1200, height: 600 }, deviceScaleFactor: 2 });
 writeFileSync(`${OUT}/_tmp.html`, banner);
 await p.goto(`file://${OUT}/_tmp.html`);
 await p.evaluate(() => document.fonts.ready);
 await p.waitForTimeout(900);
-await p.screenshot({ path: `${OUT}/banner-1200x600.png` });
+await p.screenshot({ path: `${OUT}/banner-2400x1200.png` });
 await p.close();
 console.log("banner");
 await b.close();
