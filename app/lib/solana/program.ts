@@ -29,6 +29,19 @@ export const SOLANA = {
     `https://explorer.solana.com/${kind}/${id}?cluster=devnet`,
 };
 
+/**
+ * Feeds nobody is keeping alive on devnet, so we post the price ourselves before staking.
+ *
+ * BTC/USD's sponsored account has been frozen at one price for twenty minutes while ETH and SOL
+ * update every few seconds. This is a devnet fact, not a property of the feed, so it is a list to
+ * revisit rather than a permanent design.
+ */
+export const SELF_POSTED_FEEDS = new Set([
+  "e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43", // BTC/USD
+]);
+
+export const needsOwnPrice = (feedIdHex: string) => SELF_POSTED_FEEDS.has(feedIdHex.replace(/^0x/, "").toLowerCase());
+
 /** The program's own constants, repeated here so the UI can show them without a round trip. */
 export const RULES = {
   windowSeconds: 30,
@@ -114,7 +127,13 @@ export const tokenAccount = (owner: PublicKey) =>
 const termsBytes = (t: Terms) =>
   concat(t.feedId, i64(t.strike), i32(t.expo), i64(t.closesAt));
 
-export function stakeIx(staker: PublicKey, t: Terms, above: boolean, amount: bigint) {
+/**
+ * `priceUpdate` overrides which price account the program reads. The default is the sponsored feed
+ * account, which is right whenever somebody is keeping that feed alive. Where nobody is, the caller
+ * posts one through /api/solana/price and passes it here; the program checks it the same way either
+ * way, so this changes who paid for the price, not whether it is trusted.
+ */
+export function stakeIx(staker: PublicKey, t: Terms, above: boolean, amount: bigint, priceUpdate?: PublicKey) {
   const market = marketPda(t);
   return new TransactionInstruction({
     programId: SOLANA.programId,
@@ -125,7 +144,7 @@ export function stakeIx(staker: PublicKey, t: Terms, above: boolean, amount: big
       { pubkey: positionPda(market, staker), isSigner: false, isWritable: true },
       { pubkey: tokenAccount(staker), isSigner: false, isWritable: true },
       { pubkey: SOLANA.mint, isSigner: false, isWritable: false },
-      { pubkey: priceAccount(t.feedId), isSigner: false, isWritable: false },
+      { pubkey: priceUpdate ?? priceAccount(t.feedId), isSigner: false, isWritable: false },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
@@ -136,7 +155,7 @@ export function stakeIx(staker: PublicKey, t: Terms, above: boolean, amount: big
   });
 }
 
-export function settleIx(settler: PublicKey, t: Terms) {
+export function settleIx(settler: PublicKey, t: Terms, priceUpdate?: PublicKey) {
   const market = marketPda(t);
   return new TransactionInstruction({
     programId: SOLANA.programId,
@@ -145,7 +164,7 @@ export function settleIx(settler: PublicKey, t: Terms) {
       { pubkey: market, isSigner: false, isWritable: true },
       { pubkey: vaultPda(market), isSigner: false, isWritable: true },
       { pubkey: tokenAccount(settler), isSigner: false, isWritable: true },
-      { pubkey: priceAccount(t.feedId), isSigner: false, isWritable: false },
+      { pubkey: priceUpdate ?? priceAccount(t.feedId), isSigner: false, isWritable: false },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     ],
     data: Buffer.from(discriminator("settle")),

@@ -131,6 +131,29 @@ t<630   anyone may settle with a signed Pyth update whose publish time is within
 t>630   nobody settled: the market voids and every stake is refunded
 ```
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as Trader
+    participant A as App
+    participant P as Pyth
+    participant C as Tick contract
+    participant B as Settler bot
+
+    Note over A,C: window opens on the 30s grid
+    A->>P: read Hermes, off chain and free
+    A->>A: strike = price at window open, same for everyone
+    T->>C: stake ABOVE or BELOW, from $0.10
+    C-->>T: refused if the posted price is over 10s old
+    Note over C: window closes
+    B->>P: fetch the signed update for that exact second
+    B->>C: settleWithUpdate
+    C-->>B: half the fee, capped at 2 USDC
+    C->>C: winners split the losing pool, minus 2% on profit
+    T->>C: claim
+    Note over C: one-sided or unsettled for 10 min, everyone is refunded
+```
+
 **Parimutuel.** Winners split the losing pool pro rata, minus a 2% fee on profit. A one-sided market
 voids and refunds everyone, because there is nobody to pay from.
 
@@ -260,27 +283,56 @@ chain or derived from it.
 
 ## Application architecture
 
-```
-                    ┌──────────────────────────────────────────────┐
-  browser / TWA ───▶│  Next.js 16 app (app/)                       │
-                    │  terminal · feed · groups · rooms · portfolio │
-                    └───────┬──────────────────────┬───────────────┘
-                            │ writes               │ reads
-                 ┌──────────▼─────────┐   ┌────────▼─────────────────┐
-                 │ Privy embedded     │   │ Envio HyperIndex         │
-                 │ wallet signs       │   │ GraphQL, all history     │
-                 └──────────┬─────────┘   └────────▲─────────────────┘
-                            │                      │ indexes
-                 ┌──────────▼──────────────────────┴─────────────────┐
-                 │ Monad testnet, chain 10143                        │
-                 │ Tick · TickSocial · TickFeed · TickProfiles ·      │
-                 │ TickSports · GasStation                           │
-                 └──────────▲────────────────────────────────────────┘
-                            │ signed price updates
-                 ┌──────────┴─────────┐   ┌──────────────────────────┐
-                 │ Pyth (pull oracle) │   │ settler bots, anyone's   │
-                 │ Hermes off chain   │   │ /settlers shows who won  │
-                 └────────────────────┘   └──────────────────────────┘
+One app, two chains. The trader picks which one a stake executes on, and everything either side of
+that choice is the same: the same window grid, the same Pyth feed, the same parimutuel rules.
+
+```mermaid
+flowchart TB
+    subgraph client["Browser · Android TWA"]
+        UI["Terminal · feed · groups · rooms · portfolio"]
+        SW["Chain switch<br/>Monad or Solana"]
+        PW["Privy embedded wallets<br/>one per chain, no seed phrase"]
+    end
+
+    subgraph server["Next.js server · holds no user data"]
+        STRIKE["/api/strike<br/>one strike per window, for every client"]
+        REFRESH["/api/price/refresh<br/>posts a Pyth update on Monad"]
+        SPOST["/api/solana/price<br/>posts a Pyth update on Solana"]
+        SETTLE["/api/settle · /api/solana/settle<br/>fallback settlers, after a grace period"]
+        GIFT["/api/welcome · /api/gas · /api/solana/fund<br/>opening funds, gated on Privy ownership"]
+    end
+
+    subgraph monad["Monad testnet · 10143"]
+        TICK["Tick<br/>sharded pools, settlement, bounties"]
+        SOCIAL["TickSocial · TickFeed · TickProfiles<br/>groups, rooms, chat, posts, photos"]
+    end
+
+    subgraph solana["Solana devnet"]
+        PROG["Tick program<br/>Market · Vault · Position PDAs"]
+    end
+
+    PYTH["Pyth<br/>Hermes off chain, receiver on chain"]
+    ENVIO["Envio HyperIndex<br/>every read of history"]
+    BOTS["Outside settler bots<br/>paid half the fee"]
+
+    UI --> SW
+    SW --> PW
+    PW -->|"stake · claim · post · chat"| TICK
+    PW -->|"stake · claim"| PROG
+    UI -->|"strike, price posting"| server
+    REFRESH --> PYTH
+    SPOST --> PYTH
+    PYTH -->|"signed update"| TICK
+    PYTH -->|"signed update"| PROG
+    SETTLE -.->|"only what nobody took"| TICK
+    SETTLE -.-> PROG
+    BOTS -->|"first refusal on the bounty"| TICK
+    GIFT --> TICK
+    GIFT --> PROG
+    TICK --> ENVIO
+    SOCIAL --> ENVIO
+    ENVIO -->|"portfolio · leaderboard · feed · chat"| UI
+    PROG -->|"read directly, no index yet"| UI
 ```
 
 ### Why the reads and writes are split
@@ -376,6 +428,7 @@ settlement paying half the fee capped at 2 USDC, and the 10-second fresh-price c
 | Program id | [`5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v`](https://explorer.solana.com/address/5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v?cluster=devnet) |
 | Cluster | **devnet, deployed** |
 | Build | `cargo-build-sbf --tools-version v1.58` |
+| Default market | SOL/USD on Solana, BTC/USD on Monad |
 | Artifact | `tick.so`, 290,840 bytes, sha256 `f173edd5911fda0ea7aeead59505ddd10af0e65f2b4616f87a1a798d7fcb6f57` |
 
 ### The account model
@@ -383,23 +436,38 @@ settlement paying half the fee capped at 2 USDC, and the 10-second fresh-price c
 Solana has no contract storage to shard, so the design changes shape entirely. Everything is a PDA,
 and which account a write lands in is what decides whether two transactions can run at once.
 
-```
-                     seeds                                          size
-Market   PDA   ["market", feed_id, strike_le, closes_at_le]         129 bytes
-  └─ one per window per feed per strike. The first staker opens it, so there is
-     no create-market instruction, exactly as on the EVM side.
+```mermaid
+flowchart LR
+    subgraph seeds["Seeds"]
+        S1["&quot;market&quot; · feed_id · strike · closes_at"]
+        S2["&quot;vault&quot; · market"]
+        S3["&quot;position&quot; · market · owner"]
+    end
 
-Vault    PDA   ["vault", market]                                    SPL token account
-  └─ holds both pools. Its authority is the Market PDA, so only the program moves
-     funds, and it signs with the market's own seeds.
+    M["Market PDA · 129 bytes<br/>pools, fee, settle price, flags"]
+    V["Vault · SPL token account<br/>authority is the Market PDA"]
+    P1["Position · Alice · 90 bytes"]
+    P2["Position · Bob"]
+    P3["Position · Carol"]
+    PY["Pyth price account<br/>sponsored, or one we posted"]
 
-Position PDA   ["position", market, owner]                           90 bytes
-  └─ ONE PER TRADER PER MARKET. This is the whole parallelism story.
+    S1 --> M
+    S2 --> V
+    S3 --> P1
+    S3 --> P2
+    S3 --> P3
+    M -.->|"signs transfers out"| V
+    M -.->|"read at stake and settle"| PY
+
+    style P1 fill:#1e2d11,stroke:#d8f35f
+    style P2 fill:#1e2d11,stroke:#d8f35f
+    style P3 fill:#1e2d11,stroke:#d8f35f
 ```
 
 `Market` carries `feed_id`, `strike`, `expo`, `closes_at`, `mint`, `pool_above`, `pool_below`,
 `fee`, `settle_price`, three flags (`settled`, `above_won`, `void`) and two bumps. `Position`
-carries `market`, `owner`, `above`, `below`, `claimed` and its bump.
+carries `market`, `owner`, `above`, `below`, `claimed` and its bump. The first staker opens the
+market, so there is no create-market instruction, exactly as on the EVM side.
 
 ### Why this parallelises without sharding
 
@@ -412,6 +480,26 @@ not "which slot" but "which accounts do I lock".
 | `stake` | the staker's own `Position`, the `Vault`, the two counters on `Market` | other stakers, only on `Market` and `Vault` |
 | `settle` | `Market`, `Vault`, the settler's token account | nothing else, it happens once |
 | `claim` | the claimer's own `Position`, `Vault`, their token account | other claimers, only on `Vault` |
+
+```mermaid
+flowchart TB
+    subgraph close["Close of window · every claim arrives at once"]
+        CA["Alice claims"] --> PA["Position · Alice"]
+        CB["Bob claims"] --> PB["Position · Bob"]
+        CC["Carol claims"] --> PC["Position · Carol"]
+        CA --> VLT["Vault"]
+        CB --> VLT
+        CC --> VLT
+    end
+
+    PA -.->|"no contention"| OK["runs in parallel"]
+    PB -.-> OK
+    PC -.-> OK
+    VLT -->|"the irreducible part:<br/>money moves from somewhere shared"| SEQ["serialised"]
+
+    style OK fill:#1e2d11,stroke:#d8f35f
+    style SEQ fill:#2d1111,stroke:#d2563f
+```
 
 **At the close of a window, every claim touches a different `Position`.** That burst — the one that
 would be a queue on a serial chain — fans out across one account per trader. No sharding of ours is
@@ -448,6 +536,44 @@ claim()
             cannot overflow before the divide
   loser   → nothing, and the position is marked claimed either way
 ```
+
+### Keeping the price alive ourselves
+
+Devnet's sponsored price accounts are maintained by whoever volunteers, and that is not a promise.
+BTC/USD stopped: frozen at one price, the age climbing past twenty minutes, while ETH and SOL kept
+updating every few seconds. The program refuses anything older than ten seconds, correctly, so that
+market was simply unusable.
+
+So the app posts the price itself for those feeds. `/api/solana/price` fetches the signed update
+from Hermes, and the Pyth receiver program verifies the Wormhole signatures and writes an ordinary
+`PriceUpdateV2`. The Tick program then checks that account exactly as it checks a sponsored one:
+owner, discriminator, `Full` verification, feed id. **What changed is who paid for the price, not
+whether it is trusted.**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as App
+    participant H as Hermes
+    participant R as Pyth receiver
+    participant T as Tick program
+
+    A->>H: latest signed update for BTC/USD
+    H-->>A: VAA, Wormhole signed
+    A->>R: post it
+    R->>R: verify the guardian signatures
+    R-->>A: PriceUpdateV2 account, Full verified
+    A->>T: stake, passing that account
+    T->>T: owner, discriminator, Full, feed id, age under 10s
+    T-->>A: accepted
+```
+
+Measured: posting takes about three seconds and the account reads back two to three seconds old,
+inside the cutoff. `app/scripts/solana-btc-e2e.ts` runs the whole path.
+
+Which feeds need this is a list in `lib/solana/program.ts`, not an assumption, because it is a fact
+about devnet today rather than about the feed. Solana defaults to SOL/USD, whose sponsored account
+devnet does keep updating; BTC still works, it just costs a posting first.
 
 ### Reading Pyth without the SDK
 

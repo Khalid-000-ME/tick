@@ -6,7 +6,7 @@ import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import bs58 from "bs58";
 import { createAssociatedTokenAccountInstruction, getAccount } from "@solana/spl-token";
 import {
-  SOLANA, RULES, stakeIx, claimIx, tokenAccount, readMarket, readPrice, type Terms,
+  SOLANA, RULES, stakeIx, claimIx, tokenAccount, readMarket, readPrice, needsOwnPrice, toHex, type Terms,
 } from "./program";
 
 /**
@@ -50,12 +50,28 @@ export function useSolanaStake() {
       try {
         // The program refuses a price older than the margin, so say so here rather than letting the
         // transaction fail with a code nobody can read.
-        setStep("Checking the price");
-        const price = await readPrice(connection, terms.feedId);
-        if (!price) return { ok: false, message: "No Pyth price account for that feed." };
-        const age = Math.floor(Date.now() / 1000) - price.publishTime;
-        if (age > RULES.acceptMarginSeconds) {
-          return { ok: false, message: `The posted price is ${age}s old. Wait for the next update.` };
+        // Feeds nobody maintains on devnet need a price posting before the stake will be accepted.
+        // The receiver verifies the Wormhole signatures, so this buys freshness, not trust.
+        let priceUpdate: PublicKey | undefined;
+        if (needsOwnPrice(toHex(terms.feedId))) {
+          setStep("Posting a fresh price");
+          const res = await fetch("/api/solana/price", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ feedId: toHex(terms.feedId) }),
+          }).then((r) => r.json()).catch(() => null);
+          if (!res?.ok || !res.priceAccount) {
+            return { ok: false, message: res?.error ?? "Could not post a price for that market." };
+          }
+          priceUpdate = new PublicKey(res.priceAccount);
+        } else {
+          setStep("Checking the price");
+          const price = await readPrice(connection, terms.feedId);
+          if (!price) return { ok: false, message: "No Pyth price account for that feed." };
+          const age = Math.floor(Date.now() / 1000) - price.publishTime;
+          if (age > RULES.acceptMarginSeconds) {
+            return { ok: false, message: `The posted price is ${age}s old. Wait for the next update.` };
+          }
         }
 
         setStep("Checking your balance");
@@ -73,7 +89,7 @@ export function useSolanaStake() {
         }
 
         setStep("Staking");
-        tx.add(stakeIx(owner, terms, above, amountUnits));
+        tx.add(stakeIx(owner, terms, above, amountUnits, priceUpdate));
         tx.feePayer = owner;
         tx.recentBlockhash = (await connection.getLatestBlockhash("confirmed")).blockhash;
 

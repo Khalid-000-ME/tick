@@ -59,11 +59,16 @@ export function MarketTerminal() {
   // Each of these is "what the trader picked here", which falls back to the link, which
   // falls back to the default. Picking on this page therefore always wins, and nothing
   // has to be copied anywhere when the link changes.
+  const { chain, isSolana } = useChain();
   const [windowPick, setWindowPick] = useState<number | null>(null);
   const [strikePick, setStrikePick] = useState<bigint | null>(null);
   const [strikeCleared, setStrikeCleared] = useState(false);
 
-  const feed = fromUrl.feed ?? FEEDS[0];
+  // On Solana the default is SOL/USD, whose sponsored price account devnet actually keeps
+  // updating. BTC still works there, but it costs a price posting first, so it is a market someone
+  // chooses rather than the one they land on.
+  const defaultFeed = isSolana ? (FEEDS.find((f) => f.symbol === "SOL/USD") ?? FEEDS[0]) : FEEDS[0];
+  const feed = fromUrl.feed ?? defaultFeed;
   const windowS =
     windowPick ??
     fromUrl.windowS ??
@@ -80,7 +85,6 @@ export function MarketTerminal() {
   // No selected side any more: a side IS the action. `pending` holds the side awaiting
   // confirmation; whether there is one at all is a setting (one tap, confirm or slide).
   const [pending, setPending] = useState<"ABOVE" | "BELOW" | null>(null);
-  const { chain, isSolana } = useChain();
   const solana = useSolanaStake();
   const solanaWallet = useSolanaWallet();
   const solanaPositions = useSolanaPositions(solanaWallet.address);
