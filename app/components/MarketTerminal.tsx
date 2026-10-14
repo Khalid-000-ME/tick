@@ -14,6 +14,10 @@ import { StakeSheet } from "@/components/StakeSheet";
 import { useSettings } from "@/lib/useSettings";
 import { WalletMenu } from "@/components/WalletMenu";
 import { ModeSwitch } from "@/components/ModeSwitch";
+import { ChainSwitch } from "@/components/ChainSwitch";
+import { useChain } from "@/lib/useChain";
+import { useSolanaStake } from "@/lib/solana/useSolanaStake";
+import { SOLANA } from "@/lib/solana/program";
 import { RailGrip } from "@/components/RailGrip";
 import { TickerStrip } from "@/components/TickerStrip";
 import { NewsPanel } from "@/components/NewsPanel";
@@ -75,6 +79,8 @@ export function MarketTerminal() {
   // No selected side any more: a side IS the action. `pending` holds the side awaiting
   // confirmation; whether there is one at all is a setting (one tap, confirm or slide).
   const [pending, setPending] = useState<"ABOVE" | "BELOW" | null>(null);
+  const { chain, isSolana } = useChain();
+  const solana = useSolanaStake();
   // The amount default still copies into state, because the field is edited in place.
   const amountTouched = useRef(false);
   useEffect(() => {
@@ -146,6 +152,27 @@ export function MarketTerminal() {
   async function placeStake(which: "ABOVE" | "BELOW") {
     setPending(null);
     setNotice(null);
+
+    // Solana runs the same window through the Anchor program instead of the Monad contract. The
+    // terms are identical, so the strike and the close second come from the same place; only the
+    // signing and the settlement venue differ.
+    if (isSolana) {
+      if (!market.terms) { setNotice("No open window right now."); return; }
+      const terms = {
+        feedId: Uint8Array.from(Buffer.from(feed.id.replace(/^0x/, ""), "hex")),
+        // The same strike the Monad side would use, so a window is the same market on either chain.
+        strike: strikeOverride ?? market.terms.strike,
+        expo: feed.expo,
+        closesAt: market.terms.closesAt,
+      };
+      const units = BigInt(Math.round(amount * 1e6));
+      const r = await solana.submit(terms, which === "ABOVE", units);
+      setNotice(r.ok && r.signature
+        ? `Staked ${amount} USDC ${which} on Solana. ${SOLANA.explorer("tx", r.signature)}`
+        : r.message);
+      return;
+    }
+
     const result = await stake.submit(which, amount, async () => {
       // The contract refuses a stake against a price older than the margin. Post a fresh
       // one only when the stored price is actually near that — otherwise a stake costs
@@ -196,6 +223,7 @@ export function MarketTerminal() {
           <Link href="/portfolio">Portfolio</Link>
           <Link href="/fund">Fund</Link>
         </nav>
+        <ChainSwitch />
         <ModeSwitch />
         <button
           className="theme-toggle"

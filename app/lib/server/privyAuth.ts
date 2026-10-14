@@ -36,10 +36,17 @@ interface LinkedAccount {
   chain_type?: string;
 }
 
-/** Pure, so it can be tested: is this address one of the user's own wallets? */
-export function ownsWallet(accounts: LinkedAccount[], address: string): boolean {
-  const want = address.toLowerCase();
-  return accounts.some((a) => a.type === "wallet" && (a.chain_type ?? "ethereum") === "ethereum" && a.address?.toLowerCase() === want);
+/**
+ * Pure, so it can be tested: is this address one of the user's own wallets?
+ *
+ * The comparison is case-insensitive for Ethereum, where an address is hex and case only carries a
+ * checksum, and exact for Solana, where the address is base58 and case is part of the value.
+ */
+export function ownsWallet(accounts: LinkedAccount[], address: string, chain: "ethereum" | "solana" = "ethereum"): boolean {
+  const same = chain === "solana"
+    ? (a?: string) => a === address
+    : (a?: string) => a?.toLowerCase() === address.toLowerCase();
+  return accounts.some((a) => a.type === "wallet" && (a.chain_type ?? "ethereum") === chain && same(a.address));
 }
 
 /** The user's linked accounts, from Privy's API with the app secret. Null when Privy cannot say. */

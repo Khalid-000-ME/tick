@@ -46,7 +46,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       config={{
         appearance: {
           theme: "light",
-          walletChainType: "ethereum-only",
+          // Both chains now, because a trade can execute on either.
+          walletChainType: "ethereum-and-solana",
         },
         defaultChain: monadTestnet,
         supportedChains: [monadTestnet],
@@ -56,6 +57,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
           // MetaMask still prompt, because their extension owns that UI.
           showWalletUIs: false,
           ethereum: {
+            createOnLogin: "users-without-wallets",
+          },
+          // The Solana wallet is created alongside, so switching chains in the UI never
+          // stops to ask for a wallet. It costs nothing until it signs something.
+          solana: {
             createOnLogin: "users-without-wallets",
           },
         },

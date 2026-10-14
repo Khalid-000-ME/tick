@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Moon, Sun } from "@phosphor-icons/react";
 import { WalletMenu } from "@/components/WalletMenu";
 import { ModeSwitch } from "@/components/ModeSwitch";
+import { ChainSwitch } from "@/components/ChainSwitch";
 import { Brand } from "@/components/Brand";
 import { TickerStrip } from "@/components/TickerStrip";
 import { useTheme } from "@/lib/useTheme";
@@ -48,6 +49,7 @@ export function AccountShell({
           <Link href="/portfolio" aria-current={active === "portfolio" ? "page" : undefined}>Portfolio</Link>
           <Link href="/fund" aria-current={active === "fund" ? "page" : undefined}>Fund</Link>
         </nav>
+        <ChainSwitch />
         <ModeSwitch />
         <button
           className="theme-toggle"

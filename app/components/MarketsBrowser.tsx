@@ -18,6 +18,7 @@ import { nextOpenLabel } from "@/lib/marketHours";
 import { MicroBoard } from "@/components/MicroMarkets";
 import { WalletMenu } from "@/components/WalletMenu";
 import { ModeSwitch } from "@/components/ModeSwitch";
+import { ChainSwitch } from "@/components/ChainSwitch";
 import { DURATIONS } from "@/lib/chain/config";
 import { useTheme } from "@/lib/useTheme";
 import { useTickWallet } from "@/lib/useTickWallet";
@@ -167,6 +168,7 @@ export function MarketsBrowser() {
           <Link href="/leaderboard">Leaderboard</Link>
           <Link href="/portfolio">Portfolio</Link>
         </nav>
+        <ChainSwitch />
         <ModeSwitch />
         <button className="theme-toggle" type="button" onClick={toggle} aria-label="Toggle theme">
           {theme === "dark" ? <Sun weight="bold" /> : <Moon weight="bold" />}
