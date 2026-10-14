@@ -374,21 +374,102 @@ settlement paying half the fee capped at 2 USDC, and the 10-second fresh-price c
 | Pyth reader | `solana/programs/tick/src/pyth.rs` |
 | IDL | `solana/idl/tick.json` — 3 instructions, 2 accounts, 14 errors |
 | Program id | `5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v` |
-| Build | `cargo-build-sbf --tools-version v1.58` → `tick.so`, 290,840 bytes |
+| Build | `cargo-build-sbf --tools-version v1.58` |
+| Artifact | `tick.so`, 290,840 bytes, sha256 `f173edd5911fda0ea7aeead59505ddd10af0e65f2b4616f87a1a798d7fcb6f57` |
 
-**What changes on Solana.** The EVM version shards pools 64 ways so stakers do not share a slot.
-Here that is unnecessary: each trader writes their own `Position` PDA, seeded by `(market, owner)`,
-so the close-of-window burst touches a different account per trader and parallelises without any
-sharding of ours.
+### The account model
 
-**Reading Pyth without the SDK.** `pyth-solana-receiver-sdk` pins its own Anchor and Solana
-versions, which pulls a second copy of both into the build and does not resolve. `pyth.rs` does the
-same work directly: the account must be owned by the Pyth receiver
-(`rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ`), carry the `PriceUpdateV2` discriminator, be `Full`
-verified rather than partially signed, and describe the feed that was asked for.
+Solana has no contract storage to shard, so the design changes shape entirely. Everything is a PDA,
+and which account a write lands in is what decides whether two transactions can run at once.
 
-**Proven end to end on a local validator.** `solana/scripts/localnet.sh` runs a real market: two
-traders take opposite sides, an outsider settles with a Pyth update, everyone claims.
+```
+                     seeds                                          size
+Market   PDA   ["market", feed_id, strike_le, closes_at_le]         129 bytes
+  └─ one per window per feed per strike. The first staker opens it, so there is
+     no create-market instruction, exactly as on the EVM side.
+
+Vault    PDA   ["vault", market]                                    SPL token account
+  └─ holds both pools. Its authority is the Market PDA, so only the program moves
+     funds, and it signs with the market's own seeds.
+
+Position PDA   ["position", market, owner]                           90 bytes
+  └─ ONE PER TRADER PER MARKET. This is the whole parallelism story.
+```
+
+`Market` carries `feed_id`, `strike`, `expo`, `closes_at`, `mint`, `pool_above`, `pool_below`,
+`fee`, `settle_price`, three flags (`settled`, `above_won`, `void`) and two bumps. `Position`
+carries `market`, `owner`, `above`, `below`, `claimed` and its bump.
+
+### Why this parallelises without sharding
+
+The EVM version shards pools 64 ways because every staker would otherwise write the same storage
+slot. On Solana the runtime schedules by the account list a transaction declares, so the question is
+not "which slot" but "which accounts do I lock".
+
+| Instruction | Accounts written | Contends with |
+|---|---|---|
+| `stake` | the staker's own `Position`, the `Vault`, the two counters on `Market` | other stakers, only on `Market` and `Vault` |
+| `settle` | `Market`, `Vault`, the settler's token account | nothing else, it happens once |
+| `claim` | the claimer's own `Position`, `Vault`, their token account | other claimers, only on `Vault` |
+
+**At the close of a window, every claim touches a different `Position`.** That burst — the one that
+would be a queue on a serial chain — fans out across one account per trader. No sharding of ours is
+needed, because the account model already provides it. The residual contention is the `Vault` and
+the two pool counters, which is the irreducible part: money has to move from somewhere shared.
+
+This is the same argument as the Monad design, arrived at from the other direction. On Monad we
+split one counter into 64 so optimistic execution rarely re-executes; on Solana we let the runtime
+schedule per account and make sure each trader owns theirs.
+
+### The three instructions
+
+```rust
+stake(args: MarketTerms, above: bool, amount: u64)
+  requires amount >= MIN_STAKE (0.10 USDC) and now < closes_at
+  reads the Pyth update, refuses it if publish_time is more than
+    ACCEPT_MARGIN_SECONDS (10) old          ← the latency-arbitrage cutoff
+  init_if_needed on Market, Vault and Position, so the first staker opens the market
+  transfers USDC into the Vault, credits the side on Market and Position
+
+settle()                                      ← anyone may call it
+  requires now >= closes_at
+  one-sided pool, or unsettled for SETTLE_WINDOW_SECONDS (600) → void, everyone refunded
+  reads the Pyth update, requires exponent match and
+    |publish_time − closes_at| <= SETTLE_TOLERANCE_SECONDS (20)
+  above_won = price > strike
+  fee    = losing × FEE_BPS (200) / 10_000
+  bounty = min(fee × BOUNTY_BPS (5000) / 10_000, MAX_BOUNTY (2 USDC))
+  pays the bounty out of the Vault, signed by the Market PDA
+
+claim()
+  void    → stake back
+  winner  → stake + (losing − fee) × stake / winning, in u128 so the multiply
+            cannot overflow before the divide
+  loser   → nothing, and the position is marked claimed either way
+```
+
+### Reading Pyth without the SDK
+
+`pyth-solana-receiver-sdk` pins its own Anchor and Solana versions, which pulls a second copy of
+both into the build and does not resolve: two `Pubkey` types, 22 compile errors. `pyth.rs` does the
+same work directly, and refuses anything that fails any of four checks:
+
+1. the account is owned by the Pyth receiver, `rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ`
+2. its first eight bytes are the `PriceUpdateV2` discriminator
+3. `verification_level` is `Full`, not `Partial` — a partially verified update lowers the number of
+   guardians who would have to collude to post a bad price
+4. `price_message.feed_id` is the feed the caller asked for
+
+The layout is copied from the SDK's own source, version 0.6.1, and freshness is deliberately left to
+the caller, because a stake wants a recent price and a settlement wants the price at one particular
+second.
+
+### Proven end to end on a local validator
+
+`solana/scripts/localnet.sh` runs a real market: two traders take opposite sides, an outsider
+settles with a Pyth update, everyone claims. The Pyth account is written by
+`scripts/fixture.ts` and preloaded into the validator, because there is no update on chain with a
+publish time in the present to clone; the program reads it exactly as it reads a real one.
 
 ```
 ok  pool above: 10000000          ok  pool below: 30000000
@@ -402,13 +483,25 @@ ok  second claim refused: AlreadyClaimed
 40 USDC in; 0.30 bounty to the outside settler, 39.40 to the winner, 0.30 kept as fee. Nothing
 unaccounted for, and the double claim is rejected.
 
-**Honest status: not deployed to devnet.** The program compiles and passes the run above, but the
-deploy needs about 1.48 SOL of rent and the devnet faucet has refused every request over many hours.
-There is no program address on devnet to put in this README, and we would rather say that than print
-one that does not resolve. `solana/scripts/deploy.sh` does it in one command the moment the wallet
-is funded.
+### Building it
 
----
+The toolchain is pinned, because the stock one is older than several crates in the graph:
+
+```bash
+cd solana && cargo-build-sbf --tools-version v1.58
+```
+
+`platform-tools` v1.58 carries a Rust new enough for `edition2024` crates; Anchor's own
+`anchor build` ships v1.46 (Rust 1.79) and fails on them. `Cargo.lock` additionally pins `blake3`,
+`base64ct` and `anchor-lang` so that exactly one copy of Anchor stays in the graph.
+
+### Honest status: not deployed to devnet
+
+The program compiles and passes the run above, but the deploy needs about 1.48 SOL of rent and the
+devnet faucet has refused every request across many hours and dozens of attempts. There is no
+program address on devnet to put in this README, and we would rather say so than print one that does
+not resolve. `solana/scripts/deploy.sh` builds, checks the balance covers rent, deploys and records
+the address in one command the moment the wallet is funded.
 
 ## Repository map
 
