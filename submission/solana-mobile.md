@@ -227,8 +227,8 @@ single-block log query. We run no database of our own.
 Monad testnet is live today and is what the demo runs against: six contracts, with settlement
 permissionless and paid, so an outside bot earns half the fee for settling a window.
 
-The Solana program is the port of that market, written in Anchor and verified end to end on a local
-validator. Each trader writes their own Position PDA, so the burst of settles and claims at the
+The Solana program is the port of that market, written in Anchor, verified end to end on a local
+validator and deployed to devnet as 5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v. Each trader writes their own Position PDA, so the burst of settles and claims at the
 close of a window touches a different account per trader and runs in parallel.
 
 ## What category best describes your product?
@@ -262,11 +262,11 @@ Two things we would rather you hear from us than find out.
 First, Tick runs on a test network. The USDC has no monetary value and nothing spendable changes
 hands. The product is complete end to end, not the economics.
 
-Second, on Solana specifically: the program is written and proven, not yet deployed. It compiles,
-and a local validator run takes two traders through stake, settle and claim with the money
-accounted for to the cent, including the outside settler's bounty. The devnet deploy is waiting on
-faucet SOL, nothing else. We would rather tell you that than put an address in this form that does
-not resolve.
+Second, on Solana specifically: the program is live on devnet as
+5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v, deployed in slot 510903969. A local validator run
+takes two traders through stake, settle and claim with the money accounted for to the cent,
+including the outside settler's bounty. What is not yet done is wiring the app's UI to it: the
+product you will try runs against Monad testnet, and the Solana program is the port behind it.
 
 The repository is public and the demo video is a single unbroken take against the live testnet.
 
@@ -281,8 +281,8 @@ social contracts in Solidity, `solana/` is the Anchor port of the market, `app/`
 `indexer/` is the Envio HyperIndex, `mobile/` is the Android wrapper and the signed APK, `media/`
 holds the demo video and store art, `submission/` holds these answers and the deck.
 
-Two notes. `contracts/lib/` is vendored Foundry dependencies, not our code. The Solana program is
-written and tested but its devnet deploy is still pending, and the README says so.
+Two notes. `contracts/lib/` is vendored Foundry dependencies, not our code. The Solana program is deployed to devnet; the README has the
+program id and the deploy signature.
 
 ## Demo video
 
@@ -387,7 +387,7 @@ treat it as usage rather than revenue. No marketing has been done.
 
 On Solana: the Anchor port of the market is written and verified end to end on a local validator,
 where two traders stake, an outsider settles and both claim, with the money accounted for to the
-cent. The devnet deploy is pending faucet SOL.
+cent. Deployed to devnet as 5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v.
 
 ## Who else is building in this space, and what are they getting wrong? (1000)
 

@@ -17,7 +17,7 @@ win and nobody can quietly hide a loss, because the number comes off the chain.
 |---|---|
 | Market | `0x16B57356a482Fc5b307bB76D7dC8F5d76A6Be1b2` |
 | Status | live, 104 contract tests passing, Android build shipped |
-| Solana | Anchor port written and proven on a local validator, devnet deploy pending |
+| Solana | **live on devnet**, program [`5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v`](https://explorer.solana.com/address/5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v?cluster=devnet) |
 
 ---
 
@@ -373,7 +373,8 @@ settlement paying half the fee capped at 2 USDC, and the 10-second fresh-price c
 | Program | `solana/programs/tick/src/lib.rs` |
 | Pyth reader | `solana/programs/tick/src/pyth.rs` |
 | IDL | `solana/idl/tick.json` — 3 instructions, 2 accounts, 14 errors |
-| Program id | `5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v` |
+| Program id | [`5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v`](https://explorer.solana.com/address/5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v?cluster=devnet) |
+| Cluster | **devnet, deployed** |
 | Build | `cargo-build-sbf --tools-version v1.58` |
 | Artifact | `tick.so`, 290,840 bytes, sha256 `f173edd5911fda0ea7aeead59505ddd10af0e65f2b4616f87a1a798d7fcb6f57` |
 
@@ -495,13 +496,33 @@ cd solana && cargo-build-sbf --tools-version v1.58
 `anchor build` ships v1.46 (Rust 1.79) and fails on them. `Cargo.lock` additionally pins `blake3`,
 `base64ct` and `anchor-lang` so that exactly one copy of Anchor stays in the graph.
 
-### Honest status: not deployed to devnet
+### Deployed on devnet
 
-The program compiles and passes the run above, but the deploy needs about 1.48 SOL of rent and the
-devnet faucet has refused every request across many hours and dozens of attempts. There is no
-program address on devnet to put in this README, and we would rather say so than print one that does
-not resolve. `solana/scripts/deploy.sh` builds, checks the balance covers rent, deploys and records
-the address in one command the moment the wallet is funded.
+```
+Program Id            5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v
+Owner                 BPFLoaderUpgradeab1e11111111111111111111111
+ProgramData Address   cTMUxBytqGs5paDUk8PTGhBekEUk5iMYd8WQeG8qpaU
+Authority             5mseqiAVTHpczr4PCSFVU16GBP7wKwn4Fnp7tUVQBBeh
+Last Deployed In Slot 510903969
+Data Length           290840 bytes
+```
+
+| | |
+|---|---|
+| Program | [`5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v`](https://explorer.solana.com/address/5adXZ1k5eYzyzsnAEkHsEjTfQdg1QMv53H9Ltjj9vV2v?cluster=devnet) |
+| Deploy signature | [`4C9bpTHqo3t7AnuaGCh1nZZg…`](https://explorer.solana.com/tx/4C9bpTHqo3t7AnuaGCh1nZZgQMNSdsSz56t6NfVp7ecRnEEhFfoYK69xvLUFkwTqZDftFVKga8EJFRazzu7dyPar?cluster=devnet) |
+| Status | `Ok`, slot 510903969, 2026-10-14 |
+| On-chain size | 290,840 bytes, byte-for-byte the local `tick.so` |
+| Rent | 1.47834604 SOL, held by the program account |
+
+The deployed bytes are the artifact from `cargo-build-sbf --tools-version v1.58`, sha256
+`f173edd5911fda0ea7aeead59505ddd10af0e65f2b4616f87a1a798d7fcb6f57`. `solana/deployed.json` records
+the address and when it went up, the same way the EVM side keeps `app/lib/chain/deployed.json`.
+
+The program is upgradeable, with the authority above. Redeploying is `./scripts/deploy.sh`, which
+rebuilds, checks the wallet covers rent, deploys to the same program id and rewrites
+`deployed.json`.
+
 
 ## Repository map
 
