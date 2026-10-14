@@ -3227,3 +3227,18 @@ button.landing-nav-cta { font-size: 13px; }
 .sol-done { color: var(--t-dim); font-size: 12px; }
 .sol-positions .is-up { color: #3fae6a; }
 .sol-positions .is-down { color: #d2563f; }
+
+/* ---- chain selector, in the navbar ---- */
+.chain-switch { position: relative; flex: none; }
+.chain-trigger { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, .1); color: #eef1e6; font: 600 11px var(--font-geist-mono), monospace; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: background .2s; }
+.chain-trigger:hover { background: rgba(255, 255, 255, .16); }
+.chain-trigger svg { width: 11px; height: 11px; opacity: .6; }
+.chain-switch i { width: 7px; height: 7px; flex: none; border-radius: 50%; }
+.chain-switch i[data-chain="monad"] { background: #836ef9; box-shadow: 0 0 8px #836ef966; }
+.chain-switch i[data-chain="solana"] { background: #14f195; box-shadow: 0 0 8px #14f19566; }
+.chain-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; min-width: 196px; padding: 6px; display: flex; flex-direction: column; gap: 2px; list-style: none; border-radius: 12px; background: #0c0e0a; box-shadow: 0 18px 50px rgba(0, 0, 0, .45); }
+.chain-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 8px; background: none; color: #eef1e6; font: 500 13px var(--font-geist-sans), sans-serif; text-align: left; cursor: pointer; }
+.chain-menu button:hover { background: rgba(255, 255, 255, .08); }
+.chain-menu span { display: flex; flex-direction: column; flex: 1; }
+.chain-menu small { color: rgba(238, 241, 230, .5); font: 400 11px var(--font-geist-mono), monospace; letter-spacing: .04em; }
+.chain-menu svg { width: 13px; height: 13px; color: var(--glow); }
