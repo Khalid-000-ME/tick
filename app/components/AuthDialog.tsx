@@ -17,12 +17,36 @@ import { clearMarks, markOnboarding, markSignIn, onAuthOpen, type AuthMode } fro
  */
 type Step = "choose" | "email" | "code";
 
-function explain(e: unknown): string {
+/**
+ * Turns a Privy failure into something worth reading.
+ *
+ * `what` is the step that failed, because the same words mean different things depending on it:
+ * an OAuth provider rejecting the attempt also says "invalid", and telling someone their code is
+ * wrong when they never typed one is worse than saying nothing. Only the code step may blame a code.
+ */
+function explain(what: string, e: unknown): string {
   const code = String((e as { privyErrorCode?: string })?.privyErrorCode ?? "");
   const msg = String((e as { message?: string })?.message ?? e ?? "");
-  if (/invalid|incorrect|wrong/i.test(code + msg)) return "That code is not right. Try again.";
-  if (/cancel|not.?allowed|abort|dismiss/i.test(code + msg)) return "Cancelled.";
-  if (/email/i.test(code) && /invalid/i.test(msg)) return "Check that email address.";
+  const both = `${code} ${msg}`;
+
+  if (/cancel|not.?allowed|abort|dismiss|closed|denied/i.test(both)) return "Cancelled.";
+  if (/network|fetch|timeout|offline/i.test(both)) return "Network trouble. Try again.";
+
+  if (what === "code") {
+    if (/expire/i.test(both)) return "That code has expired. Send a new one.";
+    if (/invalid|incorrect|wrong/i.test(both)) return "That code is not right. Try again.";
+  }
+  if (what === "email") {
+    if (/invalid|format/i.test(both)) return "Check that email address.";
+    if (/rate|too many|limit/i.test(both)) return "Too many attempts. Wait a minute and try again.";
+  }
+  if (what === "google" || what === "x") {
+    const who = what === "google" ? "Google" : "X";
+    return `Could not finish with ${who}. Try again, or use another way in.`;
+  }
+  if (what === "passkey") return "That passkey did not work. Try again, or use another way in.";
+  if (what === "wallet") return "Could not connect that wallet. Try again, or use another way in.";
+
   return "That did not work. Try again.";
 }
 
@@ -115,7 +139,7 @@ export function AuthDialog() {
     try {
       await fn();
     } catch (e) {
-      setError(explain(e));
+      setError(explain(label, e));
       setBusy(null);
       return false;
     }
