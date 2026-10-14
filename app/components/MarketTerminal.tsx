@@ -18,7 +18,7 @@ import { ChainSwitch } from "@/components/ChainSwitch";
 import { useChain } from "@/lib/useChain";
 import { useSolanaStake, useSolanaWallet } from "@/lib/solana/useSolanaStake";
 import { useSolanaPositions } from "@/lib/solana/useSolanaPositions";
-import { SOLANA } from "@/lib/solana/program";
+import { SOLANA, hexBytes, toHex } from "@/lib/solana/program";
 import { RailGrip } from "@/components/RailGrip";
 import { TickerStrip } from "@/components/TickerStrip";
 import { NewsPanel } from "@/components/NewsPanel";
@@ -167,7 +167,7 @@ export function MarketTerminal() {
       }
       if (!market.terms) { setNotice("No open window right now."); return; }
       const terms = {
-        feedId: Uint8Array.from(Buffer.from(feed.id.replace(/^0x/, ""), "hex")),
+        feedId: hexBytes(feed.id),
         // The same strike the Monad side would use, so a window is the same market on either chain.
         strike: strikeOverride ?? market.terms.strike,
         expo: feed.expo,
@@ -190,7 +190,7 @@ export function MarketTerminal() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            feedId: Buffer.from(terms.feedId).toString("hex"),
+            feedId: toHex(terms.feedId),
             strike: terms.strike.toString(),
             expo: terms.expo,
             closesAt: Number(terms.closesAt),

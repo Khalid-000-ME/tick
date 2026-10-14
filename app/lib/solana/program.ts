@@ -39,11 +39,44 @@ export const RULES = {
   settleWindowSeconds: 600,
 };
 
-const discriminator = (name: string) => Buffer.from(sha256(`global:${name}`).slice(0, 8));
+/**
+ * Byte helpers written against Uint8Array and DataView rather than Node's Buffer.
+ *
+ * The browser's Buffer polyfill has no readBigInt64LE, and an account's `data` arrives as a plain
+ * Uint8Array anyway, so anything built on Buffer works in a script and throws in the app. DataView
+ * behaves the same in both.
+ */
+const discriminator = (name: string) => sha256(`global:${name}`).slice(0, 8);
 
-const i64 = (n: bigint) => { const b = Buffer.alloc(8); b.writeBigInt64LE(n); return b; };
-const u64 = (n: bigint) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(n); return b; };
-const i32 = (n: number) => { const b = Buffer.alloc(4); b.writeInt32LE(n); return b; };
+const bytes = (n: number, write: (v: DataView) => void) => {
+  const b = new Uint8Array(n);
+  write(new DataView(b.buffer));
+  return b;
+};
+const i64 = (n: bigint) => bytes(8, (v) => v.setBigInt64(0, n, true));
+const u64 = (n: bigint) => bytes(8, (v) => v.setBigUint64(0, n, true));
+const i32 = (n: number) => bytes(4, (v) => v.setInt32(0, n, true));
+const u16 = (n: number) => bytes(2, (v) => v.setUint16(0, n, true));
+
+const text = (s: string) => new TextEncoder().encode(s);
+
+const concat = (...parts: Uint8Array[]) => {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let o = 0;
+  for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
+};
+
+/** Raw bytes as a lowercase hex string, without 0x. */
+export const toHex = (b: Uint8Array) => Array.from(b, (n) => n.toString(16).padStart(2, "0")).join("");
+
+/** A hex string, with or without 0x, as raw bytes. */
+export const hexBytes = (hex: string) => {
+  const h = hex.replace(/^0x/, "");
+  const out = new Uint8Array(h.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+  return out;
+};
 
 export interface Terms {
   feedId: Uint8Array;   // 32 bytes, the Pyth feed id
@@ -55,32 +88,31 @@ export interface Terms {
 /** `(feedId, strike, closesAt)` names the market, so there is no create-market instruction. */
 export function marketPda(t: Terms) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("market"), Buffer.from(t.feedId), i64(t.strike), i64(t.closesAt)],
+    [text("market"), t.feedId, i64(t.strike), i64(t.closesAt)],
     SOLANA.programId,
   )[0];
 }
 
 export const vaultPda = (market: PublicKey) =>
-  PublicKey.findProgramAddressSync([Buffer.from("vault"), market.toBuffer()], SOLANA.programId)[0];
+  PublicKey.findProgramAddressSync([text("vault"), market.toBuffer()], SOLANA.programId)[0];
 
 /** One account per trader per market: this is what lets the close-of-window burst run in parallel. */
 export const positionPda = (market: PublicKey, owner: PublicKey) =>
   PublicKey.findProgramAddressSync(
-    [Buffer.from("position"), market.toBuffer(), owner.toBuffer()],
+    [text("position"), market.toBuffer(), owner.toBuffer()],
     SOLANA.programId,
   )[0];
 
 /** The sponsored price account the push oracle keeps updated for a feed. */
 export function priceAccount(feedId: Uint8Array, shard = 0) {
-  const s = Buffer.alloc(2); s.writeUInt16LE(shard);
-  return PublicKey.findProgramAddressSync([s, Buffer.from(feedId)], SOLANA.pythPushOracle)[0];
+  return PublicKey.findProgramAddressSync([u16(shard), feedId], SOLANA.pythPushOracle)[0];
 }
 
 export const tokenAccount = (owner: PublicKey) =>
   getAssociatedTokenAddressSync(SOLANA.mint, owner, true);
 
 const termsBytes = (t: Terms) =>
-  Buffer.concat([Buffer.from(t.feedId), i64(t.strike), i32(t.expo), i64(t.closesAt)]);
+  concat(t.feedId, i64(t.strike), i32(t.expo), i64(t.closesAt));
 
 export function stakeIx(staker: PublicKey, t: Terms, above: boolean, amount: bigint) {
   const market = marketPda(t);
@@ -98,9 +130,9 @@ export function stakeIx(staker: PublicKey, t: Terms, above: boolean, amount: big
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
     ],
-    data: Buffer.concat([
-      discriminator("stake"), termsBytes(t), Buffer.from([above ? 1 : 0]), u64(amount),
-    ]),
+    data: Buffer.from(concat(
+      discriminator("stake"), termsBytes(t), Uint8Array.of(above ? 1 : 0), u64(amount),
+    )),
   });
 }
 
@@ -116,7 +148,7 @@ export function settleIx(settler: PublicKey, t: Terms) {
       { pubkey: priceAccount(t.feedId), isSigner: false, isWritable: false },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     ],
-    data: discriminator("settle"),
+    data: Buffer.from(discriminator("settle")),
   });
 }
 
@@ -132,7 +164,7 @@ export function claimIx(owner: PublicKey, t: Terms) {
       { pubkey: tokenAccount(owner), isSigner: false, isWritable: true },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     ],
-    data: discriminator("claim"),
+    data: Buffer.from(discriminator("claim")),
   });
 }
 
@@ -149,28 +181,30 @@ export interface MarketState {
 }
 
 /** Decodes the `Market` account: 8-byte discriminator, then the struct in declaration order. */
-export function decodeMarket(data: Buffer): MarketState {
+export function decodeMarket(data: Uint8Array): MarketState {
+  const v = new DataView(data.buffer, data.byteOffset, data.byteLength);
   let o = 8 + 32 + 8 + 4 + 8 + 32;        // skip feed_id, strike, expo, closes_at, mint
-  const poolAbove = data.readBigUInt64LE(o); o += 8;
-  const poolBelow = data.readBigUInt64LE(o); o += 8;
-  const fee = data.readBigUInt64LE(o); o += 8;
-  const settlePrice = data.readBigInt64LE(o); o += 8;
+  const poolAbove = v.getBigUint64(o, true); o += 8;
+  const poolBelow = v.getBigUint64(o, true); o += 8;
+  const fee = v.getBigUint64(o, true); o += 8;
+  const settlePrice = v.getBigInt64(o, true); o += 8;
   return {
     poolAbove, poolBelow, fee, settlePrice,
-    settled: data.readUInt8(o) === 1,
-    aboveWon: data.readUInt8(o + 1) === 1,
-    void: data.readUInt8(o + 2) === 1,
+    settled: v.getUint8(o) === 1,
+    aboveWon: v.getUint8(o + 1) === 1,
+    void: v.getUint8(o + 2) === 1,
   };
 }
 
 export interface PositionState { above: bigint; below: bigint; claimed: boolean; }
 
-export function decodePosition(data: Buffer): PositionState {
+export function decodePosition(data: Uint8Array): PositionState {
+  const v = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const o = 8 + 32 + 32;                   // skip market, owner
   return {
-    above: data.readBigUInt64LE(o),
-    below: data.readBigUInt64LE(o + 8),
-    claimed: data.readUInt8(o + 16) === 1,
+    above: v.getBigUint64(o, true),
+    below: v.getBigUint64(o + 8, true),
+    claimed: v.getUint8(o + 16) === 1,
   };
 }
 
@@ -185,25 +219,26 @@ export function payout(m: MarketState, above: boolean, stake: bigint): bigint {
 
 export async function readMarket(c: Connection, t: Terms): Promise<MarketState | null> {
   const info = await c.getAccountInfo(marketPda(t));
-  return info ? decodeMarket(Buffer.from(info.data)) : null;
+  return info ? decodeMarket(info.data) : null;
 }
 
 export async function readPosition(c: Connection, t: Terms, owner: PublicKey): Promise<PositionState | null> {
   const info = await c.getAccountInfo(positionPda(marketPda(t), owner));
-  return info ? decodePosition(Buffer.from(info.data)) : null;
+  return info ? decodePosition(info.data) : null;
 }
 
 /** Reads the live price straight out of the sponsored feed account, the same one the program reads. */
 export async function readPrice(c: Connection, feedId: Uint8Array) {
   const info = await c.getAccountInfo(priceAccount(feedId));
   if (!info) return null;
-  const d = Buffer.from(info.data);
-  const verification = d.readUInt8(40);                 // 0 = Partial{n}, 1 = Full
+  const d = info.data;
+  const v = new DataView(d.buffer, d.byteOffset, d.byteLength);
+  const verification = v.getUint8(40);                  // 0 = Partial{n}, 1 = Full
   const o = 40 + (verification === 1 ? 1 : 2);
   return {
-    price: d.readBigInt64LE(o + 32),
-    expo: d.readInt32LE(o + 48),
-    publishTime: Number(d.readBigInt64LE(o + 52)),
+    price: v.getBigInt64(o + 32, true),
+    expo: v.getInt32(o + 48, true),
+    publishTime: Number(v.getBigInt64(o + 52, true)),
     full: verification === 1,
   };
 }

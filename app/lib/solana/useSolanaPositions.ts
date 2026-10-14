@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
-  SOLANA, RULES, marketPda, readMarket, decodePosition, positionPda, payout as payoutOf, type Terms,
+  SOLANA, RULES, marketPda, readMarket, decodePosition, positionPda, payout as payoutOf,
+  hexBytes, toHex, type Terms,
 } from "./program";
 
 /**
@@ -50,7 +51,7 @@ const save = (owner: string, rows: SolanaPosition[]) => {
 };
 
 export const termsOf = (p: SolanaPosition): Terms => ({
-  feedId: Uint8Array.from(Buffer.from(p.feedIdHex.replace(/^0x/, ""), "hex")),
+  feedId: hexBytes(p.feedIdHex),
   strike: BigInt(p.strike),
   expo: p.expo,
   closesAt: BigInt(p.closesAt),
@@ -74,7 +75,7 @@ export function useSolanaPositions(owner: string | null) {
     const market = marketPda(t).toBase58();
     const row: SolanaPosition = {
       market,
-      feedIdHex: Buffer.from(t.feedId).toString("hex"),
+      feedIdHex: toHex(t.feedId),
       symbol,
       strike: t.strike.toString(),
       expo: t.expo,
@@ -116,7 +117,7 @@ export function useSolanaPositions(owner: string | null) {
 
         // Whether it has been collected is the Position account's business, not ours.
         const info = await connection.getAccountInfo(positionPda(marketPda(t), ownerKey)).catch(() => null);
-        const claimed = info ? decodePosition(Buffer.from(info.data)).claimed : r.claimed;
+        const claimed = info ? decodePosition(info.data).claimed : r.claimed;
 
         return {
           ...r,
